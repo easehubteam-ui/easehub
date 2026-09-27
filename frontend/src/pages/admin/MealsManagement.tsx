@@ -41,29 +41,31 @@ export const MealsManagement: React.FC = () => {
       const list = await mealApi.getAll();
       if (Array.isArray(list)) {
         const mapped: MealProvider[] = list.map((m: any) => ({
-          id: m._id || m.code,
+          id: m._id || m.id || m.code || `mp-${Math.random()}`,
           code: m.code || '#MP-BH-101',
-          name: m.name,
+          name: m.name || 'Mess Kitchen Provider',
           fssai: m.fssai || 'FSSAI Verified',
           address: m.location?.address || `${m.corridor || 'Bhilai'}, Chhattisgarh`,
-          corridor: m.corridor || '',
-          distance: m.distance || '',
-          rating: m.rating || 5.0,
-          reviewCount: m.reviewCount || 0,
+          corridor: m.corridor || 'Junwani',
+          distance: m.distance || 'Near Campus',
+          rating: typeof m.rating === 'number' ? m.rating : 5.0,
+          reviewCount: typeof m.reviewCount === 'number' ? m.reviewCount : 0,
           status: m.status || 'active',
-          tags: Array.isArray(m.tags) ? m.tags.map((t: any) => typeof t === 'string' ? t : (t?.name || String(t))) : [],
+          tags: Array.isArray(m.tags)
+            ? m.tags.map((t: any) => (typeof t === 'string' ? t : (t?.name || String(t || '')))).filter(Boolean)
+            : [],
           dailyPrice: m.dailyPrice || 0,
           monthlyPrice: m.monthlyPrice || 0,
           activeTiffins: m.activeTiffins || 0,
-          kitchenCapacity: m.kitchenCapacity || '',
+          kitchenCapacity: m.kitchenCapacity || '100 Meals/day',
           inspectionGrade: m.inspectionGrade || 'Grade A',
-          deliveryRadius: m.deliveryRadius || '',
-          breakfastMenu: m.breakfastMenu || '',
-          lunchMenu: m.lunchMenu || '',
-          dinnerMenu: m.dinnerMenu || '',
-          breakfastPrice: m.breakfastPrice || 0,
-          lunchPrice: m.lunchPrice || 0,
-          dinnerPrice: m.dinnerPrice || 0,
+          deliveryRadius: m.deliveryRadius || '3 km',
+          breakfastMenu: m.breakfastMenu || 'Poha / Paratha with Tea',
+          lunchMenu: m.lunchMenu || '4 Rotis, Rice, Dal Tadka, Sabzi & Salad',
+          dinnerMenu: m.dinnerMenu || '4 Rotis, Rice, Dal Makhani & Special Sabzi',
+          breakfastPrice: m.breakfastPrice || 40,
+          lunchPrice: m.lunchPrice || 80,
+          dinnerPrice: m.dinnerPrice || 80,
           location: m.location,
         }));
         setProviders(mapped);
@@ -104,23 +106,31 @@ export const MealsManagement: React.FC = () => {
   });
 
   const filteredProviders = providers.filter((p) => {
+    if (!p) return false;
+    const nameStr = (p.name || '').toLowerCase();
+    const codeStr = (p.code || '').toLowerCase();
+    const fssaiStr = String(p.fssai || '');
+    const addrStr = (p.address || '').toLowerCase();
+    const corrStr = (p.corridor || '').toLowerCase();
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       const match =
-        p.name.toLowerCase().includes(term) ||
-        p.code.toLowerCase().includes(term) ||
-        p.fssai.includes(term) ||
-        p.address.toLowerCase().includes(term);
+        nameStr.includes(term) ||
+        codeStr.includes(term) ||
+        fssaiStr.includes(term) ||
+        addrStr.includes(term);
       if (!match) return false;
     }
 
     if (corridorFilter !== 'all') {
-      if (!p.corridor.toLowerCase().includes(corridorFilter.toLowerCase())) return false;
+      if (!corrStr.includes(corridorFilter.toLowerCase())) return false;
     }
 
     if (dietFilter !== 'all') {
-      if (dietFilter === 'veg' && !p.tags.some((t) => t.toLowerCase().includes('veg'))) return false;
-      if (dietFilter === 'nonveg' && !p.tags.some((t) => t.toLowerCase().includes('non-veg'))) return false;
+      const tags = Array.isArray(p.tags) ? p.tags : [];
+      if (dietFilter === 'veg' && !tags.some((t) => String(t || '').toLowerCase().includes('veg'))) return false;
+      if (dietFilter === 'nonveg' && !tags.some((t) => String(t || '').toLowerCase().includes('non-veg'))) return false;
     }
 
     if (statusFilter !== 'all') {
