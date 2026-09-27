@@ -37,6 +37,8 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
   const tagList = rawServices.map((s: any) => typeof s === 'string' ? s : (s?.name || String(s)));
 
   const perKg = Number(pricing.perKg || pricing.pricePerKg || pricing.startingPrice || 50);
+  const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
+  const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
 
   return {
     id: record.id,
@@ -58,7 +60,7 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
     steamIronPerPc: Number(pricing.steamIronPerPc) || 15,
     turnaroundHours: 24,
     turnaroundTime: '24 Hours Express',
-    image: record.image || (Array.isArray(record.images) && record.images[0]) || 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=800',
+    image: record.image || (Array.isArray(record.images) && record.images[0]) || '',
     images: Array.isArray(record.images) ? record.images : [],
     services: normalizedServices.length > 0 ? normalizedServices : [{ name: 'Wash & Fold' }, { name: 'Steam Iron' }],
     pickupAvailable: record.pickup_available ?? true,
@@ -68,8 +70,8 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
       city: record.city || '',
       state: record.state || '',
       pincode: record.pincode || '',
-      latitude: Number(record.latitude) || 21.1938,
-      longitude: Number(record.longitude) || 81.3509,
+      latitude: hasLat ? Number(record.latitude) : undefined,
+      longitude: hasLng ? Number(record.longitude) : undefined,
     },
     createdAt: record.created_at,
     updatedAt: record.updated_at
@@ -124,8 +126,8 @@ export const laundryApi = {
       city: data.location?.city || '',
       state: data.location?.state || '',
       pincode: data.location?.pincode || '',
-      latitude: data.location?.latitude || 12.9716,
-      longitude: data.location?.longitude || 77.5946,
+      latitude: data.location?.latitude ?? null,
+      longitude: data.location?.longitude ?? null,
       status: data.status || 'active',
       is_active: true
     };

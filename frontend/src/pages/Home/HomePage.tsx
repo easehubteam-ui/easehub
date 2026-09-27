@@ -131,49 +131,38 @@ export const HomePage: React.FC = () => {
               {/* Right: Bento Hero Composition */}
               <div className="lg:col-span-5 relative">
                 <div className="relative rounded-3xl bg-white p-4 shadow-[0_6px_16px_rgba(23,26,24,0.04),0_20px_40px_rgba(34,89,68,0.08)] border border-[#E5E1D6]">
-                  <div className="relative h-[340px] md:h-[390px] w-full rounded-2xl overflow-hidden">
-                    <img
-                      className="w-full h-full object-cover"
-                      alt="Sunlit aesthetic student bedroom with study desk, warm wood flooring, organized bookshelves, cozy bed, potted green plants, and warm interior lighting in a modern college apartment"
-                      src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-
-                    {/* Note Tag Overlay */}
-                    <div className="absolute top-4 right-4 bg-[#EECA3A] text-[#171A18] px-4 py-2 rounded-xl shadow-md rotate-2 transform border border-amber-300">
-                      <p className="text-[10px] tracking-widest uppercase font-bold">EaseHub Living</p>
-                      <p className="text-sm font-extrabold leading-tight">Study More, Stress Less ✨</p>
+                  <div className="relative h-[340px] md:h-[390px] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-[#225944] via-[#1a4535] to-[#113125] p-6 text-white flex flex-col justify-between">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EECA3A] text-[#171A18] text-xs font-bold mb-3">
+                        <span>EaseHub Living Ecosystem</span>
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight text-[#EECA3A]">
+                        Verified Student Living & Services
+                      </h2>
+                      <p className="text-xs text-white/80 mt-2 max-w-sm">
+                        Direct access to PGs, daily tiffin messes, doorstep laundry pickups, and on-demand maintenance.
+                      </p>
                     </div>
 
                     {/* Floating Mini Micro-cards */}
-                    <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-3">
-                      <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl flex items-center gap-3 shadow-md border border-[#E5E1D6]">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
-                          <img
-                            className="w-full h-full object-cover"
-                            alt="Authentic traditional Indian thali with fluffy rice, steaming dal, paneer curry, warm rotis"
-                            src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=300&q=80"
-                          />
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl flex items-center gap-3 shadow-md border border-[#E5E1D6] text-[#171A18]">
+                        <div className="w-10 h-10 rounded-lg bg-[#EECA3A]/20 text-[#171A18] flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[20px]">restaurant</span>
                         </div>
                         <div className="min-w-0">
                           <p className="text-[10px] text-[#6B6B63] uppercase font-bold">Hot Tiffin</p>
                           <p className="text-xs font-bold text-[#171A18] truncate">Cooked Fresh Daily</p>
-                          <p className="text-xs font-extrabold text-[#EECA3A]">₹60 / meal</p>
                         </div>
                       </div>
 
-                      <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl flex items-center gap-3 shadow-md border border-[#E5E1D6]">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
-                          <img
-                            className="w-full h-full object-cover"
-                            alt="Neatly folded pile of fresh clean colorful laundered clothes"
-                            src="https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&w=300&q=80"
-                          />
+                      <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl flex items-center gap-3 shadow-md border border-[#E5E1D6] text-[#171A18]">
+                        <div className="w-10 h-10 rounded-lg bg-[#225944]/10 text-[#225944] flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[20px]">local_laundry_service</span>
                         </div>
                         <div className="min-w-0">
                           <p className="text-[10px] text-[#6B6B63] uppercase font-bold">Laundry Pick</p>
-                          <p className="text-xs font-bold text-[#171A18] truncate">Wash & Steam Press</p>
-                          <p className="text-xs font-extrabold text-[#225944]">Doorstep Pickup</p>
+                          <p className="text-xs font-bold text-[#171A18] truncate">Doorstep Pickup</p>
                         </div>
                       </div>
                     </div>
@@ -446,14 +435,10 @@ export const HomePage: React.FC = () => {
               {/* Pillar 1: PG & Hostels */}
               <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
                 <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      alt="Spacious well-lit student PG room with modern wooden furniture"
-                      src="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=600&q=80"
-                    />
-                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944] text-white text-[11px] font-bold">
-                      340+ Verified
+                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#225944] to-[#163b2d] flex items-center justify-center text-white">
+                    <span className="material-symbols-outlined text-6xl text-[#EECA3A]">apartment</span>
+                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944] text-white text-[11px] font-bold border border-white/20">
+                      Verified Accommodation
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[#225944] mb-1">
@@ -482,14 +467,10 @@ export const HomePage: React.FC = () => {
               {/* Pillar 2: Meals & Tiffins */}
               <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
                 <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      alt="Healthy and appetizing Indian student mess thali"
-                      src="https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&w=600&q=80"
-                    />
+                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#FFF3C4] to-[#EECA3A]/30 flex items-center justify-center text-[#171A18]">
+                    <span className="material-symbols-outlined text-6xl text-[#225944]">skillet</span>
                     <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#EECA3A] text-[#171A18] text-[11px] font-bold">
-                      Certified Kitchens
+                      Certified Mess
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[#225944] mb-1">
@@ -518,13 +499,9 @@ export const HomePage: React.FC = () => {
               {/* Pillar 3: Laundry Care */}
               <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
                 <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      alt="Organized stack of clean college clothes"
-                      src="https://images.unsplash.com/photo-1545173168-9f1947eebb7f?auto=format&fit=crop&w=600&q=80"
-                    />
-                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944]/20 text-[#225944] text-[11px] font-bold">
+                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#E9F2EE] to-[#225944]/20 flex items-center justify-center text-[#225944]">
+                    <span className="material-symbols-outlined text-6xl">local_laundry_service</span>
+                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944] text-white text-[11px] font-bold">
                       Doorstep Pickup
                     </span>
                   </div>
@@ -554,12 +531,8 @@ export const HomePage: React.FC = () => {
               {/* Pillar 4: Home & Maintenance Repairs */}
               <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
                 <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      alt="Verified technician fixing electrical board inside room"
-                      src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80"
-                    />
+                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#F7F5EF] to-[#E5E1D6] flex items-center justify-center text-[#171A18]">
+                    <span className="material-symbols-outlined text-6xl text-[#225944]">handyman</span>
                     <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944] text-white text-[11px] font-bold">
                       Background Checked
                     </span>

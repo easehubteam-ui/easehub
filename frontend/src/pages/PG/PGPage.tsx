@@ -50,7 +50,7 @@ export const PGPage: React.FC = () => {
           rating: p.rating || 5.0,
           reviewsCount: p.reviewCount || 0,
           price: p.monthlyRent || 0,
-          images: p.images?.length > 0 ? p.images : ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800'],
+          images: p.images?.length > 0 ? p.images : [],
           amenities: p.amenities || [],
           featured: p.verified ?? true,
           locationData: {
@@ -179,22 +179,17 @@ export const PGPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Decorative Bedroom Visual Overlay */}
+            {/* Right Decorative Hero Banner */}
             <div className="lg:col-span-4 hidden lg:block relative">
-              <div className="relative h-64 rounded-3xl overflow-hidden shadow-md border border-[#E5E1D6]">
-                <img
-                  src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80"
-                  alt="Cozy PG Room"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                
-                {/* Handwriting aesthetic quotes */}
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/40 shadow-xs text-right">
-                  <p className="font-handwritten text-xs font-bold text-[#225944] leading-tight">Better Stay<br />Happier Days ☺</p>
+              <div className="relative h-64 rounded-3xl overflow-hidden shadow-md border border-[#E5E1D6] bg-gradient-to-br from-[#225944] via-[#1a4535] to-[#123327] p-6 text-white flex flex-col justify-between">
+                <div>
+                  <span className="material-symbols-outlined text-4xl text-[#EECA3A]">domain</span>
+                  <h3 className="text-xl font-black mt-2">Verified Student PGs</h3>
+                  <p className="text-xs text-white/80 mt-1">Single & sharing rooms near Bhilai campuses</p>
                 </div>
-                <div className="absolute bottom-4 left-4 bg-[#EECA3A] text-[#171A18] px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs">
-                  More than just a room. A better you.
+                
+                <div className="bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 text-xs font-bold text-[#EECA3A]">
+                  Zero Brokerage • 100% Direct Booking
                 </div>
               </div>
             </div>
@@ -279,8 +274,15 @@ export const PGPage: React.FC = () => {
                 <p className="text-sm font-bold text-[#171A18]">Loading PGs & Hostels...</p>
               </div>
             ) : error ? (
-              <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm">
-                {error}
+              <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm space-y-3">
+                <p>{error}</p>
+                <button
+                  type="button"
+                  onClick={loadPGs}
+                  className="px-4 py-2 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#194434] transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             ) : listings.length === 0 ? (
               <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
@@ -310,11 +312,18 @@ export const PGPage: React.FC = () => {
                 >
                   {/* Left Gallery */}
                   <div className="w-full sm:w-60 h-48 rounded-xl relative overflow-hidden bg-gray-100 shrink-0">
-                    <img
-                      src={listing.images[currentImgIdx]}
-                      alt={listing.name}
-                      className="w-full h-full object-cover transition-all duration-300"
-                    />
+                    {listing.images && listing.images.length > 0 && listing.images[currentImgIdx] ? (
+                      <img
+                        src={listing.images[currentImgIdx]}
+                        alt={listing.name}
+                        className="w-full h-full object-cover transition-all duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[#E5E1D6]/40 flex flex-col items-center justify-center p-4 text-[#225944]">
+                        <span className="material-symbols-outlined text-4xl mb-1">domain</span>
+                        <span className="text-xs font-bold text-center">PG Accommodation</span>
+                      </div>
+                    )}
 
                     {/* Featured Badge */}
                     {listing.featured && (

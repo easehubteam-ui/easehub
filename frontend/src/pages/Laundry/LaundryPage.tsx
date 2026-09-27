@@ -46,7 +46,7 @@ export const LaundryPage: React.FC = () => {
             rating: l.rating || 4.8,
             reviewsCount: l.reviewCount || 18,
             pricePerKg: l.perKgPrice || l.pricePerKg || 50,
-            image: l.image || (l.images && l.images[0]) || 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=800',
+            image: l.image || (l.images && l.images[0]) || '',
             badge: { text: 'Verified', color: 'bg-[#225944] text-white' },
             services: serviceStrings.filter(Boolean),
             turnaround: l.turnaroundHours ? `${l.turnaroundHours} hours` : '24 hours',
@@ -310,8 +310,15 @@ export const LaundryPage: React.FC = () => {
                   <p className="text-sm font-bold text-[#171A18]">Loading Laundry Partners...</p>
                 </div>
               ) : error ? (
-                <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm">
-                  {error}
+                <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm space-y-3">
+                  <p>{error}</p>
+                  <button
+                    type="button"
+                    onClick={loadLaundry}
+                    className="px-4 py-2 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#194434] transition-colors"
+                  >
+                    Retry
+                  </button>
                 </div>
               ) : filteredProviders.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-[#E5E3DC] p-12 text-center shadow-xs">
@@ -335,12 +342,19 @@ export const LaundryPage: React.FC = () => {
                     <div className="flex flex-col sm:flex-row gap-5">
                       
                       {/* Image Storefront Preview */}
-                      <div className="relative w-full sm:w-56 h-44 sm:h-auto rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                        <img
-                          src={provider.image}
-                          alt={provider.name}
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="relative w-full sm:w-56 h-44 sm:h-auto rounded-xl overflow-hidden shrink-0 bg-[#E5E3DC]/40 flex items-center justify-center">
+                        {provider.image ? (
+                          <img
+                            src={provider.image}
+                            alt={provider.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-[#225944]">
+                            <span className="material-symbols-outlined text-4xl mb-1">local_laundry_service</span>
+                            <span className="text-xs font-bold text-center">Laundry Partner</span>
+                          </div>
+                        )}
                         <span className={`absolute top-2.5 left-2.5 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${provider.badge.color}`}>
                           {provider.badge.text}
                         </span>
@@ -467,16 +481,9 @@ export const LaundryPage: React.FC = () => {
 
                 {/* Towels Stack Graphic & Smiley Note */}
                 <div className="mt-4 pt-2 relative flex items-center justify-end">
-                  <div className="relative">
-                    <img
-                      alt="Stacked folded fresh towels"
-                      className="w-48 h-32 object-cover rounded-xl shadow-md border-2 border-white transform rotate-1"
-                      src="https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&w=800&q=80"
-                    />
-                    <div className="absolute -top-6 right-2 text-right">
-                      <span className="font-handwriting font-bold text-[#171A18] text-base block leading-none">Same Day</span>
-                      <span className="font-handwriting font-bold text-amber-500 text-sm">Happiness :)</span>
-                    </div>
+                  <div className="w-44 h-28 rounded-xl bg-[#225944] text-white flex flex-col items-center justify-center p-3 shadow-md border-2 border-white">
+                    <span className="material-symbols-outlined text-3xl mb-1 text-[#EECA3A]">dry_cleaning</span>
+                    <span className="text-xs font-bold text-center">Doorstep Wash & Press</span>
                   </div>
                 </div>
               </div>

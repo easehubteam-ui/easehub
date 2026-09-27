@@ -586,23 +586,16 @@ export const SupportPage: React.FC = () => {
             </div>
 
             {/* Student Life Visual Card */}
-            <div className="relative rounded-2xl overflow-hidden shadow-sm group border border-[#E1E3DF]">
-              <img
-                src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80"
-                alt="Student PG hostel communal hall"
-                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#225944]/90 via-[#225944]/40 to-transparent flex flex-col justify-end p-5 text-white">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#EECA3A]">
-                  Community Guidelines
-                </span>
-                <h4 className="text-base font-bold text-white mt-0.5">
-                  BIT Durg &amp; Bhilai PG Code of Conduct
-                </h4>
-                <p className="text-xs text-white/80 line-clamp-1 mt-0.5">
-                  Quiet hours, kitchen usage ethics, and safe communal practices.
-                </p>
-              </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-sm group border border-[#E1E3DF] bg-gradient-to-br from-[#225944] via-[#1a4535] to-[#123327] p-6 text-white flex flex-col justify-end h-48">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#EECA3A]">
+                Community Guidelines
+              </span>
+              <h4 className="text-base font-bold text-white mt-0.5">
+                BIT Durg &amp; Bhilai PG Code of Conduct
+              </h4>
+              <p className="text-xs text-white/80 line-clamp-1 mt-0.5">
+                Quiet hours, kitchen usage ethics, and safe communal practices.
+              </p>
             </div>
 
           </div>

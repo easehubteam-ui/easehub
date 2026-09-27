@@ -531,11 +531,11 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Chart 4: User Cohort Acquisition */}
+        {/* Chart 4: User Demographics */}
         <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6] mb-3">
             <div>
-              <h3 className="text-base font-extrabold text-[#171A18]">Cohort Acquisition</h3>
+              <h3 className="text-base font-extrabold text-[#171A18]">Demographic Insights</h3>
               <p className="text-xs text-[#6B6B63]">User Demographic Insights</p>
             </div>
             <span className="material-symbols-outlined text-[#225944] text-[20px]">how_to_reg</span>
@@ -545,7 +545,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="w-10 h-10 rounded-full bg-slate-100 text-[#6B6B63] flex items-center justify-center mx-auto mb-2">
               <span className="material-symbols-outlined text-xl">groups</span>
             </div>
-            <p className="text-xs font-extrabold text-[#171A18]">Cohort Data Unavailable</p>
+            <p className="text-xs font-extrabold text-[#171A18]">Demographic Data Unavailable</p>
             <p className="text-[11px] text-[#6B6B63] max-w-xs mx-auto font-medium">
               Student vs professional demographics will populate automatically as registered users complete campus profile verification.
             </p>
@@ -562,7 +562,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Chart 5: Campus Corridor Heatmap */}
+        {/* Chart 5: Campus Corridor Density */}
         <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6] mb-3">
             <div>
@@ -576,7 +576,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="w-10 h-10 rounded-full bg-slate-100 text-[#6B6B63] flex items-center justify-center mx-auto mb-2">
               <span className="material-symbols-outlined text-xl">share_location</span>
             </div>
-            <p className="text-xs font-extrabold text-[#171A18]">Location Heatmap Unavailable</p>
+            <p className="text-xs font-extrabold text-[#171A18]">Corridor Location Analytics Unavailable</p>
             <p className="text-[11px] text-[#6B6B63] max-w-xs mx-auto font-medium">
               Location analytics will appear automatically after student bookings &amp; corridor order data are recorded.
             </p>

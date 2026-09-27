@@ -42,11 +42,7 @@ export interface AddLaundryModalProps {
   onSubmitLaundry: (data: LaundryFormData) => void;
 }
 
-const defaultLaundryPhotos = [
-  'https://images.unsplash.com/photo-1545173168-9f1947eebb7f?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?auto=format&fit=crop&w=800&q=80',
-];
+const defaultLaundryPhotos: string[] = [];
 
 const availableServices = [
   'Wash & Fold',
@@ -110,16 +106,7 @@ export const AddLaundryModal: React.FC<AddLaundryModalProps> = ({
   };
 
   const handleAddSamplePhoto = () => {
-    if (formData.photos.length >= 8) {
-      alert('Maximum 8 photos allowed.');
-      return;
-    }
-    const sampleImgs = [
-      'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1521656693074-0dc35342101b?auto=format&fit=crop&w=800&q=80',
-    ];
-    const nextImg = sampleImgs[formData.photos.length % sampleImgs.length];
-    setFormData({ ...formData, photos: [...formData.photos, nextImg] });
+    alert('Please select an image file to upload.');
   };
 
   const toggleService = (srv: string) => {

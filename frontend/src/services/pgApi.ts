@@ -6,8 +6,8 @@ export interface PGLocation {
   city: string;
   state: string;
   pincode: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface PGProperty {
@@ -40,6 +40,9 @@ export interface PGProperty {
 }
 
 const mapPGFromDB = (record: any): PGProperty => {
+  const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
+  const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
+
   return {
     id: record.id,
     _id: record.id,
@@ -70,8 +73,8 @@ const mapPGFromDB = (record: any): PGProperty => {
       city: record.city || '',
       state: record.state || '',
       pincode: record.pincode || '',
-      latitude: Number(record.latitude) || 12.9716,
-      longitude: Number(record.longitude) || 77.5946,
+      latitude: hasLat ? Number(record.latitude) : undefined,
+      longitude: hasLng ? Number(record.longitude) : undefined,
     },
     createdAt: record.created_at,
     updatedAt: record.updated_at
@@ -123,8 +126,8 @@ export const pgApi = {
       city: data.location?.city || '',
       state: data.location?.state || '',
       pincode: data.location?.pincode || '',
-      latitude: data.location?.latitude || 12.9716,
-      longitude: data.location?.longitude || 77.5946,
+      latitude: data.location?.latitude ?? null,
+      longitude: data.location?.longitude ?? null,
       status: data.status || 'active',
       is_active: true
     };

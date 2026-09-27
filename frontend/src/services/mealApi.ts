@@ -34,6 +34,9 @@ export interface MealProvider {
 
 const mapMealFromDB = (record: any): MealProvider => {
   const menu = record.menu || {};
+  const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
+  const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
+
   return {
     id: record.id,
     _id: record.id,
@@ -58,7 +61,7 @@ const mapMealFromDB = (record: any): MealProvider => {
     breakfastPrice: 40,
     lunchPrice: 80,
     dinnerPrice: 90,
-    image: record.image || (Array.isArray(record.images) && record.images[0]) || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800',
+    image: record.image || (Array.isArray(record.images) && record.images[0]) || '',
     isVeg: record.is_veg ?? true,
     location: {
       address: record.address || '',
@@ -66,8 +69,8 @@ const mapMealFromDB = (record: any): MealProvider => {
       city: record.city || '',
       state: record.state || '',
       pincode: record.pincode || '',
-      latitude: Number(record.latitude) || 21.1938,
-      longitude: Number(record.longitude) || 81.3509,
+      latitude: hasLat ? Number(record.latitude) : undefined,
+      longitude: hasLng ? Number(record.longitude) : undefined,
     },
     createdAt: record.created_at,
     updatedAt: record.updated_at
@@ -123,8 +126,8 @@ export const mealApi = {
       city: data.location?.city || '',
       state: data.location?.state || '',
       pincode: data.location?.pincode || '',
-      latitude: data.location?.latitude || 12.9716,
-      longitude: data.location?.longitude || 77.5946,
+      latitude: data.location?.latitude ?? null,
+      longitude: data.location?.longitude ?? null,
       status: data.status || 'active',
       is_active: true
     };

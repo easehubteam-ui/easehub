@@ -38,12 +38,7 @@ export interface AddPGModalProps {
   onSubmitPG: (data: PGFormData) => void;
 }
 
-const defaultPhotos = [
-  'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=800&q=80',
-];
+const defaultPhotos: string[] = [];
 
 export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmitPG }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
@@ -95,19 +90,8 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
     }
   };
 
-  // Handle Photo Add
   const handleAddSamplePhoto = () => {
-    if (formData.photos.length >= 10) {
-      alert('Maximum 10 photos allowed.');
-      return;
-    }
-    const sampleImages = [
-      'https://images.unsplash.com/photo-1540518614846-7ede433c5163?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
-    ];
-    const nextImg = sampleImages[formData.photos.length % sampleImages.length];
-    setFormData({ ...formData, photos: [...formData.photos, nextImg] });
+    alert('Please select an image file to upload.');
   };
 
   // Handle Map Pin Drag / Click

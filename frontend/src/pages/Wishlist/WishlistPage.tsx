@@ -33,7 +33,7 @@ const initialItems: ShortlistItem[] = [
     price: 6500,
     pricePeriod: '/ month',
     priceBadge: 'Bills Included',
-    image: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+    image: '',
     badge1: { text: 'Verified Owner', icon: 'verified', color: 'bg-[#225944] text-white' },
     badge2: { text: 'Zero Brokerage', color: 'bg-[#EECA3A] text-[#171A18]' },
     specs: [
@@ -55,7 +55,7 @@ const initialItems: ShortlistItem[] = [
     price: 4800,
     pricePeriod: '/ month',
     priceBadge: 'Food Included',
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
+    image: '',
     badge1: { text: 'Double Sharing', icon: 'groups', color: 'bg-white text-[#225944]' },
     specs: [
       { text: '3-Times Homestyle Food', icon: 'lunch_dining' },
@@ -75,7 +75,7 @@ const initialItems: ShortlistItem[] = [
     price: 5500,
     pricePeriod: '/ month',
     priceBadge: 'Curfew: 9:30 PM',
-    image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+    image: '',
     badge1: { text: 'Girls Only', color: 'bg-[#EECA3A] text-[#171A18]' },
     badge2: { text: 'Female Warden', color: 'bg-[#225944] text-white' },
     specs: [
@@ -96,7 +96,7 @@ const initialItems: ShortlistItem[] = [
     price: 2400,
     pricePeriod: '/ month (60 meals)',
     priceBadge: '₹40/meal',
-    image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&w=800&q=80',
+    image: '',
     badge1: { text: 'Pure Veg', icon: 'eco', color: 'bg-[#225944] text-white' },
     badge2: { text: 'Hostel Delivery', color: 'bg-[#EECA3A] text-[#171A18]' },
     specs: [
@@ -118,7 +118,7 @@ const initialItems: ShortlistItem[] = [
     price: 1299,
     pricePeriod: '/ 4-month semester',
     priceBadge: '₹43/kg value',
-    image: 'https://images.unsplash.com/photo-1545173168-9f1947eebb7f?auto=format&fit=crop&w=800&q=80',
+    image: '',
     badge1: { text: 'Express 24h', icon: 'speed', color: 'bg-[#225944] text-white' },
     badge2: { text: 'Doorstep Pickup', color: 'bg-white text-[#225944]' },
     specs: [
@@ -362,12 +362,19 @@ export const WishlistPage: React.FC = () => {
                   className="relative flex flex-col bg-white rounded-2xl border border-[#E5E1D6] shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-300"
                 >
                   {/* Media Container */}
-                  <div className="relative h-56 w-full overflow-hidden bg-gray-100">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      alt={item.name}
-                      src={item.image}
-                    />
+                  <div className="relative h-56 w-full overflow-hidden bg-[#E5E1D6]/40 flex items-center justify-center">
+                    {item.image ? (
+                      <img
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        alt={item.name}
+                        src={item.image}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-4 text-[#225944]">
+                        <span className="material-symbols-outlined text-4xl mb-1">bookmark</span>
+                        <span className="text-xs font-bold text-center">{item.name}</span>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
 
                     {/* Top Micro Floating Badges */}

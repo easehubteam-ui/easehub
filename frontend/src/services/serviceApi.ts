@@ -24,6 +24,9 @@ export interface ExtraServiceItem {
 }
 
 const mapServiceFromDB = (record: any): ExtraServiceItem => {
+  const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
+  const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
+
   return {
     id: record.id,
     _id: record.id,
@@ -39,7 +42,7 @@ const mapServiceFromDB = (record: any): ExtraServiceItem => {
     corridor: record.city || 'City Wide',
     rating: 4.9,
     reviewCount: 30,
-    images: Array.isArray(record.images) && record.images.length > 0 ? record.images : [record.image || ''],
+    images: Array.isArray(record.images) && record.images.length > 0 ? record.images : (record.image ? [record.image] : []),
     isActive: record.is_active ?? true,
     location: {
       address: record.address || '',
@@ -47,8 +50,8 @@ const mapServiceFromDB = (record: any): ExtraServiceItem => {
       city: record.city || '',
       state: record.state || '',
       pincode: record.pincode || '',
-      latitude: Number(record.latitude) || 12.9716,
-      longitude: Number(record.longitude) || 77.5946,
+      latitude: hasLat ? Number(record.latitude) : undefined,
+      longitude: hasLng ? Number(record.longitude) : undefined,
     },
     createdAt: record.created_at,
     updatedAt: record.updated_at
@@ -101,8 +104,8 @@ export const serviceApi = {
       city: data.location?.city || '',
       state: data.location?.state || '',
       pincode: data.location?.pincode || '',
-      latitude: data.location?.latitude || 12.9716,
-      longitude: data.location?.longitude || 77.5946,
+      latitude: data.location?.latitude ?? null,
+      longitude: data.location?.longitude ?? null,
       is_active: true
     };
 

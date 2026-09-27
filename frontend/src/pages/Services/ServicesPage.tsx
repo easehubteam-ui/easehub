@@ -43,7 +43,7 @@ export const ServicesPage: React.FC = () => {
           rating: s.rating || 5.0,
           reviewsCount: s.reviewCount || 0,
           startingPrice: s.basePrice || 0,
-          image: s.images?.[0] || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800',
+          image: s.images?.[0] || '',
           badge: { text: 'Verified', color: 'bg-[#225944] text-white' },
           verified: true,
           tags: [s.priceUnit || 'per visit', s.corridor || 'Bhilai'],
@@ -179,12 +179,14 @@ export const ServicesPage: React.FC = () => {
                 <div className="w-20 h-1 bg-[#EECA3A]/80 mt-1 ml-auto rounded-full" />
               </div>
 
-              {/* Service Partner Image */}
-              <img
-                alt="EaseHub Professional Service Partner"
-                className="object-cover object-top h-[340px] sm:h-[380px] w-auto drop-shadow-xl z-10 rounded-b-2xl"
-                src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80"
-              />
+              {/* Service Partner Visual */}
+              <div className="h-[340px] sm:h-[380px] w-64 rounded-2xl bg-gradient-to-br from-[#225944] to-[#184232] text-white p-6 flex flex-col justify-between z-10 shadow-xl border border-white/20">
+                <span className="material-symbols-outlined text-6xl text-[#EECA3A]">handyman</span>
+                <div>
+                  <h4 className="text-xl font-black">Doorstep Repairs</h4>
+                  <p className="text-xs text-white/80 mt-1">Verified Electricians, Plumbers & Technicians</p>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -311,8 +313,15 @@ export const ServicesPage: React.FC = () => {
                 <p className="text-sm font-bold text-[#171A18]">Loading Home & Extra Services...</p>
               </div>
             ) : error ? (
-              <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm">
-                {error}
+              <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm space-y-3">
+                <p>{error}</p>
+                <button
+                  type="button"
+                  onClick={loadServices}
+                  className="px-4 py-2 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#194434] transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             ) : filteredProviders.length === 0 ? (
               <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
@@ -336,12 +345,19 @@ export const ServicesPage: React.FC = () => {
                   <div className="flex flex-col sm:flex-row gap-5">
                     
                     {/* Thumbnail Image */}
-                    <div className="relative sm:w-56 h-44 rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                      <img
-                        src={provider.image}
-                        alt={provider.name}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="relative sm:w-56 h-44 rounded-xl overflow-hidden shrink-0 bg-[#E5E1D6]/40 flex items-center justify-center">
+                      {provider.image ? (
+                        <img
+                          src={provider.image}
+                          alt={provider.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-[#225944]">
+                          <span className="material-symbols-outlined text-4xl mb-1">handyman</span>
+                          <span className="text-xs font-bold text-center">Home & Repair Service</span>
+                        </div>
+                      )}
                       <span className={`absolute top-3 left-3 text-white text-[11px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${provider.badge.color}`}>
                         {provider.badge.text}
                       </span>

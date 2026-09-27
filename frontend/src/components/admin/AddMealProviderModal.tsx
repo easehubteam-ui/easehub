@@ -50,12 +50,7 @@ export interface AddMealProviderModalProps {
   onSubmitProvider: (data: MealProviderFormData) => void;
 }
 
-const defaultMealPhotos = [
-  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80',
-];
+const defaultMealPhotos: string[] = [];
 
 const availableTags = [
   'Pure Veg',
@@ -130,17 +125,7 @@ export const AddMealProviderModal: React.FC<AddMealProviderModalProps> = ({
   };
 
   const handleAddSamplePhoto = () => {
-    if (formData.photos.length >= 8) {
-      alert('Maximum 8 photos allowed.');
-      return;
-    }
-    const sampleImgs = [
-      'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
-    ];
-    const nextImg = sampleImgs[formData.photos.length % sampleImgs.length];
-    setFormData({ ...formData, photos: [...formData.photos, nextImg] });
+    alert('Please select an image file to upload.');
   };
 
   const toggleTag = (tag: string) => {

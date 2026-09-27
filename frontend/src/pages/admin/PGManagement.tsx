@@ -147,7 +147,7 @@ export const PGManagement: React.FC = () => {
       code: '#PG-BH-' + Math.floor(1000 + Math.random() * 9000),
       name: newPG.name,
       gender: newPG.gender,
-      image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=400&q=80',
+      image: '',
       verified: true,
       corridor: newPG.corridor,
       distance: '400m to Campus',
@@ -761,11 +761,16 @@ export const PGManagement: React.FC = () => {
                 </div>
               )}
 
-              {/* TAB 3: Photos */}
+               {/* TAB 3: Photos */}
               {activeDrawerTab === 'media' && (
                 <div className="grid grid-cols-2 gap-2">
-                  <img src={selectedPG.image} alt="Hostel Room" className="w-full h-28 object-cover rounded-xl border border-[#E5E1D6]" />
-                  <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=400&q=80" alt="Hostel Room" className="w-full h-28 object-cover rounded-xl border border-[#E5E1D6]" />
+                  {selectedPG.image ? (
+                    <img src={selectedPG.image} alt="Hostel Room" className="w-full h-28 object-cover rounded-xl border border-[#E5E1D6]" />
+                  ) : (
+                    <div className="w-full h-28 bg-[#F7F5EF] rounded-xl border border-[#E5E1D6] flex items-center justify-center text-[#6B6B63] text-xs font-bold">
+                      No photos uploaded
+                    </div>
+                  )}
                 </div>
               )}
 

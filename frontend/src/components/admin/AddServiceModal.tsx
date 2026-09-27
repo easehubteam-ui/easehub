@@ -66,10 +66,7 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
     category: 'Electrical',
     icon: 'electric_bolt',
     description: 'Short circuits, switchboard fixes, fan installation, tube lights, and MCB tripping troubleshooting.',
-    photos: [
-      'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
-    ],
+    photos: [],
     basePrice: 149,
     nightSurge: 99,
     extendedLaborRate: '₹100 / 30 mins after initial 45 mins',

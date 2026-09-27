@@ -39,8 +39,8 @@ export const MealsPage: React.FC = () => {
       if (Array.isArray(data)) {
         const mapped: MealProvider[] = data.map((m: ApiMealProvider) => {
           const safeTags = Array.isArray(m.tags) ? m.tags : [];
-          const lat = m.location?.latitude || 21.1938;
-          const lng = m.location?.longitude || 81.3509;
+          const lat = m.location?.latitude;
+          const lng = m.location?.longitude;
 
           return {
             id: m._id || m.code || String(m.id),
@@ -49,7 +49,7 @@ export const MealsPage: React.FC = () => {
             rating: m.rating || 4.9,
             reviewsCount: m.reviewCount || 24,
             pricePerMeal: m.dailyPrice || 120,
-            image: m.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800',
+            image: m.image || '',
             badge: { text: m.isVeg ? 'Pure Veg' : 'Veg & Non-Veg', color: 'bg-[#225944] text-white' },
             tags: safeTags,
             mealsPerDay: 'Breakfast, Lunch & Dinner',
@@ -140,12 +140,10 @@ export const MealsPage: React.FC = () => {
                   </div>
 
                   {/* Main Thali Presentation Circle */}
-                  <div className="relative z-10 w-80 sm:w-96 h-80 sm:h-96 mx-auto rounded-full p-2 bg-white/70 shadow-2xl backdrop-blur-sm border-2 border-[#EECA3A]/50 flex items-center justify-center overflow-hidden">
-                    <img
-                      alt="Authentic Indian Thali Dish"
-                      className="w-full h-full object-cover rounded-full transform hover:scale-105 transition-transform duration-500"
-                      src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80"
-                    />
+                  <div className="relative z-10 w-80 sm:w-96 h-80 sm:h-96 mx-auto rounded-full p-6 bg-gradient-to-br from-[#225944] via-[#1a4535] to-[#113125] shadow-2xl backdrop-blur-sm border-4 border-[#EECA3A]/50 flex flex-col items-center justify-center text-center text-white">
+                    <span className="material-symbols-outlined text-6xl text-[#EECA3A] mb-2 animate-bounce">skillet</span>
+                    <h3 className="text-2xl font-black">Homestyle Meals</h3>
+                    <p className="text-xs text-white/80 mt-1 max-w-[200px]">Fresh, nutritious daily breakfast, lunch & dinner</p>
                   </div>
 
                   {/* Badge 1: Affordable Plans */}
@@ -307,8 +305,15 @@ export const MealsPage: React.FC = () => {
                     <p className="text-sm font-bold text-[#171A18]">Loading Tiffin & Mess Services...</p>
                   </div>
                 ) : error ? (
-                  <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm">
-                    {error}
+                  <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm space-y-3">
+                    <p>{error}</p>
+                    <button
+                      type="button"
+                      onClick={loadMeals}
+                      className="px-4 py-2 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#194434] transition-colors"
+                    >
+                      Retry
+                    </button>
                   </div>
                 ) : filteredProviders.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
@@ -335,11 +340,18 @@ export const MealsPage: React.FC = () => {
                     >
                       {/* Food Image + Badges */}
                       <div className="relative w-full sm:w-48 h-48 rounded-xl overflow-hidden flex-shrink-0 bg-[#F7F5EF]">
-                        <img
-                          src={provider.image}
-                          alt={provider.name}
-                          className="w-full h-full object-cover"
-                        />
+                        {provider.image ? (
+                          <img
+                            src={provider.image}
+                            alt={provider.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-[#225944]/10 flex flex-col items-center justify-center p-4 text-[#225944]">
+                            <span className="material-symbols-outlined text-4xl mb-1">restaurant</span>
+                            <span className="text-xs font-bold text-center">Mess & Tiffin Service</span>
+                          </div>
+                        )}
                         <span className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-xs ${provider.badge.color}`}>
                           {provider.badge.text}
                         </span>
@@ -475,12 +487,8 @@ export const MealsPage: React.FC = () => {
                   </div>
 
                   {/* Corner Thali Graphic */}
-                  <div className="absolute -right-12 -bottom-10 w-56 h-56 rounded-full overflow-hidden border-4 border-[#EECA3A]/40 shadow-2xl">
-                    <img
-                      alt="Delicious Indian Meal"
-                      className="w-full h-full object-cover transform rotate-12"
-                      src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80"
-                    />
+                  <div className="absolute -right-10 -bottom-8 w-44 h-44 rounded-full bg-[#EECA3A]/20 border-4 border-[#EECA3A]/40 flex items-center justify-center text-[#EECA3A]">
+                    <span className="material-symbols-outlined text-6xl">lunch_dining</span>
                   </div>
                   <div className="absolute right-4 top-3 select-none pointer-events-none">
                     <span className="font-handwriting text-2xl text-[#EECA3A] rotate-6 block">Eat Good,</span>
