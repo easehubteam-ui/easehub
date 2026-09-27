@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,7 +8,7 @@ interface AdminSidebarProps {
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -18,12 +18,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
 
   const navCategories = [
     {
-      group: 'Overview',
-      items: [{ label: 'Dashboard Overview', path: '/admin/dashboard', icon: 'dashboard' }],
-    },
-    {
-      group: 'Operations',
+      group: 'OPERATIONS',
       items: [
+        { label: 'Dashboard Overview', path: '/admin/dashboard', icon: 'dashboard' },
         { label: 'Bookings', path: '/admin/bookings', icon: 'calendar_month' },
         { label: 'Payments', path: '/admin/payments', icon: 'payments' },
         { label: 'Users', path: '/admin/users', icon: 'group' },
@@ -31,7 +28,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       ],
     },
     {
-      group: 'Services',
+      group: 'SERVICES',
       items: [
         { label: 'PG / Hostels', path: '/admin/pg', icon: 'night_shelter' },
         { label: 'Meals & Mess', path: '/admin/meals', icon: 'restaurant' },
@@ -40,7 +37,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       ],
     },
     {
-      group: 'Customer',
+      group: 'CUSTOMER',
       items: [
         { label: 'Reviews', path: '/admin/reviews', icon: 'star' },
         { label: 'Complaints', path: '/admin/complaints', icon: 'support_agent' },
@@ -48,7 +45,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       ],
     },
     {
-      group: 'Business & System',
+      group: 'BUSINESS & SYSTEM',
       items: [
         { label: 'Reports & Revenue', path: '/admin/reports', icon: 'bar_chart' },
         { label: 'System Settings', path: '/admin/settings', icon: 'settings' },
@@ -87,7 +84,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                       ADMIN
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#6B6B63] font-medium">Campus Living Suite</span>
+                  <span className="text-[11px] text-[#6B6B63] font-medium">Global Admin Suite</span>
                 </div>
               </div>
 
@@ -98,14 +95,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           </div>
 
           {/* Nav Categories List */}
-          <nav className="flex-1 overflow-y-auto pr-1 py-3 space-y-3 custom-scrollbar">
+          <nav className="flex-1 overflow-y-auto pr-1 py-3 space-y-4 custom-scrollbar">
             {navCategories.map((cat) => (
-              <div key={cat.group} className="space-y-0.5">
-                {cat.group !== 'Overview' && (
-                  <span className="px-3 py-1 text-[10px] font-extrabold uppercase text-[#6B6B63] tracking-wider block">
-                    {cat.group}
-                  </span>
-                )}
+              <div key={cat.group} className="space-y-1">
+                <span className="px-3 text-[10px] font-extrabold uppercase text-[#6B6B63] tracking-wider block">
+                  {cat.group}
+                </span>
                 {cat.items.map((item) => (
                   <NavLink
                     key={item.path}
@@ -130,8 +125,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           {/* Footer Admin Status Card */}
           <div className="p-3 bg-[#F3F4F0] rounded-xl flex items-center justify-between border border-[#E5E1D6]">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-bold text-[#6B6B63]">Campus Node</span>
-              <span className="text-xs font-extrabold text-[#171A18]">v2.4.8 Central</span>
+              <span className="text-[10px] font-bold text-[#6B6B63]">System Version</span>
+              <span className="text-xs font-extrabold text-[#171A18]">v2.5.0 Production</span>
             </div>
             <span className="w-2.5 h-2.5 rounded-full bg-[#225944] animate-pulse"></span>
           </div>
