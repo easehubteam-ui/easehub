@@ -1,5 +1,6 @@
 import { insforge } from './insforge';
 import { PGLocation } from './pgApi';
+import { getPublicImageUrl, BUCKETS } from './storageApi';
 
 export interface MealProvider {
   id?: string;
@@ -36,6 +37,7 @@ const mapMealFromDB = (record: any): MealProvider => {
   const menu = record.menu || {};
   const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
   const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
+  const imageUrl = getPublicImageUrl(BUCKETS.MEAL_IMAGES, record.images && record.images.length > 0 ? record.images : record.image) || '';
 
   return {
     id: record.id,
@@ -61,7 +63,7 @@ const mapMealFromDB = (record: any): MealProvider => {
     breakfastPrice: 40,
     lunchPrice: 80,
     dinnerPrice: 90,
-    image: record.image || (Array.isArray(record.images) && record.images[0]) || '',
+    image: imageUrl,
     isVeg: record.is_veg ?? true,
     location: {
       address: record.address || '',

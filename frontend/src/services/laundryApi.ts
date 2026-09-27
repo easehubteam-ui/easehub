@@ -1,5 +1,6 @@
 import { insforge } from './insforge';
 import { PGLocation } from './pgApi';
+import { getPublicImageUrl, BUCKETS } from './storageApi';
 
 export interface LaundryProvider {
   id?: string;
@@ -39,6 +40,7 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
   const perKg = Number(pricing.perKg || pricing.pricePerKg || pricing.startingPrice || 50);
   const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
   const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
+  const imageUrl = getPublicImageUrl(BUCKETS.LAUNDRY_IMAGES, record.images && record.images.length > 0 ? record.images : record.image) || '';
 
   return {
     id: record.id,
@@ -60,8 +62,8 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
     steamIronPerPc: Number(pricing.steamIronPerPc) || 15,
     turnaroundHours: 24,
     turnaroundTime: '24 Hours Express',
-    image: record.image || (Array.isArray(record.images) && record.images[0]) || '',
-    images: Array.isArray(record.images) ? record.images : [],
+    image: imageUrl,
+    images: imageUrl ? [imageUrl] : [],
     services: normalizedServices.length > 0 ? normalizedServices : [{ name: 'Wash & Fold' }, { name: 'Steam Iron' }],
     pickupAvailable: record.pickup_available ?? true,
     location: {

@@ -13,6 +13,45 @@ export const BUCKETS = {
   USER_ASSETS: 'user-assets',
 } as const;
 
+/**
+ * Centralized helper for public Storage image URLs.
+ * Handles: null, undefined, empty string, single path, full URL, array of image paths.
+ * Rules:
+ * - If full valid URL: return as is.
+ * - If storage path: convert using InsForge public storage URL.
+ * - If no image: return null (UI renders a clean category placeholder).
+ * - Zero Unsplash, zero random external fallbacks.
+ */
+export const getPublicImageUrl = (bucket: string, storedValue: any): string | null => {
+  if (!storedValue) return null;
+
+  let rawPath = '';
+  if (typeof storedValue === 'string') {
+    rawPath = storedValue.trim();
+  } else if (Array.isArray(storedValue) && storedValue.length > 0) {
+    if (typeof storedValue[0] === 'string') {
+      rawPath = storedValue[0].trim();
+    }
+  }
+
+  if (!rawPath) return null;
+
+  // Filter out any leftover unsplash fallback strings
+  if (rawPath.includes('unsplash.com')) {
+    return null;
+  }
+
+  // If already a valid full HTTP/HTTPS/data URL, return directly
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://') || rawPath.startsWith('data:')) {
+    return rawPath;
+  }
+
+  const projectUrl = (import.meta.env && import.meta.env.VITE_INSFORGE_PROJECT_URL) || 'https://rs8ysej4.us-east.insforge.app';
+  const cleanPath = rawPath.startsWith('/') ? rawPath.slice(1) : rawPath;
+  const encodedSegments = cleanPath.split('/').map((s) => encodeURIComponent(s)).join('/');
+  return `${projectUrl}/api/storage/buckets/${bucket}/objects/${encodedSegments}`;
+};
+
 export const storageApi = {
   /**
    * Helper to generate unique object paths: folder/timestamp-filename
@@ -32,8 +71,8 @@ export const storageApi = {
     const { error } = await insforge.storage.from(BUCKETS.PROPERTY_IMAGES).upload(path, file);
     if (error) throw new Error(error.message || 'Failed to upload property image');
     
-    const { data: urlData } = insforge.storage.from(BUCKETS.PROPERTY_IMAGES).getPublicUrl(path);
-    return { path, url: urlData?.publicUrl || '' };
+    const url = getPublicImageUrl(BUCKETS.PROPERTY_IMAGES, path) || '';
+    return { path, url };
   },
 
   /**
@@ -44,8 +83,8 @@ export const storageApi = {
     const { error } = await insforge.storage.from(BUCKETS.MEAL_IMAGES).upload(path, file);
     if (error) throw new Error(error.message || 'Failed to upload meal image');
 
-    const { data: urlData } = insforge.storage.from(BUCKETS.MEAL_IMAGES).getPublicUrl(path);
-    return { path, url: urlData?.publicUrl || '' };
+    const url = getPublicImageUrl(BUCKETS.MEAL_IMAGES, path) || '';
+    return { path, url };
   },
 
   /**
@@ -56,8 +95,8 @@ export const storageApi = {
     const { error } = await insforge.storage.from(BUCKETS.LAUNDRY_IMAGES).upload(path, file);
     if (error) throw new Error(error.message || 'Failed to upload laundry image');
 
-    const { data: urlData } = insforge.storage.from(BUCKETS.LAUNDRY_IMAGES).getPublicUrl(path);
-    return { path, url: urlData?.publicUrl || '' };
+    const url = getPublicImageUrl(BUCKETS.LAUNDRY_IMAGES, path) || '';
+    return { path, url };
   },
 
   /**
@@ -68,8 +107,8 @@ export const storageApi = {
     const { error } = await insforge.storage.from(BUCKETS.SERVICE_IMAGES).upload(path, file);
     if (error) throw new Error(error.message || 'Failed to upload service image');
 
-    const { data: urlData } = insforge.storage.from(BUCKETS.SERVICE_IMAGES).getPublicUrl(path);
-    return { path, url: urlData?.publicUrl || '' };
+    const url = getPublicImageUrl(BUCKETS.SERVICE_IMAGES, path) || '';
+    return { path, url };
   },
 
   /**
@@ -80,8 +119,8 @@ export const storageApi = {
     const { error } = await insforge.storage.from(BUCKETS.USER_ASSETS).upload(path, file);
     if (error) throw new Error(error.message || 'Failed to upload user avatar');
 
-    const { data: urlData } = insforge.storage.from(BUCKETS.USER_ASSETS).getPublicUrl(path);
-    return { path, url: urlData?.publicUrl || '' };
+    const url = getPublicImageUrl(BUCKETS.USER_ASSETS, path) || '';
+    return { path, url };
   },
 
   /**
@@ -98,7 +137,7 @@ export const storageApi = {
       .from(BUCKETS.PAYMENT_SCREENSHOTS)
       .createSignedUrl(path, 3600);
 
-    const signedUrl = signedData?.signedUrl || insforge.storage.from(BUCKETS.PAYMENT_SCREENSHOTS).getPublicUrl(path).data?.publicUrl || '';
+    const signedUrl = signedData?.signedUrl || getPublicImageUrl(BUCKETS.PAYMENT_SCREENSHOTS, path) || '';
     return { path, url: signedUrl };
   },
 
@@ -106,8 +145,7 @@ export const storageApi = {
    * Get public URL for an object in a public bucket
    */
   getPublicUrl: (bucket: string, path: string): string => {
-    const { data } = insforge.storage.from(bucket).getPublicUrl(path);
-    return data?.publicUrl || '';
+    return getPublicImageUrl(bucket, path) || '';
   },
 
   /**

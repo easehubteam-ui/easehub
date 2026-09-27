@@ -1,5 +1,6 @@
 import { insforge } from './insforge';
 import { PGLocation } from './pgApi';
+import { getPublicImageUrl, BUCKETS } from './storageApi';
 
 export interface ExtraServiceItem {
   id?: string;
@@ -26,6 +27,8 @@ export interface ExtraServiceItem {
 const mapServiceFromDB = (record: any): ExtraServiceItem => {
   const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
   const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
+  const imageUrl = getPublicImageUrl(BUCKETS.SERVICE_IMAGES, record.images && record.images.length > 0 ? record.images : record.image);
+  const imageList = imageUrl ? [imageUrl] : [];
 
   return {
     id: record.id,
@@ -42,7 +45,7 @@ const mapServiceFromDB = (record: any): ExtraServiceItem => {
     corridor: record.city || record.coverage_area || '',
     rating: record.rating !== null && record.rating !== undefined ? Number(record.rating) : 0,
     reviewCount: record.review_count !== null && record.review_count !== undefined ? Number(record.review_count) : 0,
-    images: Array.isArray(record.images) && record.images.length > 0 ? record.images : (record.image ? [record.image] : []),
+    images: imageList,
     isActive: record.is_active ?? true,
     location: {
       address: record.address || '',

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DataTable, Column } from '../../components/admin/DataTable';
 import AddLaundryModal, { LaundryFormData } from '../../components/admin/AddLaundryModal';
 import { laundryApi } from '../../services/laundryApi';
+import { bookingApi } from '../../services/bookingApi';
 
 interface LaundryOrder {
   id: string;
@@ -32,6 +33,8 @@ export const LaundryManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'orders' | 'partners'>('orders');
   const [showAddModal, setShowAddModal] = useState(false);
   const [partners, setPartners] = useState<LaundryPartner[]>([]);
+  const [orders, setOrders] = useState<LaundryOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState<boolean>(true);
 
   const fetchPartners = async () => {
     try {
@@ -56,39 +59,39 @@ export const LaundryManagement: React.FC = () => {
     }
   };
 
+  const fetchLaundryOrders = async () => {
+    try {
+      setLoadingOrders(true);
+      const list = await bookingApi.getBookings();
+      if (Array.isArray(list)) {
+        const laundryBookings = list.filter((b: any) => {
+          const type = (b.booking_type || b.bookingType || b.serviceType || b.category || '').toLowerCase();
+          const sName = (b.service_name || b.serviceName || '').toLowerCase();
+          return type.includes('laundry') || sName.includes('laundry') || sName.includes('wash');
+        });
+
+        const mapped: LaundryOrder[] = laundryBookings.map((b: any) => ({
+          id: b.booking_number || b.bookingNumber || `LND-${(b.id || '').slice(0, 6)}`,
+          customerName: b.user_name || b.userName || b.user?.fullName || b.user?.email || 'Student',
+          roomNo: b.address || 'Address not specified',
+          weight: b.notes || b.description || `${b.amount ? `₹${b.amount}` : 'Laundry Order'}`,
+          stage: (b.status === 'completed' || b.status === 'COMPLETED') ? 'Delivered' : (b.status === 'in_progress' || b.status === 'assigned') ? 'In Wash' : 'Scheduled',
+          vendor: b.provider_name || b.vendor || 'Campus Laundry Partner',
+          requestedAt: new Date(b.created_at || b.createdAt || Date.now()).toLocaleString('en-IN'),
+        }));
+        setOrders(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to load laundry bookings:', err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
   useEffect(() => {
     fetchPartners();
+    fetchLaundryOrders();
   }, []);
-
-  const [orders, setOrders] = useState<LaundryOrder[]>([
-    {
-      id: 'LND-501',
-      customerName: 'Amit Kumar',
-      roomNo: 'Room #204, Royal Boys PG',
-      weight: '12 kg (Steam Wash + Iron)',
-      stage: 'In Wash',
-      vendor: 'Campus Express Laundry',
-      requestedAt: '2026-09-24 08:30 AM',
-    },
-    {
-      id: 'LND-502',
-      customerName: 'Priya Sharma',
-      roomNo: 'Room #102, Sunshine Girls',
-      weight: '8 kg (Wash & Fold)',
-      stage: 'Delivered',
-      vendor: 'Campus Express Laundry',
-      requestedAt: '2026-09-23 03:15 PM',
-    },
-    {
-      id: 'LND-503',
-      customerName: 'Rahul Verma',
-      roomNo: 'Room #305, Green Villa',
-      weight: '15 kg (Heavy Blanket Wash)',
-      stage: 'Scheduled',
-      vendor: 'Campus Express Laundry',
-      requestedAt: '2026-09-24 10:00 AM',
-    },
-  ]);
 
   const updateStage = (id: string, newStage: LaundryOrder['stage']) => {
     setOrders((prev) =>
@@ -271,13 +274,29 @@ export const LaundryManagement: React.FC = () => {
 
       {/* Tab Content 1: Live Orders Table */}
       {activeTab === 'orders' && (
-        <DataTable
-          title="Doorstep Laundry Operations Tracker"
-          subtitle="Monitor student clothes pickup, washing progress, steam ironing, and campus doorstep delivery"
-          columns={orderColumns}
-          data={orders}
-          searchPlaceholder="Search customer or pickup ticket..."
-        />
+        loadingOrders ? (
+          <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center text-[#6B6B63] font-bold text-sm shadow-xs">
+            Loading doorstep laundry orders from database...
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs space-y-3">
+            <div className="w-14 h-14 bg-[#225944]/10 text-[#225944] rounded-2xl flex items-center justify-center mx-auto">
+              <span className="material-symbols-outlined text-3xl">local_laundry_service</span>
+            </div>
+            <h3 className="font-extrabold text-base text-[#171A18]">No laundry orders yet.</h3>
+            <p className="text-xs text-[#6B6B63]">
+              Student doorstep laundry pickup bookings will appear here automatically when placed.
+            </p>
+          </div>
+        ) : (
+          <DataTable
+            title="Doorstep Laundry Operations Tracker"
+            subtitle="Monitor student clothes pickup, washing progress, steam ironing, and campus doorstep delivery"
+            columns={orderColumns}
+            data={orders}
+            searchPlaceholder="Search customer or pickup ticket..."
+          />
+        )
       )}
 
       {/* Tab Content 2: Registered Laundry Partners Grid */}

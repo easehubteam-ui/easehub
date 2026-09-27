@@ -1,4 +1,5 @@
 import { insforge } from './insforge';
+import { getPublicImageUrl, BUCKETS } from './storageApi';
 
 export interface PGLocation {
   address: string;
@@ -42,6 +43,8 @@ export interface PGProperty {
 const mapPGFromDB = (record: any): PGProperty => {
   const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
   const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
+  const rawImages = Array.isArray(record.images) && record.images.length > 0 ? record.images : (record.image ? [record.image] : []);
+  const normalizedImages = rawImages.map((img: string) => getPublicImageUrl(BUCKETS.PROPERTY_IMAGES, img)).filter((img: string | null): img is string => img !== null);
 
   return {
     id: record.id,
@@ -49,7 +52,7 @@ const mapPGFromDB = (record: any): PGProperty => {
     code: record.code || `PG-${record.id.slice(0, 6)}`,
     name: record.name,
     gender: record.gender || 'BOYS',
-    images: Array.isArray(record.images) ? record.images : [],
+    images: normalizedImages,
     verified: true,
     corridor: record.city || 'Main',
     distance: '0.5 km',
