@@ -40,6 +40,7 @@ export interface AddServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmitService: (data: ServiceFormData) => void;
+  initialData?: ServiceFormData | null;
 }
 
 const availableIcons = [
@@ -55,42 +56,56 @@ const availableIcons = [
 
 const availableCorridors = ['Junwani', 'Smriti Nagar', 'Nehru Nagar', 'Civic Center'];
 
+const defaultFormData: ServiceFormData = {
+  name: 'Electrical & Wiring Repair',
+  category: 'Electrical',
+  icon: 'electric_bolt',
+  description: 'Short circuits, switchboard fixes, fan installation, tube lights, and MCB tripping troubleshooting.',
+  photos: [],
+  basePrice: 149,
+  nightSurge: 99,
+  extendedLaborRate: '₹100 / 30 mins after initial 45 mins',
+  includedScope: ['Switchboard & Socket Repair', 'Ceiling Fan Installation & Regulator', 'MCB Tripping Fix', 'LED Tube Light Replacement'],
+  excludedItems: 'Material parts cost extra (bulbs, switches, wires purchased at MRP).',
+  address: 'Central Service Dispatch Center, Junwani Road',
+  landmark: 'Opposite BIT Gate 2',
+  city: 'Bhilai',
+  state: 'Chhattisgarh',
+  pincode: '490020',
+  coverageCorridors: ['Junwani', 'Smriti Nagar', 'Nehru Nagar', 'Civic Center'],
+  slaMins: 30,
+  slaGuarantee: '30 min Express SLA',
+  latitude: 21.198409,
+  longitude: 81.332444,
+  primaryTechName: 'Ramesh Sahu',
+  primaryTechRole: 'Master Electrician',
+  primaryTechRating: 4.9,
+  activeTechsCount: 28,
+  status: 'pending',
+};
+
 export const AddServiceModal: React.FC<AddServiceModalProps> = ({
   isOpen,
   onClose,
   onSubmitService,
+  initialData,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<ServiceFormData>({
-    name: 'Electrical & Wiring Repair',
-    category: 'Electrical',
-    icon: 'electric_bolt',
-    description: 'Short circuits, switchboard fixes, fan installation, tube lights, and MCB tripping troubleshooting.',
-    photos: [],
-    basePrice: 149,
-    nightSurge: 99,
-    extendedLaborRate: '₹100 / 30 mins after initial 45 mins',
-    includedScope: ['Switchboard & Socket Repair', 'Ceiling Fan Installation & Regulator', 'MCB Tripping Fix', 'LED Tube Light Replacement'],
-    excludedItems: 'Material parts cost extra (bulbs, switches, wires purchased at MRP).',
-    address: 'Central Service Dispatch Center, Junwani Road',
-    landmark: 'Opposite BIT Gate 2',
-    city: 'Bhilai',
-    state: 'Chhattisgarh',
-    pincode: '490020',
-    coverageCorridors: ['Junwani', 'Smriti Nagar', 'Nehru Nagar', 'Civic Center'],
-    slaMins: 30,
-    slaGuarantee: '30 min Express SLA',
-    latitude: 21.198409,
-    longitude: 81.332444,
-    primaryTechName: 'Ramesh Sahu',
-    primaryTechRole: 'Master Electrician',
-    primaryTechRating: 4.9,
-    activeTechsCount: 28,
-    status: 'pending',
-  });
+  const [formData, setFormData] = useState<ServiceFormData>(defaultFormData);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setFormData({ ...initialData });
+      } else {
+        setFormData(defaultFormData);
+      }
+      setCurrentStep(1);
+    }
+  }, [isOpen, initialData]);
 
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [isSearchingMap, setIsSearchingMap] = useState(false);
@@ -199,10 +214,10 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-[#171A18] tracking-tight">
-                Add New Extra Service Category
+                {initialData ? 'Edit Service Category' : 'Add New Extra Service Category'}
               </h2>
               <p className="text-xs text-[#6B6B63] font-medium mt-0.5">
-                Configure handyman, electrical, plumbing, or cleaning service offerings.
+                {initialData ? 'Update handyman, electrical, plumbing, or cleaning service details.' : 'Configure handyman, electrical, plumbing, or cleaning service offerings.'}
               </p>
             </div>
           </div>

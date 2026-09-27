@@ -19,6 +19,7 @@ interface ServiceCategory {
   demandWeekly: { day: string; count: number }[];
   assignedTechs: { name: string; rating: number; jobs: number; role: string; avatar: string }[];
   customQueriesCount: number;
+  rawItem?: any;
 }
 
 interface CustomQuery {
@@ -35,21 +36,22 @@ const defaultCategories: ServiceCategory[] = [];
 
 export const ServicesManagement: React.FC = () => {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
 
   const fetchCategories = async () => {
     try {
       const list = await serviceApi.getServices();
       if (Array.isArray(list)) {
         const mapped: ServiceCategory[] = list.map((s: any) => ({
-          id: s._id || s.code,
-          code: s.code || '#SRV-BH-101',
+          id: s._id || s.id || s.code,
+          code: s.code || `#SRV-${(s.id || 'BH101').slice(0, 6)}`,
           name: s.name,
           icon: 'plumbing',
           basePrice: s.basePrice || 0,
           nightSurge: 50,
           extendedLaborRate: '₹100 / 30 mins',
           activeTechs: 1,
-          coverageCorridors: [s.corridor || 'Bhilai'],
+          coverageCorridors: [s.corridor || s.location?.city || 'Bhilai'],
           slaGuarantee: '45 min Express SLA',
           slaMins: 45,
           status: s.isActive ? 'active' : 'disabled',
@@ -57,6 +59,7 @@ export const ServicesManagement: React.FC = () => {
           demandWeekly: [],
           assignedTechs: [],
           customQueriesCount: 0,
+          rawItem: s,
         }));
         setCategories(mapped);
         if (mapped.length > 0) {
@@ -99,6 +102,34 @@ export const ServicesManagement: React.FC = () => {
     setEditSlaMins(cat.slaMins);
   };
 
+  const handleOpenAddModal = () => {
+    setEditingCategory(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditCategory = (cat: ServiceCategory) => {
+    setEditingCategory(cat);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteCategory = async (cat: ServiceCategory) => {
+    if (!window.confirm(`Are you sure you want to delete/deactivate service category "${cat.name}"?`)) {
+      return;
+    }
+    try {
+      await serviceApi.delete(cat.id);
+      setToastMsg(`Deactivated service category: ${cat.name}`);
+      if (selectedCategory?.id === cat.id) {
+        setSelectedCategory(null);
+      }
+      await fetchCategories();
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch (err: any) {
+      console.error('Failed to delete service:', err);
+      alert(err.message || 'Failed to delete service category.');
+    }
+  };
+
   const handleSaveTariffs = () => {
     if (!selectedCategory) return;
     const updated = categories.map((c) =>
@@ -134,24 +165,92 @@ export const ServicesManagement: React.FC = () => {
 
   const handleAddServiceSubmit = async (data: ServiceFormData) => {
     try {
-      await serviceApi.create({
-        name: data.name,
-        category: data.category || 'CLEANING',
-        basePrice: data.basePrice,
-        priceUnit: 'per session',
-        providerName: data.primaryTechName || 'EaseHub Master Tech',
-        description: data.description,
-        corridor: data.coverageCorridors?.[0] || 'Bhilai',
-        isActive: data.status === 'active',
-      });
+      if (editingCategory) {
+        await serviceApi.update(editingCategory.id, {
+          name: data.name,
+          category: data.category || 'CLEANING',
+          basePrice: data.basePrice,
+          description: data.description,
+          images: data.photos,
+          corridor: data.coverageCorridors?.[0] || 'Bhilai',
+          isActive: data.status === 'active',
+          location: {
+            address: data.address,
+            landmark: data.landmark || '',
+            city: data.city,
+            state: data.state,
+            pincode: data.pincode,
+            latitude: data.latitude,
+            longitude: data.longitude,
+          },
+        });
+        setToastMsg(`Updated service category: ${data.name}!`);
+      } else {
+        await serviceApi.create({
+          name: data.name,
+          category: data.category || 'CLEANING',
+          basePrice: data.basePrice,
+          priceUnit: 'per session',
+          providerName: data.primaryTechName || 'EaseHub Master Tech',
+          description: data.description,
+          images: data.photos,
+          corridor: data.coverageCorridors?.[0] || 'Bhilai',
+          isActive: data.status === 'active',
+          location: {
+            address: data.address,
+            landmark: data.landmark || '',
+            city: data.city,
+            state: data.state,
+            pincode: data.pincode,
+            latitude: data.latitude,
+            longitude: data.longitude,
+          },
+        });
+        setToastMsg(`Published new service category: ${data.name}!`);
+      }
       await fetchCategories();
       setIsModalOpen(false);
-      setToastMsg(`Published new service category: ${data.name}!`);
+      setEditingCategory(null);
       setTimeout(() => setToastMsg(null), 3500);
-    } catch (err) {
-      console.error('Failed to create service:', err);
+    } catch (err: any) {
+      console.error('Failed to save service:', err);
       alert('Failed to save service to database. Please check your admin login session.');
     }
+  };
+
+  const getInitialFormData = (cat: ServiceCategory | null): ServiceFormData | null => {
+    if (!cat) return null;
+    const raw = cat.rawItem || {};
+    const loc = raw.location || {};
+    return {
+      id: cat.id,
+      code: cat.code,
+      name: cat.name,
+      category: (raw.category as any) || 'Electrical',
+      icon: cat.icon || 'electric_bolt',
+      description: cat.description,
+      photos: raw.images || [],
+      basePrice: cat.basePrice,
+      nightSurge: cat.nightSurge,
+      extendedLaborRate: cat.extendedLaborRate,
+      includedScope: [],
+      excludedItems: '',
+      address: loc.address || 'Central Service Dispatch Center, Junwani Road',
+      landmark: loc.landmark || 'Opposite BIT Gate 2',
+      city: loc.city || 'Bhilai',
+      state: loc.state || 'Chhattisgarh',
+      pincode: loc.pincode || '490020',
+      coverageCorridors: cat.coverageCorridors,
+      slaMins: cat.slaMins,
+      slaGuarantee: cat.slaGuarantee,
+      latitude: loc.latitude || 21.198409,
+      longitude: loc.longitude || 81.332444,
+      primaryTechName: 'EaseHub Master Tech',
+      primaryTechRole: 'Master Tech',
+      primaryTechRating: 4.9,
+      activeTechsCount: cat.activeTechs,
+      status: cat.status,
+    };
   };
 
   const filteredCategories = categories.filter((c) => {
@@ -213,7 +312,7 @@ export const ServicesManagement: React.FC = () => {
             <span>Emergency SOS Grid</span>
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleOpenAddModal}
             className="px-5 py-2.5 rounded-full bg-[#225944] hover:bg-[#02412e] text-white font-bold text-xs transition shadow-md flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
@@ -399,17 +498,40 @@ export const ServicesManagement: React.FC = () => {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectCategory(cat);
-                            }}
-                            className={`p-1.5 rounded-lg transition ${
-                              isSelected ? 'bg-[#02412e] text-white' : 'text-[#707973] hover:bg-[#e1e3df]'
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[16px]">tune</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditCategory(cat);
+                              }}
+                              className="p-1.5 rounded-lg text-[#707973] hover:bg-[#e1e3df] hover:text-[#02412e] transition"
+                              title="Edit Service"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCategory(cat);
+                              }}
+                              className="p-1.5 rounded-lg text-[#707973] hover:bg-rose-100 hover:text-rose-700 transition"
+                              title="Delete Service"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectCategory(cat);
+                              }}
+                              className={`p-1.5 rounded-lg transition ${
+                                isSelected ? 'bg-[#02412e] text-white' : 'text-[#707973] hover:bg-[#e1e3df]'
+                              }`}
+                              title="Inspect Details"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">tune</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -615,22 +737,18 @@ export const ServicesManagement: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => {
-                    setToastMsg(`SLA updated for ${selectedCategory.name}!`);
-                    setTimeout(() => setToastMsg(null), 3000);
-                  }}
-                  className="py-2 rounded-xl bg-[#edeeeb] hover:bg-[#e1e3df] text-[#191c1a] font-semibold text-xs transition"
+                  onClick={() => handleEditCategory(selectedCategory)}
+                  className="py-2 rounded-xl bg-[#225944]/10 hover:bg-[#225944]/20 text-[#02412e] font-semibold text-xs transition flex items-center justify-center gap-1"
                 >
-                  Update SLA Only
+                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  <span>Edit Service</span>
                 </button>
                 <button
-                  onClick={() => {
-                    setToastMsg(`Temporarily disabled ${selectedCategory.name}!`);
-                    setTimeout(() => setToastMsg(null), 3000);
-                  }}
-                  className="py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 font-semibold text-xs transition"
+                  onClick={() => handleDeleteCategory(selectedCategory)}
+                  className="py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 font-semibold text-xs transition flex items-center justify-center gap-1"
                 >
-                  Disable Temporarily
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  <span>Delete Service</span>
                 </button>
               </div>
             </div>
@@ -639,11 +757,15 @@ export const ServicesManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Redesigned Multi-Step Add Service Category Modal */}
+      {/* Redesigned Multi-Step Add / Edit Service Category Modal */}
       <AddServiceModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingCategory(null);
+        }}
         onSubmitService={handleAddServiceSubmit}
+        initialData={getInitialFormData(editingCategory)}
       />
     </div>
   );
