@@ -42,9 +42,9 @@ export const ServicesManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   
-  // Confirmation Modal state for Deactivate / Reactivate
+  // Confirmation Modal state for Deactivate / Reactivate / Delete
   const [confirmModal, setConfirmModal] = useState<{
-    type: 'deactivate' | 'reactivate';
+    type: 'deactivate' | 'reactivate' | 'delete';
     category: ServiceCategory;
   } | null>(null);
 
@@ -156,6 +156,24 @@ export const ServicesManagement: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to reactivate service:', err);
       alert(err.message || 'Failed to reactivate service category.');
+    } finally {
+      setConfirmModal(null);
+    }
+  };
+
+  const executeDelete = async (cat: ServiceCategory) => {
+    try {
+      const res = await serviceApi.delete(cat.id);
+      if (res.softDeleted) {
+        setToastMsg(`Deactivated service (dependent booking history exists): ${cat.name}`);
+      } else {
+        setToastMsg(`Deleted service: ${cat.name}`);
+      }
+      await fetchCategories();
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch (err: any) {
+      console.error('Failed to delete service:', err);
+      alert(err.message || 'Failed to delete service.');
     } finally {
       setConfirmModal(null);
     }
@@ -313,28 +331,30 @@ export const ServicesManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Confirmation Modal for Deactivate / Reactivate */}
+      {/* Confirmation Modal for Deactivate / Reactivate / Delete */}
       {confirmModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E1D6] space-y-4 animate-in fade-in duration-150">
-            <div className="flex items-center gap-3 text-amber-700">
+            <div className="flex items-center gap-3 text-rose-700">
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                confirmModal.type === 'deactivate' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
+                confirmModal.type === 'delete' || confirmModal.type === 'deactivate' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
               }`}>
                 <span className="material-symbols-outlined text-2xl">
-                  {confirmModal.type === 'deactivate' ? 'warning' : 'published_with_changes'}
+                  {confirmModal.type === 'delete' ? 'delete' : confirmModal.type === 'deactivate' ? 'warning' : 'published_with_changes'}
                 </span>
               </div>
               <div>
                 <h3 className="font-extrabold text-lg text-[#171A18]">
-                  {confirmModal.type === 'deactivate' ? 'Deactivate Service' : 'Reactivate Service'}
+                  {confirmModal.type === 'delete' ? 'Delete service?' : confirmModal.type === 'deactivate' ? 'Deactivate Service' : 'Reactivate Service'}
                 </h3>
                 <p className="text-xs text-[#6B6B63] font-semibold">{confirmModal.category.name}</p>
               </div>
             </div>
 
             <p className="text-sm text-[#404944] leading-relaxed">
-              {confirmModal.type === 'deactivate'
+              {confirmModal.type === 'delete'
+                ? 'Are you sure you want to delete this service?'
+                : confirmModal.type === 'deactivate'
                 ? 'This service will no longer be visible to customers on the /services page or customer search.'
                 : 'This service will immediately become visible to customers again on the public /services catalog.'}
             </p>
@@ -346,10 +366,17 @@ export const ServicesManagement: React.FC = () => {
               >
                 Cancel
               </button>
-              {confirmModal.type === 'deactivate' ? (
+              {confirmModal.type === 'delete' ? (
+                <button
+                  onClick={() => executeDelete(confirmModal.category)}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition shadow-sm"
+                >
+                  Delete Service
+                </button>
+              ) : confirmModal.type === 'deactivate' ? (
                 <button
                   onClick={() => executeDeactivate(confirmModal.category)}
-                  className="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition shadow-sm"
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition shadow-sm"
                 >
                   Confirm Deactivate
                 </button>
@@ -640,6 +667,17 @@ export const ServicesManagement: React.FC = () => {
                                   <span className="material-symbols-outlined text-[16px]">check_circle</span>
                                 </button>
                               )}
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmModal({ type: 'delete', category: cat });
+                                }}
+                                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-100 transition"
+                                title="Delete Service"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                              </button>
 
                               <button
                                 onClick={(e) => {

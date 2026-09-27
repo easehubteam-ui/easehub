@@ -37,7 +37,7 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
   const normalizedServices = rawServices.map((s: any) => typeof s === 'string' ? { name: s } : (s && typeof s === 'object' && s.name ? s : { name: String(s || 'Wash & Fold') }));
   const tagList = rawServices.map((s: any) => typeof s === 'string' ? s : (s?.name || String(s)));
 
-  const perKg = Number(pricing.perKg || pricing.pricePerKg || pricing.startingPrice || 50);
+  const perKg = Number(pricing.perKg || pricing.pricePerKg || pricing.startingPrice || 0);
   const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
   const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
   const imageUrl = getPublicImageUrl(BUCKETS.LAUNDRY_IMAGES, record.images && record.images.length > 0 ? record.images : record.image) || '';
@@ -45,26 +45,26 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
   return {
     id: record.id || '',
     _id: record.id || '',
-    code: record.code || (record.id ? `LP-${String(record.id).slice(0, 6)}` : 'LP-000000'),
-    name: record.name || 'Laundry Service Provider',
-    ownerName: 'EaseHub Verified Partner',
-    phone: '9876543210',
-    email: 'laundry@easehub.com',
-    description: record.description || 'Express Wash & Steam Iron Service',
-    corridor: record.city || 'Metro Area',
-    distance: '0.8 km',
-    rating: 4.8,
-    reviewCount: 24,
+    code: record.code || (record.id ? `LP-${String(record.id).slice(0, 6)}` : '—'),
+    name: record.name || '—',
+    ownerName: record.owner_name || '—',
+    phone: record.phone || '—',
+    email: record.email || '—',
+    description: record.description || '—',
+    corridor: record.city || record.address || '—',
+    distance: '—',
+    rating: Number(record.rating) || 5.0,
+    reviewCount: Number(record.review_count) || 0,
     status: record.status || 'active',
-    tags: tagList.length > 0 ? tagList : ['Express Wash', 'Steam Iron', 'Doorstep Pickup'],
+    tags: tagList,
     pricePerKg: perKg,
     perKgPrice: perKg,
-    steamIronPerPc: Number(pricing.steamIronPerPc) || 15,
-    turnaroundHours: 24,
-    turnaroundTime: '24 Hours Express',
+    steamIronPerPc: Number(pricing.steamIronPerPc) || 0,
+    turnaroundHours: Number(record.turnaround_hours) || 24,
+    turnaroundTime: record.turnaround_time || '—',
     image: imageUrl,
     images: imageUrl ? [imageUrl] : [],
-    services: normalizedServices.length > 0 ? normalizedServices : [{ name: 'Wash & Fold' }, { name: 'Steam Iron' }],
+    services: normalizedServices,
     pickupAvailable: record.pickup_available ?? true,
     location: {
       address: record.address || '',

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable, Column } from '../../components/admin/DataTable';
 import { StatusBadge } from '../../components/admin/StatusBadge';
+import { insforge } from '../../services/insforge';
 
 interface VendorItem {
   id: string;
@@ -12,70 +13,65 @@ interface VendorItem {
   location: string;
   status: 'approved' | 'pending' | 'rejected';
   rating: number;
+  dbId?: string;
+  isActive?: boolean;
 }
 
 export const Vendors: React.FC = () => {
-  const [vendors, setVendors] = useState<VendorItem[]>([
-    {
-      id: 'VND-101',
-      businessName: 'Royal Luxury Boys PG',
-      ownerName: 'Rajesh Kumar',
-      category: 'PG / Hostel',
-      email: 'rajesh@royalboyspg.com',
-      phone: '+91 98271 99999',
-      location: 'Sector 6, Bhilai',
-      status: 'approved',
-      rating: 4.8,
-    },
-    {
-      id: 'VND-102',
-      businessName: 'Annapurna Daily Mess & Tiffin',
-      ownerName: 'Suresh Sharma',
-      category: 'Mess / Tiffin',
-      email: 'suresh@annapurna.in',
-      phone: '+91 98271 88811',
-      location: 'Near BIT College, Durg',
-      status: 'approved',
-      rating: 4.6,
-    },
-    {
-      id: 'VND-103',
-      businessName: 'Campus Express Laundry Hub',
-      ownerName: 'Mahesh Patel',
-      category: 'Laundry',
-      email: 'mahesh@expresslaundry.com',
-      phone: '+91 98271 77722',
-      location: 'Rungta Campus Gate 2',
-      status: 'pending',
-      rating: 0.0,
-    },
-    {
-      id: 'VND-104',
-      businessName: 'Sunshine Girls Residency',
-      ownerName: 'Anita Gupta',
-      category: 'PG / Hostel',
-      email: 'anita@sunshinegirls.com',
-      phone: '+91 98271 66633',
-      location: 'Civic Center, Bhilai',
-      status: 'approved',
-      rating: 4.9,
-    },
-    {
-      id: 'VND-105',
-      businessName: 'QuickFix AC & Appliance Repair',
-      ownerName: 'Dinesh Verma',
-      category: 'Maintenance',
-      email: 'dinesh@quickfix.in',
-      phone: '+91 98271 55544',
-      location: 'Nehru Nagar, Bhilai',
-      status: 'rejected',
-      rating: 2.1,
-    },
-  ]);
+  const [vendors, setVendors] = useState<VendorItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const updateStatus = (id: string, newStatus: 'approved' | 'rejected') => {
+  const fetchVendors = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await insforge.database
+        .from('users')
+        .select('*')
+        .eq('role', 'vendor');
+
+      if (!error && Array.isArray(data)) {
+        const mapped: VendorItem[] = data.map((u: any) => ({
+          id: u.id ? `VND-${u.id.slice(0, 6)}` : 'VND-UNKNOWN',
+          businessName: u.name || 'Vendor Business',
+          ownerName: u.name || 'Owner',
+          category: 'PG / Hostel',
+          email: u.email || '—',
+          phone: u.phone || '—',
+          location: u.city || u.address || 'Location not specified',
+          status: u.is_active ? 'approved' : 'pending',
+          rating: 0,
+          dbId: u.id,
+          isActive: u.is_active ?? true
+        }));
+        setVendors(mapped);
+      } else {
+        setVendors([]);
+      }
+    } catch (err) {
+      console.error('Failed to load vendors:', err);
+      setVendors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+
+  const updateStatus = async (item: VendorItem & { dbId?: string; isActive?: boolean }, newStatus: 'approved' | 'rejected') => {
+    if (item.dbId) {
+      try {
+        await insforge.database
+          .from('users')
+          .update({ is_active: newStatus === 'approved' })
+          .eq('id', item.dbId);
+      } catch (err) {
+        console.error('Failed to update vendor status:', err);
+      }
+    }
     setVendors((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, status: newStatus } : v))
+      prev.map((v) => (v.id === item.id ? { ...v, status: newStatus } : v))
     );
   };
 
@@ -121,13 +117,13 @@ export const Vendors: React.FC = () => {
           {item.status === 'pending' ? (
             <>
               <button
-                onClick={() => updateStatus(item.id, 'approved')}
+                onClick={() => updateStatus(item, 'approved')}
                 className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors shadow-xs"
               >
                 Approve
               </button>
               <button
-                onClick={() => updateStatus(item.id, 'rejected')}
+                onClick={() => updateStatus(item, 'rejected')}
                 className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-[10px] hover:bg-rose-700 transition-colors shadow-xs"
               >
                 Reject
@@ -135,7 +131,7 @@ export const Vendors: React.FC = () => {
             </>
           ) : (
             <button
-              onClick={() => updateStatus(item.id, item.status === 'approved' ? 'rejected' : 'approved')}
+              onClick={() => updateStatus(item, item.status === 'approved' ? 'rejected' : 'approved')}
               className="text-[10px] text-[#6B6B63] hover:underline font-bold"
             >
               Toggle Status

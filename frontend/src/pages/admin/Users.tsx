@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable, Column } from '../../components/admin/DataTable';
 import { StatusBadge } from '../../components/admin/StatusBadge';
+import { userApi, UserRecord } from '../../services/userApi';
+import { useAuth } from '../../context/AuthContext';
 
 interface UserItem {
   id: string;
+  authUserId?: string;
   name: string;
   email: string;
   phone: string;
@@ -14,72 +17,94 @@ interface UserItem {
 }
 
 export const Users: React.FC = () => {
-  const [users, setUsers] = useState<UserItem[]>([
-    {
-      id: 'USR-001',
-      name: 'Priya Sharma',
-      email: 'priya.s@bitdurg.ac.in',
-      phone: '+91 98271 12345',
-      role: 'customer',
-      isActive: true,
-      college: 'BIT Durg',
-      joinedAt: '2026-08-15',
-    },
-    {
-      id: 'USR-002',
-      name: 'Rahul Verma',
-      email: 'rahul.v@rungta.ac.in',
-      phone: '+91 98271 54321',
-      role: 'customer',
-      isActive: true,
-      college: 'Rungta Group Bhilai',
-      joinedAt: '2026-08-18',
-    },
-    {
-      id: 'USR-003',
-      name: 'Royal Boys PG (Rajesh Kumar)',
-      email: 'owner@royalboyspg.com',
-      phone: '+91 98271 99999',
-      role: 'vendor',
-      isActive: true,
-      college: 'Bhilai Sector 6',
-      joinedAt: '2026-07-10',
-    },
-    {
-      id: 'USR-004',
-      name: 'System Superadmin',
-      email: 'admin@easehub.local',
-      phone: '+91 788 405 1120',
-      role: 'superadmin',
-      isActive: true,
-      college: 'EaseHub HQ',
-      joinedAt: '2026-01-01',
-    },
-    {
-      id: 'USR-005',
-      name: 'Vikas Singh',
-      email: 'vikas.s@bitdurg.ac.in',
-      phone: '+91 98271 88888',
-      role: 'customer',
-      isActive: false,
-      college: 'BIT Durg',
-      joinedAt: '2026-09-01',
-    },
-  ]);
+  const { user: currentUser } = useAuth();
+
+  const [users, setUsers] = useState<UserItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  const toggleUserStatus = (id: string) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u))
-    );
+  const triggerToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
+
+  const loadUsers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const dbUsers: UserRecord[] = await userApi.getAll();
+      const mapped: UserItem[] = dbUsers.map((u) => ({
+        id: u.id,
+        authUserId: u.auth_user_id,
+        name: u.name || '—',
+        email: u.email || '—',
+        phone: u.phone || '—',
+        role: u.role || 'customer',
+        isActive: u.is_active ?? true,
+        college: u.city || u.address || '—',
+        joinedAt: u.created_at ? u.created_at.split('T')[0] : '—'
+      }));
+      setUsers(mapped);
+    } catch (err: any) {
+      console.error('Failed to load users from DB:', err);
+      setError('Unable to load users from database.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const handleToggleBlock = async (item: UserItem) => {
+    const success = await userApi.toggleBlock(item.id, item.isActive);
+    if (success) {
+      triggerToast(`User ${item.name} status updated to ${!item.isActive ? 'ACTIVE' : 'BLOCKED'}.`, 'success');
+      loadUsers();
+    } else {
+      triggerToast(`Failed to update status for ${item.name}.`, 'error');
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    if (currentUser && (currentUser.id === userToDelete.id || currentUser.email === userToDelete.email)) {
+      triggerToast('You cannot delete your own logged-in account.', 'error');
+      setUserToDelete(null);
+      return;
+    }
+
+    const superadmins = users.filter((u) => u.role === 'superadmin');
+    if (userToDelete.role === 'superadmin' && superadmins.length <= 1) {
+      triggerToast('Cannot delete the final superadmin account.', 'error');
+      setUserToDelete(null);
+      return;
+    }
+
+    const res = await userApi.deleteUser(userToDelete.id);
+    if (res.success) {
+      triggerToast(res.message || `User ${userToDelete.name} deleted.`, 'success');
+      setUserToDelete(null);
+      loadUsers();
+    } else {
+      triggerToast(res.message || `Failed to delete ${userToDelete.name}.`, 'error');
+      setUserToDelete(null);
+    }
   };
 
   const columns: Column<UserItem>[] = [
     {
       key: 'id',
       header: 'User ID',
-      render: (item) => <span className="font-mono font-bold text-[#225944]">{item.id}</span>,
+      render: (item) => <span className="font-mono font-bold text-[#225944] text-xs">{item.id}</span>,
     },
     {
       key: 'name',
@@ -109,47 +134,90 @@ export const Users: React.FC = () => {
     {
       key: 'actions',
       header: 'Actions',
-      render: (item) => (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedUser(item);
-            }}
-            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#171A18] transition-colors"
-            title="View Details"
-          >
-            <span className="material-symbols-outlined text-[16px]">visibility</span>
-          </button>
-          {item.role !== 'superadmin' && (
+      render: (item) => {
+        const isSelf = currentUser && (currentUser.id === item.id || currentUser.email === item.email);
+
+        return (
+          <div className="flex items-center gap-1.5">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                toggleUserStatus(item.id);
+                setSelectedUser(item);
               }}
-              className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
-                item.isActive
-                  ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
-                  : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-              }`}
+              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#171A18] transition-colors"
+              title="View Details"
             >
-              {item.isActive ? 'Block' : 'Unblock'}
+              <span className="material-symbols-outlined text-[16px]">visibility</span>
             </button>
-          )}
-        </div>
-      ),
+
+            {!isSelf && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleBlock(item);
+                }}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
+                  item.isActive
+                    ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                    : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                }`}
+                title={item.isActive ? 'Block User' : 'Unblock User'}
+              >
+                {item.isActive ? 'Block' : 'Unblock'}
+              </button>
+            )}
+
+            {!isSelf && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUserToDelete(item);
+                }}
+                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
+                title="Delete User"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+              </button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div className="space-y-6">
-      <DataTable
-        title="User Management Directory"
-        subtitle="Manage customer, vendor, and administrator accounts across EaseHub"
-        columns={columns}
-        data={users}
-        searchPlaceholder="Search name, email, or phone..."
-      />
+      {/* Toast Banner */}
+      {toastMessage && (
+        <div className={`p-3 rounded-2xl text-xs font-bold border ${
+          toastMessage.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+        }`}>
+          {toastMessage.text}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="bg-white rounded-3xl border border-[#E5E1D6] p-12 text-center shadow-xs">
+          <div className="w-10 h-10 border-4 border-[#225944] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm font-bold text-[#171A18]">Loading Real User Directory...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-rose-50 border border-rose-200 rounded-3xl p-8 text-center text-rose-800 font-semibold text-sm">
+          <p>{error}</p>
+          <button onClick={loadUsers} className="mt-3 px-4 py-2 rounded-xl bg-[#225944] text-white text-xs font-bold">
+            Retry
+          </button>
+        </div>
+      ) : (
+        <DataTable
+          title="User Management Directory"
+          subtitle="Manage customer, vendor, and administrator accounts directly from InsForge PostgreSQL"
+          columns={columns}
+          data={users}
+          searchPlaceholder="Search name, email, or phone..."
+          emptyMessage="No users found"
+        />
+      )}
 
       {/* User Details Modal */}
       {selectedUser && (
@@ -158,11 +226,11 @@ export const Users: React.FC = () => {
             <div className="flex items-center justify-between pb-4 border-b border-[#E5E1D6]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-[#225944] text-[#EECA3A] font-bold flex items-center justify-center text-base">
-                  {selectedUser.name.charAt(0).toUpperCase()}
+                  {(selectedUser.name || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-[#171A18]">{selectedUser.name}</h3>
-                  <p className="text-xs text-[#6B6B63]">{selectedUser.id}</p>
+                  <p className="text-xs text-[#6B6B63] font-mono">{selectedUser.id}</p>
                 </div>
               </div>
               <button
@@ -184,8 +252,8 @@ export const Users: React.FC = () => {
                   <span className="font-bold text-[#171A18]">{selectedUser.phone}</span>
                 </div>
                 <div>
-                  <span className="text-[#6B6B63] block text-[10px]">Campus / Sector</span>
-                  <span className="font-bold text-[#171A18]">{selectedUser.college || 'N/A'}</span>
+                  <span className="text-[#6B6B63] block text-[10px]">Campus / Location</span>
+                  <span className="font-bold text-[#171A18]">{selectedUser.college}</span>
                 </div>
                 <div>
                   <span className="text-[#6B6B63] block text-[10px]">Role</span>
@@ -210,6 +278,39 @@ export const Users: React.FC = () => {
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#171A18]"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E1D6] space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center">
+                <span className="material-symbols-outlined text-2xl">warning</span>
+              </div>
+              <h3 className="text-lg font-extrabold text-[#171A18]">Delete this user?</h3>
+            </div>
+
+            <p className="text-xs text-[#6B6B63] leading-relaxed">
+              Are you sure you want to permanently delete user <strong className="text-[#171A18]">{userToDelete.name}</strong> ({userToDelete.email})? This action cannot be undone.
+            </p>
+
+            <div className="pt-3 border-t border-[#E5E1D6] flex items-center justify-end gap-3">
+              <button
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#171A18]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors shadow-sm"
+              >
+                Delete User
               </button>
             </div>
           </div>

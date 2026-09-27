@@ -16,6 +16,7 @@ interface DataTableProps<T> {
   actions?: React.ReactNode;
   onRowClick?: (item: T) => void;
   pageSize?: number;
+  emptyMessage?: string;
 }
 
 export function DataTable<T extends { id?: string | number; [key: string]: any }>({
@@ -27,6 +28,7 @@ export function DataTable<T extends { id?: string | number; [key: string]: any }
   actions,
   onRowClick,
   pageSize = 10,
+  emptyMessage = 'No records found',
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);

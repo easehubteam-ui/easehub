@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable, Column } from '../../components/admin/DataTable';
 import { StatusBadge } from '../../components/admin/StatusBadge';
+import { insforge } from '../../services/insforge';
 
 interface ReviewItem {
   id: string;
@@ -10,42 +11,60 @@ interface ReviewItem {
   comment: string;
   status: 'approved' | 'pending' | 'rejected';
   date: string;
+  dbId?: string;
 }
 
 export const Reviews: React.FC = () => {
-  const [reviews, setReviews] = useState<ReviewItem[]>([
-    {
-      id: 'REV-01',
-      author: 'Priya Sharma (BIT Durg)',
-      targetName: 'Royal Luxury Boys PG',
-      rating: 5,
-      comment: 'Super clean rooms with fast Wi-Fi and 24/7 security warden. Highly recommended!',
-      status: 'approved',
-      date: '2026-09-22',
-    },
-    {
-      id: 'REV-02',
-      author: 'Rahul Verma (Rungta)',
-      targetName: 'Annapurna Daily Mess',
-      rating: 4,
-      comment: 'Food quality is great, hot roti served daily on time in hostel.',
-      status: 'approved',
-      date: '2026-09-21',
-    },
-    {
-      id: 'REV-03',
-      author: 'Anonymous Student',
-      targetName: 'Campus Express Laundry',
-      rating: 1,
-      comment: 'Clothes took 3 days instead of 24 hours. Needs better speed.',
-      status: 'pending',
-      date: '2026-09-24',
-    },
-  ]);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const setReviewStatus = (id: string, newStatus: ReviewItem['status']) => {
+  const fetchReviews = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await insforge.database
+        .from('reviews')
+        .select('*');
+
+      if (!error && Array.isArray(data)) {
+        const mapped: ReviewItem[] = data.map((r: any) => ({
+          id: r.id ? `REV-${r.id.slice(0, 6)}` : 'REV-UNKNOWN',
+          author: r.userName || r.user_id ? `User (${(r.user_id || '').slice(0, 6)})` : 'Verified Resident',
+          targetName: r.service_name || r.property_name || 'EaseHub Partner',
+          rating: Number(r.rating) || 5,
+          comment: r.comment || 'No comment text provided.',
+          status: r.is_published ? 'approved' : 'pending',
+          date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN') : '—',
+          dbId: r.id,
+        }));
+        setReviews(mapped);
+      } else {
+        setReviews([]);
+      }
+    } catch (err) {
+      console.error('Failed to load reviews:', err);
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const setReviewStatus = async (item: ReviewItem, newStatus: ReviewItem['status']) => {
+    if (item.dbId) {
+      try {
+        await insforge.database
+          .from('reviews')
+          .update({ is_published: newStatus === 'approved' })
+          .eq('id', item.dbId);
+      } catch (err) {
+        console.error('Failed to update review status:', err);
+      }
+    }
     setReviews((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+      prev.map((r) => (r.id === item.id ? { ...r, status: newStatus } : r))
     );
   };
 
@@ -82,13 +101,13 @@ export const Reviews: React.FC = () => {
       render: (item) => (
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => setReviewStatus(item.id, 'approved')}
+            onClick={() => setReviewStatus(item, 'approved')}
             className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold hover:bg-emerald-200"
           >
             Approve
           </button>
           <button
-            onClick={() => setReviewStatus(item.id, 'rejected')}
+            onClick={() => setReviewStatus(item, 'rejected')}
             className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold hover:bg-rose-200"
           >
             Reject

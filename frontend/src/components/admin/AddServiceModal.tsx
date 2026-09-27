@@ -56,32 +56,32 @@ const availableIcons = [
 
 const availableCorridors = ['Junwani', 'Smriti Nagar', 'Nehru Nagar', 'Civic Center'];
 
-const defaultFormData: ServiceFormData = {
-  name: 'Electrical & Wiring Repair',
+const emptyFormData: ServiceFormData = {
+  name: '',
   category: 'Electrical',
   icon: 'electric_bolt',
-  description: 'Short circuits, switchboard fixes, fan installation, tube lights, and MCB tripping troubleshooting.',
+  description: '',
   photos: [],
-  basePrice: 149,
-  nightSurge: 99,
-  extendedLaborRate: '₹100 / 30 mins after initial 45 mins',
-  includedScope: ['Switchboard & Socket Repair', 'Ceiling Fan Installation & Regulator', 'MCB Tripping Fix', 'LED Tube Light Replacement'],
-  excludedItems: 'Material parts cost extra (bulbs, switches, wires purchased at MRP).',
-  address: 'Central Service Dispatch Center, Junwani Road',
-  landmark: 'Opposite BIT Gate 2',
+  basePrice: 0,
+  nightSurge: 0,
+  extendedLaborRate: '',
+  includedScope: [],
+  excludedItems: '',
+  address: '',
+  landmark: '',
   city: 'Bhilai',
   state: 'Chhattisgarh',
-  pincode: '490020',
-  coverageCorridors: ['Junwani', 'Smriti Nagar', 'Nehru Nagar', 'Civic Center'],
+  pincode: '',
+  coverageCorridors: [],
   slaMins: 30,
-  slaGuarantee: '30 min Express SLA',
-  latitude: 21.198409,
-  longitude: 81.332444,
-  primaryTechName: 'Ramesh Sahu',
-  primaryTechRole: 'Master Electrician',
-  primaryTechRating: 4.9,
-  activeTechsCount: 28,
-  status: 'pending',
+  slaGuarantee: '30 min SLA',
+  latitude: 0,
+  longitude: 0,
+  primaryTechName: '',
+  primaryTechRole: '',
+  primaryTechRating: 5.0,
+  activeTechsCount: 1,
+  status: 'active',
 };
 
 export const AddServiceModal: React.FC<AddServiceModalProps> = ({
@@ -94,14 +94,14 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<ServiceFormData>(defaultFormData);
+  const [formData, setFormData] = useState<ServiceFormData>(emptyFormData);
 
   React.useEffect(() => {
     if (isOpen) {
       if (initialData) {
         setFormData({ ...initialData });
       } else {
-        setFormData(defaultFormData);
+        setFormData(emptyFormData);
       }
       setCurrentStep(1);
     }

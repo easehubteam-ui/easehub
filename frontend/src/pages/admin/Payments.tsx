@@ -35,14 +35,14 @@ export const Payments: React.FC = () => {
 
       if (Array.isArray(list)) {
         const mapped: PaymentItem[] = list.map((p: any) => ({
-          id: p.paymentNumber || p._id,
-          txnId: p.utr || 'TXN_' + p._id,
-          customerName: p.userName || p.user?.fullName || 'Customer',
+          id: p.paymentNumber || p._id || p.id,
+          txnId: p.utr || (p.id ? `TXN_${String(p.id).slice(0, 8)}` : '—'),
+          customerName: p.userName || p.user?.fullName || p.user?.name || '—',
           amount: `₹${(p.amount || 0).toLocaleString('en-IN')}`,
-          method: p.method === 'qr' ? 'UPI QR Escrow' : 'Online Gateway',
+          method: p.method === 'qr' ? 'UPI QR Escrow' : (p.method || 'Online Gateway'),
           status: p.status === 'verified' ? 'completed' : p.status === 'rejected' ? 'failed' : 'pending',
           payoutStatus: p.status === 'verified' ? 'settled' : 'pending',
-          timestamp: new Date(p.createdAt || Date.now()).toLocaleString('en-IN'),
+          timestamp: p.createdAt ? new Date(p.createdAt).toLocaleString('en-IN') : '—',
         }));
         setPayments(mapped);
       }

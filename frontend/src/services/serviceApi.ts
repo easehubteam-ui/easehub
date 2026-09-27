@@ -141,9 +141,19 @@ export const serviceApi = {
     await insforge.database.from('services').update(dbPayload).eq('id', id);
     return serviceApi.getById(id);
   },
-  delete: async (id: string) => {
-    await insforge.database.from('services').update({ is_active: false }).eq('id', id);
-    return { success: true };
+  delete: async (id: string): Promise<{ success: boolean; softDeleted?: boolean; message?: string }> => {
+    try {
+      const { error } = await insforge.database.from('services').delete().eq('id', id);
+      if (error) {
+        console.warn('Hard delete failed due to constraints, soft deactivating service instead:', error);
+        await insforge.database.from('services').update({ is_active: false }).eq('id', id);
+        return { success: true, softDeleted: true, message: 'Service deactivated because associated booking/order records exist.' };
+      }
+      return { success: true, softDeleted: false, message: 'Service deleted successfully.' };
+    } catch (err: any) {
+      console.error('Error deleting service:', err);
+      return { success: false, message: err?.message || 'Failed to delete service.' };
+    }
   },
   deactivate: async (id: string) => {
     await insforge.database.from('services').update({ is_active: false }).eq('id', id);

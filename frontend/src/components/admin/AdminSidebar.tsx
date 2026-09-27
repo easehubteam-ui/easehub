@@ -10,7 +10,6 @@ interface AdminSidebarProps {
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [selectedHub, setSelectedHub] = useState('Bhilai & Durg Central Hub');
 
   const handleLogout = async () => {
     await logout();
@@ -95,20 +94,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
               <button onClick={onClose} className="lg:hidden text-[#6B6B63] hover:text-[#171A18]">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
-            </div>
-
-            {/* Campus Node Switcher Dropdown */}
-            <div className="flex items-center gap-2 bg-[#F3F4F0] px-3 py-1.5 rounded-xl mt-1 border border-[#E5E1D6]">
-              <span className="material-symbols-outlined text-[#225944] text-[18px]">location_city</span>
-              <select
-                value={selectedHub}
-                onChange={(e) => setSelectedHub(e.target.value)}
-                className="bg-transparent text-xs font-bold text-[#171A18] focus:outline-none cursor-pointer w-full"
-              >
-                <option value="Bhilai & Durg Central Hub">Bhilai & Durg Central Hub</option>
-                <option value="Raipur East Campus Hub">Raipur East Campus Hub</option>
-                <option value="Naya Raipur Technology Node">Naya Raipur Tech Node</option>
-              </select>
             </div>
           </div>
 
