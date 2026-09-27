@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import LocationMap from '../common/LocationMap';
+import { storageApi } from '../../services/storageApi';
 
 export interface ServiceFormData {
   id?: string;
@@ -60,6 +61,8 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
   onSubmitService,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<ServiceFormData>({
     name: 'Electrical & Wiring Repair',
@@ -93,6 +96,40 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
   const [isSearchingMap, setIsSearchingMap] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setIsUploading(true);
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const res = await storageApi.uploadServiceImage(file, file.name);
+        if (res.url) {
+          uploadedUrls.push(res.url);
+        }
+      }
+      if (uploadedUrls.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          photos: [...prev.photos, ...uploadedUrls],
+        }));
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload service photo to InsForge Storage.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemovePhoto = (idxToRemove: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, idx) => idx !== idxToRemove),
+    }));
+  };
 
   const toggleCorridor = (c: string) => {
     const exists = formData.coverageCorridors.includes(c);
@@ -256,6 +293,55 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
                   <div className="pb-2 border-b border-[#E5E1D6]">
                     <h3 className="text-lg font-extrabold text-[#171A18]">1. Service Basics</h3>
                     <p className="text-xs text-[#6B6B63]">Define service category title, icon and description.</p>
+                  </div>
+
+                  {/* Service Banner / Icon Photos Upload Container */}
+                  <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3 shadow-xs">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      multiple
+                      className="hidden"
+                    />
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[#171A18]">Service Photos & Banner</label>
+                      <span className="text-[11px] text-[#6B6B63] font-semibold">{formData.photos.length}/6 photos</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-[#225944]/30 hover:border-[#225944] rounded-2xl p-4 bg-[#F8FAF6] hover:bg-[#E9F1ED]/40 transition-all flex flex-col items-center justify-center text-center cursor-pointer min-h-[100px] group"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-[#225944]/10 text-[#225944] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                          {isUploading ? (
+                            <span className="w-4 h-4 border-2 border-[#225944] border-t-transparent rounded-full animate-spin"></span>
+                          ) : (
+                            <span className="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-[#171A18]">
+                          {isUploading ? 'Uploading to InsForge...' : 'Upload service photos'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        {formData.photos.map((url, idx) => (
+                          <div key={idx} className="relative group rounded-xl overflow-hidden border border-[#E5E1D6] h-14 bg-slate-100">
+                            <img src={url} alt={`Service preview ${idx}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(idx)}
+                              className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-xs"
+                            >
+                              <span className="material-symbols-outlined text-[10px]">close</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3.5 shadow-xs text-xs">

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import LocationMap from '../common/LocationMap';
+import { storageApi } from '../../services/storageApi';
 
 export interface LaundryFormData {
   id?: string;
@@ -61,6 +62,8 @@ export const AddLaundryModal: React.FC<AddLaundryModalProps> = ({
   onSubmitLaundry,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<LaundryFormData>({
     name: 'Campus Express Laundry & Dry Cleaners',
@@ -105,8 +108,35 @@ export const AddLaundryModal: React.FC<AddLaundryModalProps> = ({
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setIsUploading(true);
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const res = await storageApi.uploadLaundryImage(file, file.name);
+        if (res.url) {
+          uploadedUrls.push(res.url);
+        }
+      }
+      if (uploadedUrls.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          photos: [...prev.photos, ...uploadedUrls],
+        }));
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload laundry photo to InsForge Storage.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleAddSamplePhoto = () => {
-    alert('Please select an image file to upload.');
+    fileInputRef.current?.click();
   };
 
   const toggleService = (srv: string) => {
@@ -274,6 +304,14 @@ export const AddLaundryModal: React.FC<AddLaundryModalProps> = ({
                   </div>
 
                   <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3 shadow-xs">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      multiple
+                      className="hidden"
+                    />
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-[#171A18]">Facility Photos</label>
                       <span className="text-[11px] text-[#6B6B63] font-semibold">{formData.photos.length}/8 photos</span>
@@ -285,9 +323,15 @@ export const AddLaundryModal: React.FC<AddLaundryModalProps> = ({
                         className="border-2 border-dashed border-[#225944]/30 hover:border-[#225944] rounded-2xl p-4 bg-[#F8FAF6] hover:bg-[#E9F1ED]/40 transition-all flex flex-col items-center justify-center text-center cursor-pointer min-h-[120px] group"
                       >
                         <div className="w-10 h-10 rounded-full bg-[#225944]/10 text-[#225944] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-                          <span className="material-symbols-outlined text-[20px]">add_photo_alternate</span>
+                          {isUploading ? (
+                            <span className="w-5 h-5 border-2 border-[#225944] border-t-transparent rounded-full animate-spin"></span>
+                          ) : (
+                            <span className="material-symbols-outlined text-[20px]">add_photo_alternate</span>
+                          )}
                         </div>
-                        <span className="text-xs font-bold text-[#171A18]">Upload facility photos</span>
+                        <span className="text-xs font-bold text-[#171A18]">
+                          {isUploading ? 'Uploading to InsForge...' : 'Upload facility photos'}
+                        </span>
                         <span className="text-[10px] text-[#6B6B63] mt-0.5">Washing machines & steam iron setup</span>
                       </div>
 

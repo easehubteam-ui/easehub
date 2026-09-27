@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import LocationMap from '../common/LocationMap';
+import { storageApi } from '../../services/storageApi';
 
 export interface PGFormData {
   name: string;
@@ -42,6 +43,8 @@ const defaultPhotos: string[] = [];
 
 export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmitPG }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [formData, setFormData] = useState<PGFormData>({
@@ -90,8 +93,35 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setIsUploading(true);
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const res = await storageApi.uploadPropertyImage(file, file.name);
+        if (res.url) {
+          uploadedUrls.push(res.url);
+        }
+      }
+      if (uploadedUrls.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          photos: [...prev.photos, ...uploadedUrls],
+        }));
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload image to InsForge Storage.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleAddSamplePhoto = () => {
-    alert('Please select an image file to upload.');
+    fileInputRef.current?.click();
   };
 
   // Handle Map Pin Drag / Click
@@ -264,6 +294,14 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
 
                   {/* Property Photos Upload Container */}
                   <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3 shadow-xs">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      multiple
+                      className="hidden"
+                    />
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-[#171A18]">Property Photos</label>
                       <span className="text-[11px] text-[#6B6B63] font-semibold">{formData.photos.length}/10 photos</span>
@@ -276,11 +314,17 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
                         className="border-2 border-dashed border-[#225944]/30 hover:border-[#225944] rounded-2xl p-4 bg-[#F8FAF6] hover:bg-[#E9F1ED]/40 transition-all flex flex-col items-center justify-center text-center cursor-pointer min-h-[120px] group"
                       >
                         <div className="w-10 h-10 rounded-full bg-[#225944]/10 text-[#225944] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-                          <span className="material-symbols-outlined text-[20px]">add_photo_alternate</span>
+                          {isUploading ? (
+                            <span className="w-5 h-5 border-2 border-[#225944] border-t-transparent rounded-full animate-spin"></span>
+                          ) : (
+                            <span className="material-symbols-outlined text-[20px]">add_photo_alternate</span>
+                          )}
                         </div>
-                        <span className="text-xs font-bold text-[#171A18]">Click to upload photos</span>
-                        <span className="text-[10px] text-[#6B6B63] mt-0.5">or drag and drop</span>
-                        <span className="text-[9px] text-[#6B6B63] mt-1 font-mono">JPG, PNG (Max 5MB each)</span>
+                        <span className="text-xs font-bold text-[#171A18]">
+                          {isUploading ? 'Uploading to InsForge...' : 'Click to upload photos'}
+                        </span>
+                        <span className="text-[10px] text-[#6B6B63] mt-0.5">Select real image files</span>
+                        <span className="text-[9px] text-[#6B6B63] mt-1 font-mono">JPG, PNG, WEBP</span>
                       </div>
 
                       {/* Image Thumbnails Grid */}

@@ -174,7 +174,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           {/* Dynamic User Authentication State */}
-          {isAuthenticated && currentPath !== '/login' && currentPath !== '/register' ? (
+          {isAuthenticated && user?.role === 'customer' && currentPath !== '/login' && currentPath !== '/register' ? (
             /* Logged-In User Profile Button & Dropdown */
             <div className="relative">
               <button
@@ -327,7 +327,7 @@ export const Navbar: React.FC = () => {
             Services
           </Link>
 
-          {isAuthenticated && (
+          {isAuthenticated && user?.role === 'customer' && (
             <Link
               to="/account"
               onClick={() => setMobileMenuOpen(false)}
@@ -339,7 +339,7 @@ export const Navbar: React.FC = () => {
           )}
 
           <div className="pt-2 border-t border-[#E5E1D6] flex items-center gap-3">
-            {isAuthenticated ? (
+            {isAuthenticated && user?.role === 'customer' ? (
               <button
                 onClick={handleLogout}
                 className="flex-1 py-2 text-center rounded-xl bg-rose-500/10 text-rose-700 text-xs font-bold"

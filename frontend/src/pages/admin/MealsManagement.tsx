@@ -51,7 +51,7 @@ export const MealsManagement: React.FC = () => {
           rating: m.rating || 5.0,
           reviewCount: m.reviewCount || 0,
           status: m.status || 'active',
-          tags: m.tags || [],
+          tags: Array.isArray(m.tags) ? m.tags.map((t: any) => typeof t === 'string' ? t : (t?.name || String(t))) : [],
           dailyPrice: m.dailyPrice || 0,
           monthlyPrice: m.monthlyPrice || 0,
           activeTiffins: m.activeTiffins || 0,
@@ -67,6 +67,14 @@ export const MealsManagement: React.FC = () => {
           location: m.location,
         }));
         setProviders(mapped);
+        setSelectedProvider((prev) => {
+          if (!prev && mapped.length > 0) return mapped[0];
+          if (prev) {
+            const found = mapped.find((p) => p.id === prev.id);
+            return found || mapped[0] || null;
+          }
+          return mapped[0] || null;
+        });
       }
     } catch (err) {
       console.error('Failed to load meal providers:', err);
@@ -77,7 +85,7 @@ export const MealsManagement: React.FC = () => {
     fetchProviders();
   }, []);
 
-  const [selectedProvider, setSelectedProvider] = useState<MealProvider>(providers[0]);
+  const [selectedProvider, setSelectedProvider] = useState<MealProvider | null>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'overview' | 'pricing' | 'delivery'>('menu');
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -432,7 +440,7 @@ export const MealsManagement: React.FC = () => {
           </div>
 
           {filteredProviders.map((p) => {
-            const isSelected = selectedProvider.id === p.id;
+            const isSelected = selectedProvider?.id === p.id;
             return (
               <div
                 key={p.id}
@@ -514,7 +522,20 @@ export const MealsManagement: React.FC = () => {
         </div>
 
         {/* RIGHT COLUMN: Provider Detail & Menu Approval Dossier (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-[#E5E1D6] shadow-sm overflow-hidden space-y-4">
+        {!selectedProvider ? (
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-[#E5E1D6] p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-[#E9F1ED] text-[#225944] flex items-center justify-center mx-auto">
+              <span className="material-symbols-outlined text-[28px]">restaurant</span>
+            </div>
+            <h3 className="font-extrabold text-base text-[#171A18]">No Meal Provider Selected</h3>
+            <p className="text-xs text-[#6B6B63] max-w-sm mx-auto">
+              {providers.length === 0
+                ? 'No meal providers found in database. Click "+ Add Meal Provider" above to add your first kitchen.'
+                : 'Select a meal provider from the left column to view weekly menus and FSSAI details.'}
+            </p>
+          </div>
+        ) : (
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-[#E5E1D6] shadow-sm overflow-hidden space-y-4">
           {/* Dossier Top Cover & Quick Meta */}
           <div className="p-6 bg-[#F8FAF6] border-b border-[#E5E1D6] space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -770,6 +791,7 @@ export const MealsManagement: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
       </div>
 
       {/* Redesigned Add Meal Provider Modal */}
