@@ -39,30 +39,6 @@ export const userApi = {
   },
 
   /**
-   * Get real booking & payment counts for a user from PostgreSQL.
-   */
-  async getUserActivityCounts(userId: string): Promise<{ bookingCount: number; paymentCount: number }> {
-    try {
-      const { count: bookingCount } = await insforge.database
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-
-      const { count: paymentCount } = await insforge.database
-        .from('payments')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-
-      return {
-        bookingCount: bookingCount || 0,
-        paymentCount: paymentCount || 0,
-      };
-    } catch (err) {
-      return { bookingCount: 0, paymentCount: 0 };
-    }
-  },
-
-  /**
    * Toggle block/unblock status for a user record in PostgreSQL.
    */
   async toggleBlock(userId: string, currentStatus: boolean): Promise<boolean> {
@@ -88,8 +64,8 @@ export const userApi = {
    */
   async deleteUser(userId: string): Promise<{ success: boolean; softDeleted?: boolean; message?: string }> {
     try {
-      // Delete associated saved items first
-      await insforge.database
+      // First try hard deletion
+      const { error } = await insforge.database
         .from('saved_items')
         .delete()
         .eq('user_id', userId);
@@ -101,6 +77,7 @@ export const userApi = {
 
       if (deleteError) {
         console.warn('Permanent delete failed due to DB references, soft-deactivating user instead:', deleteError);
+        // Fallback to deactivating user
         const { error: updateError } = await insforge.database
           .from('users')
           .update({ is_active: false })

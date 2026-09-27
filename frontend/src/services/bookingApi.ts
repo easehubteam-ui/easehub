@@ -92,4 +92,20 @@ export const bookingApi = {
     });
     return res.data;
   },
+  deleteBooking: async (id: string) => {
+    try {
+      const { error } = await insforge.database
+        .from('bookings')
+        .delete()
+        .eq('id', id);
+      if (error) {
+        await bookingApi.cancelBooking(id);
+      }
+      return true;
+    } catch (err) {
+      await bookingApi.cancelBooking(id);
+      return true;
+    }
+  },
 };
+

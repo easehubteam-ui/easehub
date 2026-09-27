@@ -42,6 +42,7 @@ export const WishlistPage: React.FC = () => {
   const [parentPhone, setParentPhone] = useState<string>('');
   const [copyBtnText, setCopyBtnText] = useState<string>('Copy Link');
   const [showMatrix, setShowMatrix] = useState<boolean>(false);
+  const [deletingItem, setDeletingItem] = useState<ShortlistItem | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; icon: string } | null>(null);
 
   const parentInputRef = useRef<HTMLInputElement>(null);
@@ -216,6 +217,7 @@ export const WishlistPage: React.FC = () => {
     } else {
       triggerToast(`Failed to remove ${name}`, 'error');
     }
+    setDeletingItem(null);
   };
 
   const handleClearAll = async () => {
@@ -472,7 +474,7 @@ export const WishlistPage: React.FC = () => {
 
                     {/* Favorite Heart Delete Button */}
                     <button
-                      onClick={() => handleRemoveItem(item.id, item.name)}
+                      onClick={() => setDeletingItem(item)}
                       aria-label="Remove from saved"
                       className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md text-red-500 flex items-center justify-center shadow-md hover:scale-110 transition-transform"
                     >
@@ -714,6 +716,40 @@ export const WishlistPage: React.FC = () => {
 
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deletingItem && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E1D6] space-y-4 animate-in fade-in zoom-in-95 text-center">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <span className="material-symbols-outlined text-2xl">warning</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-[#171A18]">Remove from saved?</h3>
+              <p className="text-xs text-[#6B6B63] mt-1">
+                Are you sure you want to remove <strong className="text-[#171A18]">{deletingItem.name}</strong> from your saved wishlist?
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingItem(null)}
+                className="px-5 py-2.5 rounded-xl border border-[#E5E1D6] text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRemoveItem(deletingItem.id, deletingItem.name)}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center gap-1.5"
+              >
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Toast Notification */}
       {toastMessage && (

@@ -7,55 +7,43 @@ type TabType = 'pg' | 'meals' | 'laundry' | 'repairs';
 interface MapNode {
   id: string;
   name: string;
-  pgs: number;
-  mess: number;
+  locality: string;
   embedUrl: string;
 }
 
 const mapNodes: MapNode[] = [
   {
-    id: 'bhilai-central',
-    name: 'Bhilai Central Hub',
-    pgs: 342,
-    mess: 124,
-    embedUrl: 'https://maps.google.com/maps?q=Bhilai,%20Chhattisgarh&t=&z=13&ie=UTF8&iwloc=&output=embed',
-  },
-  {
     id: 'junwani',
-    name: 'Junwani (BIT Durg Gate 2)',
-    pgs: 98,
-    mess: 42,
+    name: 'Junwani Campus Zone',
+    locality: 'BIT Durg Gate 2',
     embedUrl: 'https://maps.google.com/maps?q=Bhilai%20Institute%20of%20Technology%20Durg,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
   },
   {
     id: 'smriti-nagar',
-    name: 'Smriti Nagar Hub',
-    pgs: 74,
-    mess: 30,
+    name: 'Smriti Nagar Locality',
+    locality: 'Smriti Nagar',
     embedUrl: 'https://maps.google.com/maps?q=Smriti%20Nagar%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
   },
   {
     id: 'civic-center',
-    name: 'Civic Center',
-    pgs: 52,
-    mess: 38,
+    name: 'Civic Center Area',
+    locality: 'Civic Center',
     embedUrl: 'https://maps.google.com/maps?q=Civic%20Center%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
   },
   {
     id: 'nehru-nagar',
-    name: 'Nehru Nagar',
-    pgs: 46,
-    mess: 19,
+    name: 'Nehru Nagar Sector',
+    locality: 'Nehru Nagar',
     embedUrl: 'https://maps.google.com/maps?q=Nehru%20Nagar%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
   },
   {
     id: 'rungta',
-    name: 'Rungta Kurud Corridor',
-    pgs: 63,
-    mess: 28,
+    name: 'Rungta College Corridor',
+    locality: 'Kurud Corridor',
     embedUrl: 'https://maps.google.com/maps?q=Rungta%20College%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
   },
 ];
+
 
 export const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('pg');
@@ -583,7 +571,7 @@ export const HomePage: React.FC = () => {
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 pointer-events-none">
                     <div className="bg-[#225944] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 pointer-events-auto">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#EECA3A] animate-pulse"></span>
-                      <span className="text-xs font-extrabold">{selectedMapNode.name}: {selectedMapNode.pgs} PGs • {selectedMapNode.mess} Mess</span>
+                      <span className="text-xs font-extrabold">{selectedMapNode.name} • Verified Zone</span>
                     </div>
 
                     <a
@@ -602,10 +590,10 @@ export const HomePage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#171A18] flex items-center gap-1">
                         <span className="material-symbols-outlined text-[#225944] text-[16px]">location_on</span>
-                        <span>Select Campus Node to Focus Live Map:</span>
+                        <span>Select Locality to Focus Live Map:</span>
                       </span>
                       <Link to="/pg" className="text-[11px] font-bold text-[#225944] hover:underline flex items-center gap-0.5">
-                        <span>View Full Map</span>
+                        <span>View Marketplace Map</span>
                         <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                       </Link>
                     </div>
@@ -622,12 +610,7 @@ export const HomePage: React.FC = () => {
                               : 'bg-[#F7F5EF] text-[#171A18] hover:bg-[#E5E1D6]'
                           }`}
                         >
-                          <span>{node.name.split(' ')[0]}</span>
-                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                            selectedMapNode.id === node.id ? 'bg-white/20 text-white' : 'bg-[#EECA3A] text-[#171A18]'
-                          }`}>
-                            {node.pgs}
-                          </span>
+                          <span>{node.locality}</span>
                         </button>
                       ))}
                     </div>
@@ -638,8 +621,8 @@ export const HomePage: React.FC = () => {
               {/* Campus Quick Browse Directory */}
               <div className="lg:col-span-6 space-y-4">
                 <div>
-                  <span className="text-xs font-bold text-[#EECA3A] uppercase tracking-wider">Prime Educational Neighborhoods</span>
-                  <h2 className="text-3xl font-extrabold text-[#171A18] mt-1">Popular Student Hubs in Bhilai &amp; Durg</h2>
+                  <span className="text-xs font-bold text-[#225944] uppercase tracking-wider">Prime Educational Neighborhoods</span>
+                  <h2 className="text-3xl font-extrabold text-[#171A18] mt-1">Explore Student Localities &amp; Campuses</h2>
                   <p className="text-sm text-[#6B6B63] mt-2 leading-relaxed">
                     Stay close to your lecture halls, coaching institutes, and transit stops. Choose a locality to focus the live map instantly.
                   </p>
@@ -658,10 +641,10 @@ export const HomePage: React.FC = () => {
                       }`}
                     >
                       <p className={`text-sm font-bold ${selectedMapNode.id === node.id ? 'text-white' : 'text-[#171A18] group-hover:text-white'}`}>
-                        {node.name.split(' ')[0]}
+                        {node.locality}
                       </p>
                       <p className={`text-xs ${selectedMapNode.id === node.id ? 'text-white/80' : 'text-[#6B6B63] group-hover:text-white/80'}`}>
-                        {node.pgs} PGs • {node.mess} Mess
+                        Verified Area
                       </p>
                     </button>
                   ))}
