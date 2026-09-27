@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { savedApi } from '../../services/savedApi';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
@@ -11,6 +12,21 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [savedCount, setSavedCount] = useState<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isAuthenticated && user && user.role === 'customer') {
+      savedApi.getSavedItems().then((items) => {
+        if (isMounted) setSavedCount(items.length);
+      }).catch(() => {
+        if (isMounted) setSavedCount(0);
+      });
+    } else {
+      setSavedCount(0);
+    }
+    return () => { isMounted = false; };
+  }, [isAuthenticated, user, currentPath]);
 
   const handleLogout = async () => {
     setUserDropdownOpen(false);
@@ -155,12 +171,21 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Wishlist Heart Button */}
-          <Link
-            to="/wishlist"
+          <button
+            type="button"
+            onClick={() => {
+              if (!isAuthenticated || !user) {
+                navigate('/login');
+              } else if (user.role === 'admin' || user.role === 'superadmin') {
+                navigate('/admin/dashboard');
+              } else {
+                navigate('/wishlist');
+              }
+            }}
             aria-label="Wishlist"
             title="View Wishlist"
             className={`p-2.5 rounded-xl border transition-colors shadow-xs flex items-center justify-center relative ${
-              currentPath === '/wishlist'
+              currentPath === '/wishlist' || currentPath === '/saved'
                 ? 'bg-[#225944] text-[#EECA3A] border-[#225944]'
                 : 'bg-white border-[#E5E1D6] text-[#171A18] hover:text-red-500 hover:border-red-300'
             }`}
@@ -168,10 +193,12 @@ export const Navbar: React.FC = () => {
             <svg className="w-4 h-4 fill-current" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EECA3A] text-[#171A18] font-bold text-[10px] flex items-center justify-center shadow-xs">
-              3
-            </span>
-          </Link>
+            {savedCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EECA3A] text-[#171A18] font-bold text-[10px] flex items-center justify-center shadow-xs">
+                {savedCount}
+              </span>
+            )}
+          </button>
 
           {/* Dynamic User Authentication State */}
           {isAuthenticated && user?.role === 'customer' && currentPath !== '/login' && currentPath !== '/register' ? (

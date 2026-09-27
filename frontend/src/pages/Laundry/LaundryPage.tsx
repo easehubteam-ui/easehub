@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import { laundryApi, LaundryProvider as ApiLaundryProvider } from '../../services/laundryApi';
+import { savedApi } from '../../services/savedApi';
+import { useAuth } from '../../context/AuthContext';
 
 interface LaundryProvider {
   id: string;
@@ -19,6 +21,9 @@ interface LaundryProvider {
 }
 
 export const LaundryPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+
   const [activeFilter, setActiveFilter] = useState<string>('All Services');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -68,12 +73,32 @@ export const LaundryPage: React.FC = () => {
     loadLaundry();
   }, []);
 
-  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+  useEffect(() => {
+    if (isAuthenticated && user && user.role === 'customer') {
+      savedApi.getSavedItems().then((records) => {
+        const lndSavedIds = records.filter((r) => r.item_type === 'laundry').map((r) => r.item_id);
+        setFavorites(lndSavedIds);
+      }).catch(() => setFavorites([]));
+    } else {
+      setFavorites([]);
+    }
+  }, [isAuthenticated, user]);
+
+  const toggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    if (!isAuthenticated || !user) {
+      navigate('/login');
+      return;
+    }
+    const isFav = favorites.includes(id);
+    if (isFav) {
+      setFavorites((prev) => prev.filter((i) => i !== id));
+      await savedApi.removeSavedItem('laundry', id);
+    } else {
+      setFavorites((prev) => [...prev, id]);
+      await savedApi.saveItem('laundry', id);
+    }
   };
 
   const filteredProviders = providersList.filter((provider) => {

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import FloatingContact from '../components/common/FloatingContact';
+import { savedApi } from '../services/savedApi';
 
 export const CustomerLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -10,7 +11,22 @@ export const CustomerLayout: React.FC = () => {
   const navigate = useNavigate();
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [savedCount, setSavedCount] = useState<number>(0);
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
+  useEffect(() => {
+    let isMounted = true;
+    if (user && user.role === 'customer') {
+      savedApi.getSavedItems().then((items) => {
+        if (isMounted) setSavedCount(items.length);
+      }).catch(() => {
+        if (isMounted) setSavedCount(0);
+      });
+    } else {
+      setSavedCount(0);
+    }
+    return () => { isMounted = false; };
+  }, [user, currentPath]);
 
   const handleLogout = async () => {
     setUserDropdownOpen(false);
@@ -134,9 +150,11 @@ export const CustomerLayout: React.FC = () => {
               title="Saved Wishlist"
             >
               <span className="material-symbols-outlined text-[20px] text-rose-500">favorite</span>
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#225944] text-white font-black text-[10px] flex items-center justify-center shadow-xs">
-                5
-              </span>
+              {savedCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#225944] text-white font-black text-[10px] flex items-center justify-center shadow-xs">
+                  {savedCount}
+                </span>
+              )}
             </Link>
 
             {/* Notifications Bell Icon */}

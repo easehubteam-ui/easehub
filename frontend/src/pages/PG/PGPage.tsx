@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import LocationMap from '../../components/common/LocationMap';
 import { pgApi, PGProperty } from '../../services/pgApi';
+import { savedApi } from '../../services/savedApi';
+import { useAuth } from '../../context/AuthContext';
 
 export interface PGLocationData {
   address: string;
@@ -29,6 +31,9 @@ export interface PGListing {
 }
 
 export const PGPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [activeImageIdx, setActiveImageIdx] = useState<Record<string, number>>({});
   const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -78,6 +83,17 @@ export const PGPage: React.FC = () => {
     loadPGs();
   }, []);
 
+  useEffect(() => {
+    if (isAuthenticated && user && user.role === 'customer') {
+      savedApi.getSavedItems().then((records) => {
+        const pgSavedIds = records.filter((r) => r.item_type === 'pg').map((r) => r.item_id);
+        setSavedIds(pgSavedIds);
+      }).catch(() => setSavedIds([]));
+    } else {
+      setSavedIds([]);
+    }
+  }, [isAuthenticated, user]);
+
   const handleNextImg = (id: string, max: number, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveImageIdx((prev) => ({
@@ -94,11 +110,20 @@ export const PGPage: React.FC = () => {
     }));
   };
 
-  const toggleSave = (id: string, e: React.MouseEvent) => {
+  const toggleSave = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSavedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    if (!isAuthenticated || !user) {
+      navigate('/login');
+      return;
+    }
+    const isSaved = savedIds.includes(id);
+    if (isSaved) {
+      setSavedIds((prev) => prev.filter((i) => i !== id));
+      await savedApi.removeSavedItem('pg', id);
+    } else {
+      setSavedIds((prev) => [...prev, id]);
+      await savedApi.saveItem('pg', id);
+    }
   };
 
   return (

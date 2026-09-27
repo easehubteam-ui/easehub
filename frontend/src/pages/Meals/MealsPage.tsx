@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import LocationMap from '../../components/common/LocationMap';
 import { PGLocationData } from '../PG/PGPage';
 import { mealApi, MealProvider as ApiMealProvider } from '../../services/mealApi';
+import { savedApi } from '../../services/savedApi';
+import { useAuth } from '../../context/AuthContext';
 
 interface MealProvider {
   id: string;
@@ -23,6 +25,9 @@ interface MealProvider {
 }
 
 export const MealsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -82,12 +87,32 @@ export const MealsPage: React.FC = () => {
     loadMeals();
   }, []);
 
-  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+  useEffect(() => {
+    if (isAuthenticated && user && user.role === 'customer') {
+      savedApi.getSavedItems().then((records) => {
+        const mealSavedIds = records.filter((r) => r.item_type === 'meals').map((r) => r.item_id);
+        setFavorites(mealSavedIds);
+      }).catch(() => setFavorites([]));
+    } else {
+      setFavorites([]);
+    }
+  }, [isAuthenticated, user]);
+
+  const toggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    if (!isAuthenticated || !user) {
+      navigate('/login');
+      return;
+    }
+    const isFav = favorites.includes(id);
+    if (isFav) {
+      setFavorites((prev) => prev.filter((item) => item !== id));
+      await savedApi.removeSavedItem('meals', id);
+    } else {
+      setFavorites((prev) => [...prev, id]);
+      await savedApi.saveItem('meals', id);
+    }
   };
 
   const filteredProviders = providersList.filter((provider) => {

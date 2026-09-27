@@ -55,7 +55,6 @@ export const AppRoutes: React.FC = () => {
         <Route path="/meals" element={<MealsPage />} />
         <Route path="/laundry" element={<LaundryPage />} />
         <Route path="/services" element={<ServicesPage />} />
-        <Route path="/wishlist" element={<WishlistPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -75,6 +74,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/payment" element={<CustomerPaymentPage />} />
         <Route path="/support" element={<SupportPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/saved" element={<WishlistPage />} />
 
         {/* Shortcuts & Aliases */}
         <Route path="/my-account" element={<Navigate to="/account" replace />} />

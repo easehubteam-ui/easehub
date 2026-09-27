@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { serviceApi, ExtraServiceItem } from '../../services/serviceApi';
+import { savedApi } from '../../services/savedApi';
 
 interface ServiceProvider {
   id: string;
@@ -26,7 +27,7 @@ export const ServicesPage: React.FC = () => {
   const [providersList, setProvidersList] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const loadServices = async () => {
@@ -63,12 +64,32 @@ export const ServicesPage: React.FC = () => {
     loadServices();
   }, []);
 
-  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+  useEffect(() => {
+    if (isAuthenticated && user && user.role === 'customer') {
+      savedApi.getSavedItems().then((records) => {
+        const srvSavedIds = records.filter((r) => r.item_type === 'services').map((r) => r.item_id);
+        setFavorites(srvSavedIds);
+      }).catch(() => setFavorites([]));
+    } else {
+      setFavorites([]);
+    }
+  }, [isAuthenticated, user]);
+
+  const toggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    if (!isAuthenticated || !user) {
+      navigate('/login');
+      return;
+    }
+    const isFav = favorites.includes(id);
+    if (isFav) {
+      setFavorites((prev) => prev.filter((i) => i !== id));
+      await savedApi.removeSavedItem('services', id);
+    } else {
+      setFavorites((prev) => [...prev, id]);
+      await savedApi.saveItem('services', id);
+    }
   };
 
   const handleBooking = (provider: ServiceProvider) => {

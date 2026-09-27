@@ -1,10 +1,18 @@
-import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { savedApi, SavedItemRecord } from '../../services/savedApi';
+import { pgApi, PGProperty } from '../../services/pgApi';
+import { mealApi, MealProvider } from '../../services/mealApi';
+import { laundryApi, LaundryProvider } from '../../services/laundryApi';
+import { serviceApi, ExtraServiceItem } from '../../services/serviceApi';
 
 interface ShortlistItem {
-  id: string;
+  id: string; // postgres saved_items record id
+  originalId: string; // database entity id
   name: string;
   category: 'pg' | 'meals' | 'services';
+  itemType: 'pg' | 'meals' | 'laundry' | 'services';
   tagline: string;
   location: string;
   rating: number;
@@ -19,120 +27,16 @@ interface ShortlistItem {
   dateSaved: string;
   ctaText?: string;
   secondaryCtaText?: string;
+  linkUrl: string;
 }
 
-const initialItems: ShortlistItem[] = [
-  {
-    id: '1',
-    name: 'Shree Krishna PG',
-    category: 'pg',
-    tagline: 'Luxury Single AC Room with En-suite Washroom',
-    location: 'Junwani • 400m to BIT Gate 2',
-    rating: 4.8,
-    reviewsCount: 120,
-    price: 6500,
-    pricePeriod: '/ month',
-    priceBadge: 'Bills Included',
-    image: '',
-    badge1: { text: 'Verified Owner', icon: 'verified', color: 'bg-[#225944] text-white' },
-    badge2: { text: 'Zero Brokerage', color: 'bg-[#EECA3A] text-[#171A18]' },
-    specs: [
-      { text: 'High-Speed Wi-Fi', icon: 'wifi' },
-      { text: '3 Meals Included', icon: 'restaurant' },
-      { text: 'Study Desk', icon: 'desk' },
-      { text: '24x7 Power Backup', icon: 'bolt' }
-    ],
-    dateSaved: '2025-05-10'
-  },
-  {
-    id: '2',
-    name: 'Comfort Stay Boys Hostel',
-    category: 'pg',
-    tagline: 'Double Sharing Room with Individual Steel Wardrobes',
-    location: 'Smriti Nagar • 1.2km to Campus',
-    rating: 4.6,
-    reviewsCount: 95,
-    price: 4800,
-    pricePeriod: '/ month',
-    priceBadge: 'Food Included',
-    image: '',
-    badge1: { text: 'Double Sharing', icon: 'groups', color: 'bg-white text-[#225944]' },
-    specs: [
-      { text: '3-Times Homestyle Food', icon: 'lunch_dining' },
-      { text: 'RO Water Chiller', icon: 'water_drop' },
-      { text: 'CCTV 24/7 Monitored', icon: 'videocam' }
-    ],
-    dateSaved: '2025-05-08'
-  },
-  {
-    id: '3',
-    name: 'Grace Girls Residency',
-    category: 'pg',
-    tagline: 'Biometric Access with Strict Night Warden Protocol',
-    location: 'Nehru Nagar (East)',
-    rating: 4.9,
-    reviewsCount: 140,
-    price: 5500,
-    pricePeriod: '/ month',
-    priceBadge: 'Curfew: 9:30 PM',
-    image: '',
-    badge1: { text: 'Girls Only', color: 'bg-[#EECA3A] text-[#171A18]' },
-    badge2: { text: 'Female Warden', color: 'bg-[#225944] text-white' },
-    specs: [
-      { text: 'Biometric Entry', icon: 'fingerprint' },
-      { text: 'In-house Laundry', icon: 'local_laundry_service' },
-      { text: 'Induction Pantry', icon: 'kitchen' }
-    ],
-    dateSaved: '2025-05-11'
-  },
-  {
-    id: '4',
-    name: 'Royal Annapurna Veg Thali',
-    category: 'meals',
-    tagline: 'Complete Lunch + Dinner Plan (Delivered Hot Twice Daily)',
-    location: 'Delivered to Room Doorstep',
-    rating: 4.7,
-    reviewsCount: 310,
-    price: 2400,
-    pricePeriod: '/ month (60 meals)',
-    priceBadge: '₹40/meal',
-    image: '',
-    badge1: { text: 'Pure Veg', icon: 'eco', color: 'bg-[#225944] text-white' },
-    badge2: { text: 'Hostel Delivery', color: 'bg-[#EECA3A] text-[#171A18]' },
-    specs: [
-      { text: 'Unlimited Rotis', icon: 'bakery_dining' },
-      { text: 'Exam Pause Guarantee', icon: 'pause_circle' },
-      { text: 'Fresh Daily Salad', icon: 'nutrition' }
-    ],
-    dateSaved: '2025-05-09',
-    ctaText: 'Start 3-Day Trial (₹199)'
-  },
-  {
-    id: '5',
-    name: 'FreshThread Semester Saver',
-    category: 'services',
-    tagline: '30 kg All-Inclusive Wash + Steam Iron Package',
-    location: 'Civic Center • Covers Entire Bhilai',
-    rating: 4.8,
-    reviewsCount: 88,
-    price: 1299,
-    pricePeriod: '/ 4-month semester',
-    priceBadge: '₹43/kg value',
-    image: '',
-    badge1: { text: 'Express 24h', icon: 'speed', color: 'bg-[#225944] text-white' },
-    badge2: { text: 'Doorstep Pickup', color: 'bg-white text-[#225944]' },
-    specs: [
-      { text: 'Free Doorstep Pickup', icon: 'local_shipping' },
-      { text: 'Steam Wrinkle-Free', icon: 'iron' },
-      { text: '24h Express Turnaround', icon: 'schedule' }
-    ],
-    dateSaved: '2025-05-07',
-    ctaText: 'Activate Package'
-  }
-];
-
 export const WishlistPage: React.FC = () => {
-  const [items, setItems] = useState<ShortlistItem[]>(initialItems);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  const [items, setItems] = useState<ShortlistItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [activeCategory, setActiveCategory] = useState<'all' | 'pg' | 'meals' | 'services'>('all');
   const [sortOption, setSortOption] = useState<string>('recent');
   const [parentPhone, setParentPhone] = useState<string>('');
@@ -149,26 +53,195 @@ export const WishlistPage: React.FC = () => {
     }, 3200);
   };
 
-  const handleRemoveItem = (id: string, name: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    triggerToast(`${name} removed from shortlist`, 'delete');
+  const loadSavedItems = async () => {
+    if (!isAuthenticated || !user) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const records: SavedItemRecord[] = await savedApi.getSavedItems();
+      if (!records || records.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      // Load all catalog items in parallel
+      const [pgs, meals, laundries, services] = await Promise.all([
+        pgApi.getAll().catch(() => [] as PGProperty[]),
+        mealApi.getAll().catch(() => [] as MealProvider[]),
+        laundryApi.getAll().catch(() => [] as LaundryProvider[]),
+        serviceApi.getAll().catch(() => [] as ExtraServiceItem[])
+      ]);
+
+      const mappedItems: ShortlistItem[] = [];
+
+      for (const rec of records) {
+        if (rec.item_type === 'pg') {
+          const pg = pgs.find((p: PGProperty) => p.id === rec.item_id || p._id === rec.item_id);
+          if (pg) {
+            mappedItems.push({
+              id: rec.id,
+              originalId: pg.id || rec.item_id,
+              name: pg.name,
+              category: 'pg',
+              itemType: 'pg',
+              tagline: `${pg.gender} PG • ${pg.roomMatrix || 'Single/Double Sharing'}`,
+              location: `${pg.location?.address || pg.corridor || 'Bhilai'}`,
+              rating: pg.rating || 5.0,
+              reviewsCount: pg.reviewCount || 0,
+              price: pg.monthlyRent || 0,
+              pricePeriod: '/ month',
+              priceBadge: 'Verified Stay',
+              image: pg.images && pg.images.length > 0 ? pg.images[0] : '',
+              badge1: { text: pg.gender, icon: 'home', color: 'bg-[#225944] text-white' },
+              badge2: { text: 'Verified', color: 'bg-[#EECA3A] text-[#171A18]' },
+              specs: (pg.amenities || []).slice(0, 4).map((a: string) => ({ text: a, icon: 'check_circle' })),
+              dateSaved: rec.created_at ? rec.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              linkUrl: `/pg`
+            });
+          }
+        } else if (rec.item_type === 'meals') {
+          const meal = meals.find((m: MealProvider) => m.id === rec.item_id || m._id === rec.item_id);
+          if (meal) {
+            mappedItems.push({
+              id: rec.id,
+              originalId: meal.id || rec.item_id,
+              name: meal.name,
+              category: 'meals',
+              itemType: 'meals',
+              tagline: `${meal.isVeg ? 'Pure Veg' : 'Veg/Non-Veg'} Daily Tiffin Subscription`,
+              location: meal.corridor || meal.location?.address || 'Doorstep Delivery',
+              rating: meal.rating || 5.0,
+              reviewsCount: meal.reviewCount || 0,
+              price: meal.monthlyPrice || (meal.dailyPrice ? meal.dailyPrice * 30 : 2400),
+              pricePeriod: '/ month',
+              priceBadge: `₹${meal.dailyPrice || 80}/day`,
+              image: meal.image || '',
+              badge1: { text: meal.isVeg ? 'Pure Veg' : 'Veg & Non-Veg', icon: 'restaurant', color: 'bg-[#225944] text-white' },
+              specs: (meal.tags || []).slice(0, 3).map((t: string) => ({ text: t, icon: 'lunch_dining' })),
+              dateSaved: rec.created_at ? rec.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              linkUrl: `/meals`
+            });
+          }
+        } else if (rec.item_type === 'laundry') {
+          const lnd = laundries.find((l: LaundryProvider) => l.id === rec.item_id || l._id === rec.item_id);
+          if (lnd) {
+            mappedItems.push({
+              id: rec.id,
+              originalId: lnd.id || rec.item_id,
+              name: lnd.name,
+              category: 'services',
+              itemType: 'laundry',
+              tagline: `Laundry & Steam Iron Care Service`,
+              location: lnd.corridor || 'Civic Center, Bhilai',
+              rating: lnd.rating || 5.0,
+              reviewsCount: lnd.reviewCount || 0,
+              price: lnd.pricePerKg || lnd.perKgPrice || 50,
+              pricePeriod: '/ kg',
+              priceBadge: 'Doorstep Pickup',
+              image: lnd.image || '',
+              badge1: { text: 'Express Laundry', icon: 'local_laundry_service', color: 'bg-[#225944] text-white' },
+              specs: (lnd.tags || ['Wash & Fold', 'Steam Iron', 'Express 24h']).map((t: string) => ({ text: t, icon: 'local_laundry_service' })),
+              dateSaved: rec.created_at ? rec.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              linkUrl: `/laundry`
+            });
+          }
+        } else if (rec.item_type === 'services') {
+          const srv = services.find((s: ExtraServiceItem) => s.id === rec.item_id || s._id === rec.item_id);
+          if (srv) {
+            mappedItems.push({
+              id: rec.id,
+              originalId: srv.id || rec.item_id,
+              name: srv.name,
+              category: 'services',
+              itemType: 'services',
+              tagline: srv.description || `${srv.category} Service`,
+              location: srv.corridor || 'Bhilai & Durg',
+              rating: srv.rating || 5.0,
+              reviewsCount: srv.reviewCount || 0,
+              price: srv.basePrice || 0,
+              pricePeriod: ` / ${srv.priceUnit || 'service'}`,
+              priceBadge: srv.category,
+              image: srv.images && srv.images.length > 0 ? srv.images[0] : '',
+              badge1: { text: srv.category, icon: 'handyman', color: 'bg-[#225944] text-white' },
+              specs: [{ text: srv.providerName || 'EaseHub Verified', icon: 'verified' }],
+              dateSaved: rec.created_at ? rec.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              linkUrl: `/services`
+            });
+          }
+        }
+      }
+
+      setItems(mappedItems);
+    } catch (err: any) {
+      console.error('Failed to load saved items:', err);
+      setError('Unable to load saved items.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleClearAll = () => {
+  useEffect(() => {
+    if (isAuthenticated && user && user.role === 'customer') {
+      loadSavedItems();
+    }
+  }, [isAuthenticated, user]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAF6] flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#225944] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-bold text-[#225944]">Loading saved items...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Enforce customer login requirement
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect admin/superadmin away from customer saved page
+  if (user.role === 'admin' || user.role === 'superadmin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  const handleRemoveItem = async (savedId: string, name: string) => {
+    const success = await savedApi.removeSavedItemById(savedId);
+    if (success) {
+      setItems((prev) => prev.filter((item) => item.id !== savedId));
+      triggerToast(`${name} removed from shortlist`, 'delete');
+    } else {
+      triggerToast(`Failed to remove ${name}`, 'error');
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (items.length === 0) return;
     if (window.confirm('Are you sure you want to remove all saved items from your wishlist?')) {
+      for (const item of items) {
+        await savedApi.removeSavedItemById(item.id);
+      }
       setItems([]);
       triggerToast('Shortlist cleared', 'delete_forever');
     }
   };
 
   const handleShareWhatsApp = () => {
+    if (items.length === 0) {
+      triggerToast('No items in shortlist to share', 'info');
+      return;
+    }
+    const itemNames = items.map((it, idx) => `${idx + 1}. ${it.name} (${it.category.toUpperCase()})`).join('\n');
     const shareText = encodeURIComponent(
-      "Hey! Here is my shortlisted student stay & meal plan on EaseHub Bhilai:\n1. Shree Krishna PG (Near BIT Gate 2)\n2. Comfort Stay Boys Hostel\n3. Grace Girls Residency\n4. Annapurna Tiffin Subscription\nCheck verified details here: https://easehub.in/shortlist/bhilai-student-2025"
+      `Hey! Here is my shortlisted student stay & service plan on EaseHub Bhilai:\n${itemNames}\nCheck verified details on EaseHub: ${window.location.origin}/wishlist`
     );
     const cleanPhone = parentPhone.replace(/\D/g, '');
     if (cleanPhone.length === 10) {
       window.open(`https://wa.me/91${cleanPhone}?text=${shareText}`, '_blank');
-      triggerToast('Opening WhatsApp to send shortlist to parent...', 'send');
+      triggerToast('Opening WhatsApp to send shortlist...', 'send');
     } else {
       window.open(`https://wa.me/?text=${shareText}`, '_blank');
       triggerToast('Opening WhatsApp...', 'send');
@@ -218,7 +291,7 @@ export const WishlistPage: React.FC = () => {
       
       {/* Main Container */}
       <main className="w-full pt-6 pb-20 bg-[#F8FAF6]">
-        <div className="relative w-full max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
           
           {/* Subtle Ambient Glow Background Graphic */}
           <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-[#EECA3A]/20 blur-3xl pointer-events-none"></div>
@@ -335,13 +408,15 @@ export const WishlistPage: React.FC = () => {
                 </select>
               </div>
 
-              <button
-                onClick={handleClearAll}
-                className="flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold text-[#6B6B63] hover:text-red-600 hover:bg-red-50 transition-all"
-              >
-                <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
-                <span>Clear All</span>
-              </button>
+              {items.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold text-[#6B6B63] hover:text-red-600 hover:bg-red-50 transition-all"
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
+                  <span>Clear All</span>
+                </button>
+              )}
 
               <button
                 onClick={openShareSection}
@@ -354,7 +429,12 @@ export const WishlistPage: React.FC = () => {
           </div>
 
           {/* Active Shortlist Cards Grid */}
-          {sortedItems.length > 0 ? (
+          {loading ? (
+            <div className="my-16 text-center flex flex-col items-center justify-center gap-3">
+              <div className="w-10 h-10 border-4 border-[#225944] border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-bold text-[#225944]">Retrieving saved items...</p>
+            </div>
+          ) : sortedItems.length > 0 ? (
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedItems.map((item) => (
                 <article
@@ -420,7 +500,7 @@ export const WishlistPage: React.FC = () => {
                           {item.name}
                         </h2>
                         <span className="text-[10px] px-2 py-0.5 rounded bg-[#225944]/10 text-[#225944] uppercase font-bold">
-                          {item.category === 'pg' ? 'Hostel Stay' : item.category === 'meals' ? 'Meal Plan' : 'Laundry Service'}
+                          {item.category === 'pg' ? 'Hostel Stay' : item.category === 'meals' ? 'Meal Plan' : 'Laundry / Service'}
                         </span>
                       </div>
 
@@ -454,33 +534,14 @@ export const WishlistPage: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        {item.ctaText ? (
-                          <button
-                            onClick={() => triggerToast(`Initiated for ${item.name}`, 'check_circle')}
-                            className="col-span-2 h-10 px-4 rounded-full bg-[#225944] text-white hover:bg-[#184232] text-xs font-bold transition-all text-center shadow-xs flex items-center justify-center gap-1"
-                          >
-                            <span>{item.ctaText}</span>
-                            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                          </button>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => triggerToast(`Visit scheduled for ${item.name}`, 'calendar_month')}
-                              className="h-10 px-3 rounded-full bg-[#F3F4F0] text-[#225944] hover:bg-[#225944]/10 text-xs font-bold transition-all text-center flex items-center justify-center gap-1 border border-[#E5E1D6]"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">calendar_month</span>
-                              <span>Visit Free</span>
-                            </button>
-                            <Link
-                              to="/pg"
-                              className="h-10 px-3 rounded-full bg-[#225944] text-white hover:bg-[#184232] text-xs font-bold transition-all text-center shadow-xs flex items-center justify-center gap-1"
-                            >
-                              <span>Book Now</span>
-                              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                            </Link>
-                          </>
-                        )}
+                      <div className="grid grid-cols-1 gap-2 pt-1">
+                        <Link
+                          to={item.linkUrl}
+                          className="h-10 px-4 rounded-full bg-[#225944] text-white hover:bg-[#184232] text-xs font-bold transition-all text-center shadow-xs flex items-center justify-center gap-1"
+                        >
+                          <span>View Details</span>
+                          <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -600,82 +661,52 @@ export const WishlistPage: React.FC = () => {
           </section>
 
           {/* Side-by-Side Comparison Feature Teaser */}
-          <div className="mt-8 p-5 rounded-2xl bg-white border border-[#E5E1D6] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#EECA3A]/40 flex items-center justify-center text-[#171A18] shrink-0 font-bold">
-                <span className="material-symbols-outlined text-[22px]">compare_arrows</span>
+          {items.length > 0 && (
+            <div className="mt-8 p-5 rounded-2xl bg-white border border-[#E5E1D6] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-[#EECA3A]/40 flex items-center justify-center text-[#171A18] shrink-0 font-bold">
+                  <span className="material-symbols-outlined text-[22px]">compare_arrows</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#225944]">Compare Amenities Side-by-Side</h4>
+                  <p className="text-xs text-[#6B6B63]">See a tabular view of Wi-Fi speed, distance, pricing, and inclusions for your saved items.</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-[#225944]">Compare Amenities Side-by-Side</h4>
-                <p className="text-xs text-[#6B6B63]">See a tabular view of Wi-Fi speed, distance to BIT Durg, AC vs Non-AC, and tiffin meal times.</p>
-              </div>
+              <button
+                onClick={() => setShowMatrix(!showMatrix)}
+                className="px-5 h-10 rounded-full bg-[#F3F4F0] hover:bg-[#E5E1D6] text-[#225944] text-xs font-bold transition-all flex items-center gap-2 shrink-0 border border-[#E5E1D6]"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {showMatrix ? 'close' : 'table_chart'}
+                </span>
+                <span>{showMatrix ? 'Hide Matrix' : 'View Amenities Matrix'}</span>
+              </button>
             </div>
-            <button
-              onClick={() => setShowMatrix(!showMatrix)}
-              className="px-5 h-10 rounded-full bg-[#F3F4F0] hover:bg-[#E5E1D6] text-[#225944] text-xs font-bold transition-all flex items-center gap-2 shrink-0 border border-[#E5E1D6]"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                {showMatrix ? 'close' : 'table_chart'}
-              </span>
-              <span>{showMatrix ? 'Hide Matrix' : 'View Amenities Matrix'}</span>
-            </button>
-          </div>
+          )}
 
-          {/* Hidden Quick Amenity Matrix Table */}
-          {showMatrix && (
+          {/* Dynamic Quick Amenity Matrix Table */}
+          {showMatrix && items.length > 0 && (
             <div className="mt-4 bg-white rounded-2xl border border-[#E5E1D6] shadow-md overflow-x-auto p-4 transition-all">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="text-[#6B6B63] font-bold uppercase tracking-wider border-b border-[#E5E1D6]">
                     <th className="py-3 px-4">Listing Name</th>
-                    <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4">Category</th>
                     <th className="py-3 px-4">Location</th>
-                    <th className="py-3 px-4">Monthly Cost</th>
+                    <th className="py-3 px-4">Price</th>
                     <th className="py-3 px-4">Key Inclusions</th>
-                    <th className="py-3 px-4">Campus Proximity</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E1D6] text-[#191C1A]">
-                  <tr className="hover:bg-[#F3F4F0] transition-colors">
-                    <td className="py-3 px-4 font-bold text-[#225944]">Shree Krishna PG</td>
-                    <td className="py-3 px-4">Single AC Room</td>
-                    <td className="py-3 px-4">Junwani</td>
-                    <td className="py-3 px-4 font-bold">₹6,500</td>
-                    <td className="py-3 px-4">3 Meals, Study Desk, Power Backup</td>
-                    <td className="py-3 px-4 text-[#225944] font-bold">400m from BIT Gate 2</td>
-                  </tr>
-                  <tr className="hover:bg-[#F3F4F0] transition-colors">
-                    <td className="py-3 px-4 font-bold text-[#225944]">Comfort Stay Boys Hostel</td>
-                    <td className="py-3 px-4">Double Sharing</td>
-                    <td className="py-3 px-4">Smriti Nagar</td>
-                    <td className="py-3 px-4 font-bold">₹4,800</td>
-                    <td className="py-3 px-4">Homestyle Food, RO Chiller, CCTV</td>
-                    <td className="py-3 px-4 text-[#6B6B63]">1.2 km from BIT</td>
-                  </tr>
-                  <tr className="hover:bg-[#F3F4F0] transition-colors">
-                    <td className="py-3 px-4 font-bold text-[#225944]">Grace Girls Residency</td>
-                    <td className="py-3 px-4">Premium Girls Wing</td>
-                    <td className="py-3 px-4">Nehru Nagar</td>
-                    <td className="py-3 px-4 font-bold">₹5,500</td>
-                    <td className="py-3 px-4">Biometric, Warden, In-house Laundry</td>
-                    <td className="py-3 px-4 text-[#6B6B63]">2.1 km (Direct Bus)</td>
-                  </tr>
-                  <tr className="hover:bg-[#F3F4F0] transition-colors">
-                    <td className="py-3 px-4 font-bold text-[#225944]">Royal Annapurna Veg Thali</td>
-                    <td className="py-3 px-4">Meal Subscription</td>
-                    <td className="py-3 px-4">Hostel Delivery</td>
-                    <td className="py-3 px-4 font-bold">₹2,400</td>
-                    <td className="py-3 px-4">60 Meals/mo, Unlimited Rotis</td>
-                    <td className="py-3 px-4 text-[#225944] font-bold">Free Doorstep Delivery</td>
-                  </tr>
-                  <tr className="hover:bg-[#F3F4F0] transition-colors">
-                    <td className="py-3 px-4 font-bold text-[#225944]">FreshThread Semester Saver</td>
-                    <td className="py-3 px-4">Semester Laundry (30kg)</td>
-                    <td className="py-3 px-4">Civic Center</td>
-                    <td className="py-3 px-4 font-bold">₹1,299</td>
-                    <td className="py-3 px-4">Doorstep Pickup, 24h Turnaround, Steam</td>
-                    <td className="py-3 px-4 text-[#225944] font-bold">All Campus Hostels</td>
-                  </tr>
+                  {items.map((it) => (
+                    <tr key={it.id} className="hover:bg-[#F3F4F0] transition-colors">
+                      <td className="py-3 px-4 font-bold text-[#225944]">{it.name}</td>
+                      <td className="py-3 px-4 capitalize">{it.category}</td>
+                      <td className="py-3 px-4">{it.location}</td>
+                      <td className="py-3 px-4 font-bold">₹{it.price.toLocaleString()}{it.pricePeriod}</td>
+                      <td className="py-3 px-4">{it.specs.map(s => s.text).join(', ')}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
