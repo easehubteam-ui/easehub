@@ -96,6 +96,18 @@ export const LaundryManagement: React.FC = () => {
     );
   };
 
+  const handleDeleteLaundry = async (p: LaundryPartner) => {
+    if (window.confirm(`Are you sure you want to delete laundry partner "${p.name}"?`)) {
+      try {
+        await laundryApi.delete(p.id);
+        await fetchPartners();
+      } catch (err: any) {
+        console.error('Failed to delete laundry partner:', err);
+        alert(err.message || 'Failed to delete laundry partner.');
+      }
+    }
+  };
+
   const handleAddLaundrySubmit = async (data: LaundryFormData) => {
     try {
       await laundryApi.create({
@@ -278,13 +290,22 @@ export const LaundryManagement: React.FC = () => {
                   <span className="text-[10px] font-mono font-bold text-[#225944] block">{p.code}</span>
                   <h3 className="font-extrabold text-sm text-[#171A18] mt-0.5">{p.name}</h3>
                 </div>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                    p.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {p.status.toUpperCase()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                      p.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {p.status.toUpperCase()}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteLaundry(p)}
+                    className="p-1 rounded-lg hover:bg-rose-100 text-rose-700 transition"
+                    title="Delete Partner"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] grid grid-cols-2 gap-2 text-xs">

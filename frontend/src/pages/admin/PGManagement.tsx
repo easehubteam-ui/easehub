@@ -96,6 +96,19 @@ export const PGManagement: React.FC = () => {
   const [foodFilter, setFoodFilter] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const handleDeletePG = async (pg: PGProperty) => {
+    if (window.confirm(`Are you sure you want to delete property "${pg.name}"?`)) {
+      try {
+        await pgApi.delete(pg.id);
+        if (selectedPG?.id === pg.id) setSelectedPG(null);
+        await fetchProperties();
+      } catch (err: any) {
+        console.error('Failed to delete PG:', err);
+        alert(err.message || 'Failed to delete property.');
+      }
+    }
+  };
   const [newPG, setNewPG] = useState({
     name: '',
     landlordName: '',
@@ -581,22 +594,16 @@ export const PGManagement: React.FC = () => {
                         <button
                           onClick={() => setSelectedPG(pg)}
                           className="p-1.5 rounded-lg hover:bg-slate-100 text-[#225944]"
-                          title="Audit Dossier"
+                          title="Inspect / Edit Dossier"
                         >
                           <span className="material-symbols-outlined text-[18px]">edit_square</span>
                         </button>
                         <button
-                          onClick={() => {
-                            setProperties(
-                              properties.map((p) =>
-                                p.id === pg.id ? { ...p, status: p.status === 'active' ? 'disabled' : 'active' } : p
-                              )
-                            );
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-[#6B6B63]"
-                          title="Toggle Status"
+                          onClick={() => handleDeletePG(pg)}
+                          className="p-1.5 rounded-lg hover:bg-rose-100 text-rose-700 transition"
+                          title="Delete Property"
                         >
-                          <span className="material-symbols-outlined text-[18px]">pause_circle</span>
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
                       </div>
                     </td>
@@ -807,13 +814,11 @@ export const PGManagement: React.FC = () => {
             {/* Drawer Action Bar */}
             <div className="p-4 bg-[#F8FAF6] border-t border-[#E5E1D6] flex items-center justify-between">
               <button
-                onClick={() => {
-                  setProperties(properties.map((p) => (p.id === selectedPG.id ? { ...p, status: 'revision' } : p)));
-                  setSelectedPG(null);
-                }}
-                className="px-3 py-2 rounded-xl bg-rose-100 text-rose-800 font-bold hover:bg-rose-200 text-xs"
+                onClick={() => handleDeletePG(selectedPG)}
+                className="px-4 py-2.5 rounded-xl bg-rose-100 text-rose-800 font-bold hover:bg-rose-200 text-xs flex items-center gap-1.5 transition"
               >
-                Reject / Revise
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span>Delete Property</span>
               </button>
 
               <button
@@ -822,9 +827,9 @@ export const PGManagement: React.FC = () => {
                   setSelectedPG(null);
                   alert(`Published and approved ${selectedPG.name}!`);
                 }}
-                className="px-5 py-2 rounded-full bg-[#225944] text-white font-bold hover:bg-[#184232] text-xs shadow-md"
+                className="px-5 py-2.5 rounded-full bg-[#225944] text-white font-bold hover:bg-[#184232] text-xs shadow-md transition"
               >
-                Save & Publish
+                Save &amp; Publish
               </button>
             </div>
           </div>

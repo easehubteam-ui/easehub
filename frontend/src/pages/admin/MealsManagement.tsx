@@ -96,6 +96,19 @@ export const MealsManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const handleDeleteMeal = async (p: MealProvider) => {
+    if (window.confirm(`Are you sure you want to delete meal kitchen "${p.name}"?`)) {
+      try {
+        await mealApi.delete(p.id);
+        if (selectedProvider?.id === p.id) setSelectedProvider(null);
+        await fetchProviders();
+      } catch (err: any) {
+        console.error('Failed to delete meal provider:', err);
+        alert(err.message || 'Failed to delete meal provider.');
+      }
+    }
+  };
   const [newMess, setNewMess] = useState({
     name: '',
     fssai: '',
@@ -479,13 +492,25 @@ export const MealsManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      p.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
-                    }`}
-                  >
-                    {p.status === 'active' ? 'ACTIVE' : 'PENDING'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        p.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                      }`}
+                    >
+                      {p.status === 'active' ? 'ACTIVE' : 'PENDING'}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMeal(p);
+                      }}
+                      className="p-1 rounded-lg hover:bg-rose-100 text-rose-700 transition"
+                      title="Delete Kitchen"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-2 flex items-center gap-2 text-xs font-medium text-[#6B6B63]">
@@ -786,16 +811,17 @@ export const MealsManagement: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => alert(`Requested menu revision for ${selectedProvider.name}`)}
-                  className="px-4 py-2 rounded-full bg-rose-100 text-rose-800 font-bold hover:bg-rose-200 transition-colors"
+                  onClick={() => handleDeleteMeal(selectedProvider)}
+                  className="px-4 py-2 rounded-full bg-rose-100 text-rose-800 font-bold hover:bg-rose-200 transition-colors flex items-center gap-1"
                 >
-                  Reject / Request Change
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  <span>Delete Kitchen</span>
                 </button>
                 <button
                   onClick={() => alert(`Approved and published weekly menu for ${selectedProvider.name}!`)}
                   className="px-5 py-2 rounded-full bg-[#225944] text-white font-bold hover:bg-[#184232] shadow-md transition-colors"
                 >
-                  Approve Menu & Publish
+                  Approve Menu &amp; Publish
                 </button>
               </div>
             </div>
