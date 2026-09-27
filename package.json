@@ -1,0 +1,20 @@
+{
+  "name": "easehub-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "EaseHub - Production-Ready Full-Stack Web Platform",
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,yellow\" \"npm run backend\" \"npm run frontend\"",
+    "frontend": "cd frontend && npm run dev",
+    "backend": "cd backend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "lint": "cd frontend && npm run lint && cd ../backend && npm run lint",
+    "seed:admin": "cd backend && npm run seed:admin",
+    "seed:user": "cd backend && npm run seed:user"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
