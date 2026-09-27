@@ -3,16 +3,20 @@ import { insforge } from './insforge';
 export const authApi = {
   register: async (data: any) => {
     const { email, password, name } = data;
-    const { data: signUpData, error } = await insforge.auth.signUp({
+    const { error: signUpError } = await insforge.auth.signUp({
       email,
       password,
       name,
       autoConfirm: true
     });
-    if (error) {
-      throw new Error(error.message);
+    if (signUpError) {
+      throw new Error(signUpError.message);
     }
-    return { success: true, data: { user: signUpData?.user } };
+    const { data: signInData, error: signInError } = await insforge.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      throw new Error(signInError.message);
+    }
+    return { success: true, data: { user: signInData?.user } };
   },
   login: async (data: any) => {
     const email = data.email || data.emailOrPhone;

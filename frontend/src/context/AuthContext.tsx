@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .from('users')
           .insert([{
             auth_user_id: authUser.id,
-            name: authUser.name || authUser.email?.split('@')[0] || 'User',
+            name: authUser.name || authUser.profile?.name || authUser.email?.split('@')[0] || 'User',
             email: authUser.email,
             phone: authUser.phone || null,
             role: 'customer',
@@ -194,45 +194,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (data: any) => {
     try {
-      const { email, password, name, phone } = data;
+      const { email, password, name, phone, city } = data;
 
       if (!email || !password || !name) {
         throw new Error('Name, email, and password are required.');
       }
 
-      const { data: signUpData, error } = await insforge.auth.signUp({
-        email,
+      // 1. Sign up user via InsForge Auth
+      const { error: signUpError } = await insforge.auth.signUp({
+        email: email.trim().toLowerCase(),
         password,
-        name,
+        name: name.trim(),
         autoConfirm: true
       });
 
-      if (error || !signUpData?.user) {
-        throw new Error(error?.message || 'Registration failed. Please try again.');
+      if (signUpError) {
+        const errLower = (signUpError.message || '').toLowerCase();
+        if (errLower.includes('already') || errLower.includes('exists')) {
+          throw new Error('An account with this email address already exists.');
+        }
+        throw new Error(signUpError.message || 'Registration failed. Please try again.');
       }
 
-      const authUser = signUpData.user;
+      // 2. Authenticate immediately to obtain access token & active session for RLS
+      const { data: signInData, error: signInError } = await insforge.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password
+      });
 
-      // Insert customer profile into PostgreSQL users table using array insert
-      await insforge.database
+      if (signInError || !signInData?.user) {
+        throw new Error(signInError?.message || 'Auto-login failed after account creation.');
+      }
+
+      const authUser = signInData.user;
+
+      // 3. Create public.users profile in PostgreSQL
+      const formattedPhone = phone && String(phone).trim() !== '' ? String(phone).trim() : null;
+      const { error: insertError } = await insforge.database
         .from('users')
         .insert([{
           auth_user_id: authUser.id,
-          name,
-          email,
-          phone: phone || null,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          phone: formattedPhone,
+          city: city || null,
           role: 'customer',
           is_active: true
         }]);
 
+      if (insertError) {
+        const msgLower = (insertError.message || '').toLowerCase();
+        if (insertError.code === '23505' || msgLower.includes('duplicate') || msgLower.includes('unique')) {
+          if (msgLower.includes('phone')) {
+            throw new Error('An account with this mobile number already exists.');
+          }
+          throw new Error('An account with this email address already exists.');
+        }
+        console.error('Failed to create user profile in database:', insertError);
+      }
+
+      // 4. Retrieve mapped profile for application context
       const profile = await fetchOrSyncProfile(authUser);
       setUser(profile);
       return profile;
     } catch (err: any) {
-      const msg = err?.message || 'Registration failed. Please try again.';
+      const msg = err?.message || 'Registration failed. Please check your details and try again.';
       throw new Error(msg);
     }
   };
+
 
   const logout = async () => {
     try {
