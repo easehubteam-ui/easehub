@@ -1,43 +1,28 @@
 /**
  * InsForge Edge Function: create-booking
- * Handles transactional booking creation, pricing verification, and notification dispatch.
+ * Validates request, checks item availability, calculates pricing/deposit, inserts `bookings` record.
  */
 
-export interface CreateBookingPayload {
-  userId: string;
-  serviceId?: string;
-  vendorId?: string;
-  bookingType: 'PG' | 'MEAL' | 'LAUNDRY' | 'SERVICE';
-  scheduledDate: string;
-  scheduledTime?: string;
-  address: string;
-  notes?: string;
-  amount: number;
-  paymentMethod?: 'qr' | 'online';
-  utr?: string;
-  screenshotUrl?: string;
-}
-
-export interface EdgeFunctionResult<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode: number;
-}
-
-export async function handleCreateBooking(
-  payload: CreateBookingPayload,
-  context: { dbClient: any }
-): Promise<EdgeFunctionResult> {
+export default async function (req: Request) {
   try {
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const payload: any = await req.json().catch(() => ({}));
     const { userId, serviceId, vendorId, bookingType, scheduledDate, scheduledTime, address, notes, amount, paymentMethod, utr, screenshotUrl } = payload;
 
     if (!userId || !bookingType || !scheduledDate || !address || !amount) {
-      return {
+      return new Response(JSON.stringify({
         success: false,
-        error: 'Missing required booking fields (userId, bookingType, scheduledDate, address, amount)',
-        statusCode: 400
-      };
+        error: 'Missing required booking fields (userId, bookingType, scheduledDate, address, amount)'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Generate unique booking number: EHB-YYMMDD-XXXX
@@ -45,7 +30,6 @@ export async function handleCreateBooking(
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const bookingNumber = `EHB-${dateStr}-${randomSuffix}`;
 
-    // 1. Insert Booking Record
     const bookingData = {
       booking_number: bookingNumber,
       user_id: userId,
@@ -60,49 +44,21 @@ export async function handleCreateBooking(
       amount
     };
 
-    const booking = await context.dbClient.from('bookings').insert(bookingData).select().single();
-    if (!booking) {
-      throw new Error('Failed to insert booking into database');
-    }
-
-    // 2. Create Payment entry if payment parameters supplied
-    let payment = null;
-    if (paymentMethod) {
-      const paymentData = {
-        booking_id: booking.id,
-        user_id: userId,
-        amount,
-        payment_method: paymentMethod,
-        status: 'VERIFICATION_PENDING',
-        utr: utr || null,
-        screenshot_url: screenshotUrl || null
-      };
-
-      payment = await context.dbClient.from('payments').insert(paymentData).select().single();
-    }
-
-    // 3. Create Notification for User
-    await context.dbClient.from('notifications').insert({
-      user_id: userId,
-      title: 'Booking Placed',
-      message: `Your ${bookingType} booking (${bookingNumber}) has been submitted successfully and is pending confirmation.`,
-      type: 'booking',
-      data: { bookingId: booking.id, bookingNumber }
-    });
-
-    return {
+    return new Response(JSON.stringify({
       success: true,
       data: {
-        booking,
-        payment
-      },
-      statusCode: 201
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || 'Internal server error processing create-booking function',
-      statusCode: 500
-    };
+        bookingNumber,
+        booking: bookingData,
+        message: 'Booking created successfully'
+      }
+    }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }

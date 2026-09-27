@@ -1,6 +1,6 @@
 /**
- * InsForge Edge Function: create-review
- * Customer leaves review for a COMPLETED booking.
+ * InsForge Edge Function: submit-payment
+ * Customer submits payment proof (UTR / screenshot) for verification.
  */
 
 export default async function (req: Request) {
@@ -13,12 +13,12 @@ export default async function (req: Request) {
     }
 
     const payload: any = await req.json().catch(() => ({}));
-    const { userId, bookingId, rating, comment } = payload;
+    const { bookingId, userId, amount, paymentMethod, utr, screenshotUrl } = payload;
 
-    if (!userId || !bookingId || !rating || rating < 1 || rating > 5) {
+    if (!bookingId || !userId || !amount || !paymentMethod) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Invalid input (userId, bookingId, rating between 1 and 5 required)'
+        error: 'Missing required parameters (bookingId, userId, amount, paymentMethod)'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -28,15 +28,17 @@ export default async function (req: Request) {
     return new Response(JSON.stringify({
       success: true,
       data: {
-        userId,
         bookingId,
-        rating,
-        comment: comment || null,
-        isPublished: true,
-        message: 'Review submitted successfully'
+        userId,
+        amount,
+        paymentMethod,
+        utr: utr || null,
+        screenshotUrl: screenshotUrl || null,
+        status: 'VERIFICATION_PENDING',
+        message: 'Payment verification details submitted successfully'
       }
     }), {
-      status: 201,
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (err: any) {

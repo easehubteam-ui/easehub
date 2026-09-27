@@ -330,6 +330,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Users RLS Policies
 CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (auth_user_id = auth.uid() OR is_admin());
 CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth_user_id = auth.uid() OR is_admin());
+CREATE POLICY "Users can insert own profile" ON users FOR INSERT WITH CHECK (auth_user_id = auth.uid() OR is_admin());
 CREATE POLICY "Admins full access on users" ON users FOR ALL USING (is_admin());
 
 -- Catalog Public Read RLS Policies

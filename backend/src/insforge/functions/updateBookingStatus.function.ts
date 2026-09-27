@@ -1,6 +1,6 @@
 /**
- * InsForge Edge Function: create-review
- * Customer leaves review for a COMPLETED booking.
+ * InsForge Edge Function: update-booking-status
+ * Admin or system updates booking status (CONFIRMED, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED, REJECTED).
  */
 
 export default async function (req: Request) {
@@ -13,12 +13,14 @@ export default async function (req: Request) {
     }
 
     const payload: any = await req.json().catch(() => ({}));
-    const { userId, bookingId, rating, comment } = payload;
+    const { bookingId, status, updatedBy } = payload;
 
-    if (!userId || !bookingId || !rating || rating < 1 || rating > 5) {
+    const allowedStatuses = ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED'];
+
+    if (!bookingId || !status || !allowedStatuses.includes(status)) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Invalid input (userId, bookingId, rating between 1 and 5 required)'
+        error: `Invalid parameters. Status must be one of: ${allowedStatuses.join(', ')}`
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -28,15 +30,13 @@ export default async function (req: Request) {
     return new Response(JSON.stringify({
       success: true,
       data: {
-        userId,
         bookingId,
-        rating,
-        comment: comment || null,
-        isPublished: true,
-        message: 'Review submitted successfully'
+        status,
+        updatedAt: new Date().toISOString(),
+        message: `Booking status updated to ${status}`
       }
     }), {
-      status: 201,
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (err: any) {

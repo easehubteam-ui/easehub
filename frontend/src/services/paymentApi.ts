@@ -1,15 +1,17 @@
-import { api } from './api';
+import { insforge } from './insforge';
+import { storageApi } from './storageApi';
 
 export interface PaymentRecord {
-  _id: string;
-  paymentNumber: string;
-  booking: any;
-  user: any;
+  id?: string;
+  _id?: string;
+  paymentNumber?: string;
+  booking?: any;
+  user?: any;
   userName?: string;
   serviceName?: string;
   amount: number;
   method: 'qr' | 'online';
-  status: 'pending' | 'verification_pending' | 'verified' | 'rejected' | 'refunded';
+  status: 'pending' | 'verification_pending' | 'verified' | 'rejected' | 'refunded' | 'VERIFICATION_PENDING' | 'VERIFIED' | 'REJECTED';
   utr?: string;
   screenshotUrl?: string;
   rejectionReason?: string;
@@ -19,23 +21,57 @@ export interface PaymentRecord {
 
 export const paymentApi = {
   getPayments: async () => {
-    const res = await api.get('/payments');
-    return res.data?.data?.payments || [];
+    try {
+      const { data } = await insforge.database.from('payments').select('*');
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      return [];
+    }
   },
   getStats: async () => {
-    const res = await api.get('/payments/stats');
-    return res.data?.data || {};
+    const res = await insforge.functions.invoke('admin-stats');
+    return res.data || {};
   },
   submitProof: async (data: { bookingId?: string; amount: number; utr: string; screenshotUrl?: string; serviceName?: string }) => {
-    const res = await api.post('/payments/submit', data);
-    return res.data?.data?.payment;
+    const { data: userRes } = await insforge.auth.getCurrentUser();
+    if (!userRes?.user) throw new Error('Authentication required');
+
+    const { data: profiles } = await insforge.database
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', userRes.user.id);
+
+    const profile = Array.isArray(profiles) && profiles.length > 0 ? profiles[0] : null;
+    if (!profile) throw new Error('User profile not found');
+
+    const payload = {
+      bookingId: data.bookingId || '',
+      userId: profile.id,
+      amount: data.amount,
+      paymentMethod: 'qr',
+      utr: data.utr,
+      screenshotUrl: data.screenshotUrl || ''
+    };
+
+    const res = await insforge.functions.invoke('submit-payment', { body: payload });
+    return res.data;
   },
   verify: async (id: string) => {
-    const res = await api.put(`/payments/${id}/verify`);
-    return res.data?.data?.payment;
+    const { data: userRes } = await insforge.auth.getCurrentUser();
+    const adminUserId = userRes?.user?.id || '';
+
+    const res = await insforge.functions.invoke('admin-payment-action', {
+      body: { paymentId: id, adminUserId, action: 'VERIFIED' }
+    });
+    return res.data;
   },
   reject: async (id: string, reason: string) => {
-    const res = await api.put(`/payments/${id}/reject`, { reason });
-    return res.data?.data?.payment;
+    const { data: userRes } = await insforge.auth.getCurrentUser();
+    const adminUserId = userRes?.user?.id || '';
+
+    const res = await insforge.functions.invoke('admin-payment-action', {
+      body: { paymentId: id, adminUserId, action: 'REJECTED', rejectionReason: reason }
+    });
+    return res.data;
   },
 };

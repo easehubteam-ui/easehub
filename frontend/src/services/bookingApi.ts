@@ -1,7 +1,8 @@
-import { api } from './api';
+import { insforge } from './insforge';
 
 export interface BookingRecord {
-  _id: string;
+  id?: string;
+  _id?: string;
   bookingNumber: string;
   user: any;
   userName?: string;
@@ -10,7 +11,7 @@ export interface BookingRecord {
   serviceName?: string;
   serviceType?: string;
   roomType?: string;
-  status: 'pending' | 'confirmed' | 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
+  status: 'pending' | 'confirmed' | 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'rejected' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
   scheduledDate: string;
   scheduledTime?: string;
   address: string;
@@ -23,23 +24,72 @@ export interface BookingRecord {
 
 export const bookingApi = {
   getBookings: async () => {
-    const res = await api.get('/bookings');
-    return res.data?.data?.bookings || [];
+    try {
+      const { data } = await insforge.database.from('bookings').select('*');
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      return [];
+    }
   },
   getMyBookings: async () => {
-    const res = await api.get('/bookings/my');
-    return res.data?.data?.bookings || [];
+    try {
+      const { data: userRes } = await insforge.auth.getCurrentUser();
+      if (!userRes?.user) return [];
+
+      const { data: profiles } = await insforge.database
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', userRes.user.id);
+
+      const profile = Array.isArray(profiles) && profiles.length > 0 ? profiles[0] : null;
+      if (!profile) return [];
+
+      const { data } = await insforge.database
+        .from('bookings')
+        .select('*')
+        .eq('user_id', profile.id);
+
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      return [];
+    }
   },
   createBooking: async (data: Partial<BookingRecord>) => {
-    const res = await api.post('/bookings', data);
-    return res.data?.data?.booking;
+    const { data: userRes } = await insforge.auth.getCurrentUser();
+    if (!userRes?.user) throw new Error('Authentication required');
+
+    const { data: profiles } = await insforge.database
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', userRes.user.id);
+
+    const profile = Array.isArray(profiles) && profiles.length > 0 ? profiles[0] : null;
+    if (!profile) throw new Error('User profile not found');
+
+    const payload = {
+      userId: profile.id,
+      serviceId: (data as any).serviceId || null,
+      bookingType: data.serviceType || 'SERVICE',
+      scheduledDate: data.scheduledDate || new Date().toISOString(),
+      scheduledTime: data.scheduledTime || '',
+      address: data.address || '',
+      notes: data.description || '',
+      amount: data.amount || 0
+    };
+
+    const res = await insforge.functions.invoke('create-booking', { body: payload });
+    return res.data;
   },
   updateStatus: async (id: string, status: string, vendor?: string, roomNumber?: string) => {
-    const res = await api.put(`/bookings/${id}/status`, { status, vendor, roomNumber });
-    return res.data?.data?.booking;
+    const res = await insforge.functions.invoke('update-booking-status', {
+      body: { bookingId: id, status }
+    });
+    return res.data;
   },
   cancelBooking: async (id: string) => {
-    const res = await api.put(`/bookings/${id}/cancel`);
-    return res.data?.data?.booking;
+    const res = await insforge.functions.invoke('update-booking-status', {
+      body: { bookingId: id, status: 'CANCELLED' }
+    });
+    return res.data;
   },
 };

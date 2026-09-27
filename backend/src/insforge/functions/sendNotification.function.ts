@@ -3,52 +3,47 @@
  * Dispatches automated notifications to users.
  */
 
-export interface SendNotificationPayload {
-  userId: string;
-  title: string;
-  message: string;
-  type?: string;
-  data?: Record<string, any>;
-}
-
-export async function handleSendNotification(
-  payload: SendNotificationPayload,
-  context: { dbClient: any }
-): Promise<{ success: boolean; data?: any; error?: string; statusCode: number }> {
+export default async function (req: Request) {
   try {
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const payload: any = await req.json().catch(() => ({}));
     const { userId, title, message, type = 'general', data = {} } = payload;
 
     if (!userId || !title || !message) {
-      return {
+      return new Response(JSON.stringify({
         success: false,
-        error: 'Missing parameters (userId, title, message are required)',
-        statusCode: 400
-      };
+        error: 'Missing parameters (userId, title, message are required)'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    const notification = await context.dbClient
-      .from('notifications')
-      .insert({
-        user_id: userId,
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        userId,
         title,
         message,
         type,
-        is_read: false,
-        data
-      })
-      .select()
-      .single();
-
-    return {
-      success: true,
-      data: notification,
-      statusCode: 201
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || 'Error processing send-notification function',
-      statusCode: 500
-    };
+        isRead: false,
+        data,
+        createdAt: new Date().toISOString()
+      }
+    }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }

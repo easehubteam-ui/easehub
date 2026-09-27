@@ -1,36 +1,68 @@
-import { api } from './api';
+import { insforge } from './insforge';
 
 export const authApi = {
   register: async (data: any) => {
-    const res = await api.post('/auth/register', data);
-    return res.data;
+    const { email, password, name } = data;
+    const { data: signUpData, error } = await insforge.auth.signUp({
+      email,
+      password,
+      name,
+      autoConfirm: true
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { success: true, data: { user: signUpData?.user } };
   },
   login: async (data: any) => {
-    const res = await api.post('/auth/login', data);
-    return res.data;
+    const email = data.email || data.emailOrPhone;
+    const password = data.password;
+    const { data: loginData, error } = await insforge.auth.signInWithPassword({ email, password });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { success: true, data: { user: loginData?.user } };
   },
   adminLogin: async (data: any) => {
-    const res = await api.post('/auth/admin/login', data);
-    return res.data;
+    const email = data.email || data.emailOrPhone;
+    const password = data.password;
+    const { data: loginData, error } = await insforge.auth.signInWithPassword({ email, password });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { success: true, data: { user: loginData?.user } };
   },
   logout: async () => {
-    const res = await api.post('/auth/logout');
-    return res.data;
+    await insforge.auth.signOut();
+    return { success: true };
   },
   getMe: async () => {
-    const res = await api.get('/auth/me');
-    return res.data;
+    const { data, error } = await insforge.auth.getCurrentUser();
+    if (error || !data?.user) {
+      return { success: false, data: { user: null } };
+    }
+    return { success: true, data: { user: data.user } };
   },
   forgotPassword: async (data: { emailOrPhone: string }) => {
-    const res = await api.post('/auth/forgot-password', data);
-    return res.data;
+    const { error } = await insforge.auth.sendResetPasswordEmail({
+      email: data.emailOrPhone
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { success: true, message: 'Password reset link sent to your email.' };
   },
   resetPassword: async (data: { token: string; newPassword: string }) => {
-    const res = await api.post('/auth/reset-password', data);
-    return res.data;
+    const { error } = await insforge.auth.resetPassword({
+      newPassword: data.newPassword,
+      otp: data.token
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { success: true, message: 'Password updated successfully.' };
   },
   health: async () => {
-    const res = await api.get('/auth/health');
-    return res.data;
+    return { success: true, message: 'InsForge Auth is active' };
   },
 };

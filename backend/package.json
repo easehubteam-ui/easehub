@@ -13,6 +13,7 @@
     "seed:user": "tsx src/scripts/seedUser.ts"
   },
   "dependencies": {
+    "@insforge/sdk": "^1.5.2",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

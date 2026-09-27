@@ -1,6 +1,6 @@
 /**
- * InsForge Edge Function: create-review
- * Customer leaves review for a COMPLETED booking.
+ * InsForge Edge Function: create-payment
+ * Initializes payment record for a booking.
  */
 
 export default async function (req: Request) {
@@ -13,27 +13,31 @@ export default async function (req: Request) {
     }
 
     const payload: any = await req.json().catch(() => ({}));
-    const { userId, bookingId, rating, comment } = payload;
+    const { bookingId, userId, amount, paymentMethod } = payload;
 
-    if (!userId || !bookingId || !rating || rating < 1 || rating > 5) {
+    if (!bookingId || !userId || !amount || !paymentMethod) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Invalid input (userId, bookingId, rating between 1 and 5 required)'
+        error: 'Missing required payment details (bookingId, userId, amount, paymentMethod)'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    const paymentData = {
+      booking_id: bookingId,
+      user_id: userId,
+      amount,
+      payment_method: paymentMethod,
+      status: 'VERIFICATION_PENDING'
+    };
+
     return new Response(JSON.stringify({
       success: true,
       data: {
-        userId,
-        bookingId,
-        rating,
-        comment: comment || null,
-        isPublished: true,
-        message: 'Review submitted successfully'
+        payment: paymentData,
+        message: 'Payment record created. Please upload screenshot/UTR.'
       }
     }), {
       status: 201,
