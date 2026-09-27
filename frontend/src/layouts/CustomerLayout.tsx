@@ -57,14 +57,7 @@ export const CustomerLayout: React.FC = () => {
             </div>
           </Link>
 
-          {/* Location Selector (Center-Left) */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F7F5EF] border border-[#E5E1D6] text-xs font-bold text-[#171A18]">
-            <span className="material-symbols-outlined text-[16px] text-[#225944]">location_on</span>
-            <select className="bg-transparent border-none text-xs font-bold focus:outline-none text-[#171A18] cursor-pointer pr-1">
-              <option value="Bhilai">Bhilai &amp; Durg Hub</option>
-              <option value="Raipur">Raipur Hub</option>
-            </select>
-          </div>
+
 
           {/* Desktop App Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-xs sm:text-sm font-bold">

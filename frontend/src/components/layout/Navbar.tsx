@@ -157,18 +157,7 @@ export const Navbar: React.FC = () => {
 
         {/* Right Header Controls */}
         <div className="flex items-center gap-3">
-          {/* Location Selector */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E5E1D6] text-xs font-semibold text-[#171A18] shadow-xs">
-            <svg className="w-4 h-4 text-[#225944] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <select className="bg-transparent border-none text-xs font-semibold focus:outline-none text-[#171A18] cursor-pointer pr-1">
-              <option value="Bhilai">Bhilai, CG</option>
-              <option value="Raipur">Raipur, CG</option>
-              <option value="Durg">Durg, CG</option>
-            </select>
-          </div>
+
 
           {/* Wishlist Heart Button */}
           <button
