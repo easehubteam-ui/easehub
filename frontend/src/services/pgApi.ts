@@ -47,9 +47,9 @@ const mapPGFromDB = (record: any): PGProperty => {
   const normalizedImages = rawImages.map((img: string) => getPublicImageUrl(BUCKETS.PROPERTY_IMAGES, img)).filter((img: string | null): img is string => img !== null);
 
   return {
-    id: record.id,
-    _id: record.id,
-    code: record.code || `PG-${record.id.slice(0, 6)}`,
+    id: record.id || '',
+    _id: record.id || '',
+    code: record.code || (record.id ? `PG-${String(record.id).slice(0, 6)}` : 'PG-000000'),
     name: record.name,
     gender: record.gender || 'BOYS',
     images: normalizedImages,

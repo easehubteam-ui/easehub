@@ -43,9 +43,9 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
   const imageUrl = getPublicImageUrl(BUCKETS.LAUNDRY_IMAGES, record.images && record.images.length > 0 ? record.images : record.image) || '';
 
   return {
-    id: record.id,
-    _id: record.id,
-    code: record.code || `LP-${record.id.slice(0, 6)}`,
+    id: record.id || '',
+    _id: record.id || '',
+    code: record.code || (record.id ? `LP-${String(record.id).slice(0, 6)}` : 'LP-000000'),
     name: record.name || 'Laundry Service Provider',
     ownerName: 'EaseHub Verified Partner',
     phone: '9876543210',

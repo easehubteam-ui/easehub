@@ -40,9 +40,9 @@ const mapMealFromDB = (record: any): MealProvider => {
   const imageUrl = getPublicImageUrl(BUCKETS.MEAL_IMAGES, record.images && record.images.length > 0 ? record.images : record.image) || '';
 
   return {
-    id: record.id,
-    _id: record.id,
-    code: record.code || `MP-${record.id.slice(0, 6)}`,
+    id: record.id || '',
+    _id: record.id || '',
+    code: record.code || (record.id ? `MP-${String(record.id).slice(0, 6)}` : 'MP-000000'),
     name: record.name || 'Mess & Tiffin Partner',
     fssai: 'FSSAI-12345678',
     corridor: record.city || 'Central Hub',
