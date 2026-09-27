@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatCard } from '../../components/admin/StatCard';
+import { adminApi } from '../../services/adminApi';
 
 export const Reports: React.FC = () => {
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    adminApi.getStats()
+      .then((data) => {
+        if (data) setStats(data);
+      })
+      .catch((err) => console.error('Failed to load report stats:', err));
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -20,31 +31,31 @@ export const Reports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Quarterly Growth" value="+28.4%" icon="trending_up" color="bg-[#225944]" />
-        <StatCard title="Active Mess Subscriptions" value="257 Active" icon="restaurant" color="bg-amber-600" />
-        <StatCard title="Laundry Delivery Satisfaction" value="4.9 / 5.0" icon="star" color="bg-emerald-600" />
+        <StatCard title="Registered Users" value={`${stats?.totalUsers || 0} Accounts`} icon="group" color="bg-[#225944]" />
+        <StatCard title="Verified PGs & Hostels" value={`${stats?.totalPGs || 0} Properties`} icon="night_shelter" color="bg-amber-600" />
+        <StatCard title="Total Platform Revenue" value={`₹${(stats?.totalRevenue || 0).toLocaleString('en-IN')}`} icon="currency_rupee" color="bg-emerald-600" />
       </div>
 
       <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-sm">
-        <h3 className="text-base font-bold text-[#171A18] mb-2">Campus Occupancy Summary</h3>
+        <h3 className="text-base font-bold text-[#171A18] mb-2">Campus Infrastructure Summary</h3>
         <p className="text-xs text-[#6B6B63] mb-4">
-          Detailed metrics for BIT Durg, Rungta Group Bhilai, CSIT, and IIT Bhilai partner hostels.
+          Real-time catalog metrics across Bhilai and Durg campus corridors.
         </p>
-        <div className="space-y-3">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-[#E5E1D6] flex justify-between items-center text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-4 rounded-2xl bg-[#F8FAF6] border border-[#E5E1D6] flex justify-between items-center text-xs">
             <div>
-              <span className="font-bold text-[#171A18] block">BIT Durg Student Zone</span>
-              <span className="text-[#6B6B63] text-[10px]">1,850 Active Resident Accounts</span>
+              <span className="font-bold text-[#171A18] block">Meal & Tiffin Services</span>
+              <span className="text-[#6B6B63] text-[10px]">Verified Mess Providers</span>
             </div>
-            <span className="font-extrabold text-[#225944]">94% Occupancy</span>
+            <span className="font-extrabold text-[#225944]">{stats?.totalMealProviders || 0} Active</span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-50 border border-[#E5E1D6] flex justify-between items-center text-xs">
+          <div className="p-4 rounded-2xl bg-[#F8FAF6] border border-[#E5E1D6] flex justify-between items-center text-xs">
             <div>
-              <span className="font-bold text-[#171A18] block">Rungta Group Campus Zone</span>
-              <span className="text-[#6B6B63] text-[10px]">1,420 Active Resident Accounts</span>
+              <span className="font-bold text-[#171A18] block">Laundry & Garment Care</span>
+              <span className="text-[#6B6B63] text-[10px]">Doorstep Laundry Hubs</span>
             </div>
-            <span className="font-extrabold text-[#225944]">89% Occupancy</span>
+            <span className="font-extrabold text-[#225944]">{stats?.totalLaundryProviders || 0} Active</span>
           </div>
         </div>
       </div>

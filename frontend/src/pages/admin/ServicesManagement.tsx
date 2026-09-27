@@ -227,16 +227,15 @@ export const ServicesManagement: React.FC = () => {
         {/* Metric Card 1 */}
         <div className="p-5 rounded-2xl bg-[#f8faf6] border border-[#c0c9c2]/50 shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Active Categories</span>
+            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Active Services</span>
             <div className="w-9 h-9 rounded-xl bg-[#225944]/10 text-[#02412e] flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">category</span>
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-[#191c1a]">8 Core</div>
+            <div className="text-2xl font-black text-[#191c1a]">{categories.length} Services</div>
             <div className="text-xs text-[#225944] font-medium mt-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">trending_up</span>
-              <span>+2 seasonal categories added this month</span>
+              <span>{categories.length} Doorstep Categories Available</span>
             </div>
           </div>
         </div>
@@ -244,15 +243,15 @@ export const ServicesManagement: React.FC = () => {
         {/* Metric Card 2 */}
         <div className="p-5 rounded-2xl bg-[#f8faf6] border border-[#c0c9c2]/50 shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Verified Tech Pool</span>
+            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Verified Partners</span>
             <div className="w-9 h-9 rounded-xl bg-[#fcd747]/20 text-[#715d00] flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">engineering</span>
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-[#191c1a]">136 Techs</div>
+            <div className="text-2xl font-black text-[#191c1a]">{categories.length} Listings</div>
             <div className="text-xs text-[#707973] font-medium mt-1">
-              <strong className="text-[#02412e]">128 Active Dispatched</strong> • 8 On Standby
+              <strong className="text-[#02412e]">{categories.length} Active Listings</strong>
             </div>
           </div>
         </div>
@@ -260,16 +259,15 @@ export const ServicesManagement: React.FC = () => {
         {/* Metric Card 3 */}
         <div className="p-5 rounded-2xl bg-[#f8faf6] border border-[#c0c9c2]/50 shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Today's Dispatched</span>
+            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Service Coverage</span>
             <div className="w-9 h-9 rounded-xl bg-[#225944]/10 text-[#02412e] flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">speed</span>
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-[#191c1a]">74 Jobs</div>
+            <div className="text-2xl font-black text-[#191c1a]">{categories.length} Categories</div>
             <div className="text-xs text-[#225944] font-medium mt-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">verified</span>
-              <span>98.2% On-Time SLA (45m avg arrival)</span>
+              <span>Bhilai &amp; Durg Campus Coverage</span>
             </div>
           </div>
         </div>

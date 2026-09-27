@@ -273,20 +273,17 @@ export const PGManagement: React.FC = () => {
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-[#171A18]">{properties.length + 181}</span>
-            <span className="text-xs text-[#225944] font-bold flex items-center gap-0.5">
-              <span className="material-symbols-outlined text-[14px]">trending_up</span>+8 this month
+            <span className="text-3xl font-extrabold text-[#171A18]">{properties.length}</span>
+            <span className="text-xs text-[#225944] font-bold">
+              Database Units
             </span>
           </div>
           <div className="mt-4 pt-3 flex items-center justify-between text-[11px] font-bold bg-[#F8FAF6] rounded-xl px-3 py-1.5 border border-[#E5E1D6]">
             <span className="flex items-center gap-1 text-[#225944]">
-              <span className="w-2 h-2 rounded-full bg-[#225944]"></span>142 Active
+              <span className="w-2 h-2 rounded-full bg-[#225944]"></span>{properties.filter((p) => p.status === 'active').length} Active
             </span>
             <span className="flex items-center gap-1 text-amber-700">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>26 Audit
-            </span>
-            <span className="flex items-center gap-1 text-[#6B6B63]">
-              <span className="w-2 h-2 rounded-full bg-slate-400"></span>18 Off
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>{properties.filter((p) => p.status === 'pending').length} Audit
             </span>
           </div>
         </div>
@@ -294,43 +291,35 @@ export const PGManagement: React.FC = () => {
         {/* KPI 2 */}
         <div className="bg-white p-5 rounded-2xl border border-[#E5E1D6] shadow-xs flex flex-col justify-between relative overflow-hidden group">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-[#6B6B63]">Bed Inventory & Occupancy</span>
+            <span className="text-xs font-bold text-[#6B6B63]">Active PG Properties</span>
             <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-800 flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">hotel</span>
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-[#171A18]">3,420</span>
-            <span className="text-xs font-bold text-[#6B6B63]">Beds Total</span>
+            <span className="text-3xl font-extrabold text-[#171A18]">{properties.length}</span>
+            <span className="text-xs font-bold text-[#6B6B63]">Properties Total</span>
           </div>
-          <div className="mt-4 space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-[#225944]">3,221 Occupied (94.2%)</span>
-              <span className="text-[#6B6B63]">199 Beds Vacant</span>
-            </div>
-            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
-              <div className="bg-[#225944] h-full rounded-full transition-all duration-700" style={{ width: '94.2%' }}></div>
-            </div>
+          <div className="mt-4 text-xs font-semibold text-[#6B6B63] pt-3 border-t border-[#E5E1D6]">
+            <span>{properties.filter((p) => p.gender === 'BOYS').length} Boys • {properties.filter((p) => p.gender === 'GIRLS').length} Girls</span>
           </div>
         </div>
 
         {/* KPI 3 */}
         <div className="bg-white p-5 rounded-2xl border border-[#E5E1D6] shadow-xs flex flex-col justify-between relative overflow-hidden group">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-[#6B6B63]">Avg. Room Tariff & Deposit</span>
+            <span className="text-xs font-bold text-[#6B6B63]">Avg. Room Tariff</span>
             <div className="w-9 h-9 rounded-xl bg-slate-100 text-[#171A18] flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">currency_rupee</span>
             </div>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-[#171A18]">
-              ₹6,250<span className="text-xs font-normal text-[#6B6B63]">/mo</span>
+              ₹{properties.length > 0 ? Math.round(properties.reduce((a, b) => a + (b.monthlyRent || 0), 0) / properties.length) : 0}<span className="text-xs font-normal text-[#6B6B63]">/mo</span>
             </span>
-            <span className="text-xs font-semibold text-[#6B6B63]">Cluster Avg</span>
           </div>
           <div className="mt-4 pt-3 flex items-center justify-between text-[11px] font-semibold bg-[#F8FAF6] rounded-xl px-3 py-1.5 border border-[#E5E1D6]">
-            <span>Avg Escrow Security: <b className="text-[#171A18] font-bold">₹8,000</b></span>
-            <span className="px-1.5 py-0.5 rounded bg-[#225944]/10 text-[#225944] font-bold">0% Comm</span>
+            <span>Cluster Average Tariff</span>
           </div>
         </div>
 
@@ -343,12 +332,14 @@ export const PGManagement: React.FC = () => {
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-rose-600">26</span>
+            <span className="text-3xl font-extrabold text-rose-600">
+              {properties.filter((p) => p.status === 'pending').length}
+            </span>
             <span className="text-xs font-semibold text-[#6B6B63]">Pending Approval</span>
           </div>
           <div className="mt-4 pt-3 flex items-center justify-between text-xs font-bold bg-rose-50 rounded-xl px-3 py-1.5 text-rose-800 border border-rose-200">
             <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">priority_high</span>9 Urgent (&lt; 24h SLA)
+              <span className="material-symbols-outlined text-[16px]">priority_high</span>{properties.filter((p) => p.status === 'pending').length} Pending Audit
             </span>
             <button onClick={() => setStatusFilter('pending')} className="underline font-extrabold hover:text-rose-900">
               Audit Now

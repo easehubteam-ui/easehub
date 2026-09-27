@@ -39,20 +39,38 @@ export default async function (req: Request) {
       countTable('bookings')
     ]);
 
+    // Query payments for verified revenue & pending count
+    let totalRevenue = 0;
+    let pendingPaymentsCount = 0;
+    let verifiedPaymentsCount = 0;
+
+    try {
+      const payRes = await fetch(`${baseUrl}/rest/v1/payments?select=amount,status`, { headers });
+      const payments = await payRes.json();
+      if (Array.isArray(payments)) {
+        payments.forEach((p: any) => {
+          if (p.status === 'verified') {
+            verifiedPaymentsCount++;
+            totalRevenue += Number(p.amount) || 0;
+          } else if (p.status === 'pending') {
+            pendingPaymentsCount++;
+          }
+        });
+      }
+    } catch (e) {}
+
     return new Response(JSON.stringify({
       success: true,
       data: {
-        totalUsers: totalUsers || 1,
-        totalVendors: 4,
-        totalPGs: totalPGs || 3,
-        totalMealProviders: totalMeals || 2,
-        totalLaundryProviders: totalLaundry || 2,
-        totalServices: totalServices || 2,
-        totalBookings: totalBookings || 0,
-        pendingPaymentVerifications: 0,
-        totalRevenue: 0,
-        occupancyRate: 88,
-        totalBeds: 120
+        totalUsers: totalUsers || 0,
+        totalPGs: totalPGs || 0,
+        totalMealProviders: totalMeals || 0,
+        totalLaundryProviders: totalLaundry || 0,
+        totalServices: totalServices || 0,
+        totalBookingsCount: totalBookings || 0,
+        pendingPaymentsCount,
+        verifiedPaymentsCount,
+        totalRevenue
       }
     }), {
       status: 200,

@@ -392,280 +392,172 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Row 4: Visual Analytics (Charts 1 & 3) */}
+      {/* Row 4: Visual Analytics (Charts 1 & 3) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* Chart 1: Bookings Over Time (8 Cols) */}
+        {/* Chart 1: Bookings Trajectory */}
         <div className="xl:col-span-8 bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E5E1D6] mb-4 gap-2">
             <div>
-              <h3 className="text-base font-extrabold text-[#171A18]">Bookings Trajectory & Intake Surges</h3>
-              <p className="text-xs text-[#6B6B63]">10-Month Timeline (Jan – Oct 2026) showing semester rush at BIT Durg & CSVTU</p>
+              <h3 className="text-base font-extrabold text-[#171A18]">Bookings Trajectory</h3>
+              <p className="text-xs text-[#6B6B63]">Real-time booking volume across Bhilai &amp; Durg corridors</p>
             </div>
             <div className="flex items-center gap-3 text-xs font-semibold">
               <span className="inline-flex items-center gap-1.5 text-[#225944]">
-                <span className="w-3 h-3 rounded bg-[#225944]"></span> 2026 Intake Surge
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[#6B6B63]">
-                <span className="w-3 h-3 rounded bg-slate-300"></span> Baseline
+                <span className="w-3 h-3 rounded bg-[#225944]"></span> Live Orders ({liveBookings.length})
               </span>
             </div>
           </div>
 
-          {/* SVG Line/Area Chart for Bookings */}
-          <div className="w-full h-64 relative flex items-end">
-            <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 800 240">
-              <defs>
-                <linearGradient id="bookingGrad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#225944" stopOpacity="0.25"></stop>
-                  <stop offset="100%" stopColor="#225944" stopOpacity="0.0"></stop>
-                </linearGradient>
-              </defs>
-              {/* Gridlines */}
-              <line stroke="#edeeeb" strokeDasharray="4" x1="0" x2="800" y1="40" y2="40"></line>
-              <line stroke="#edeeeb" strokeDasharray="4" x1="0" x2="800" y1="100" y2="100"></line>
-              <line stroke="#edeeeb" strokeDasharray="4" x1="0" x2="800" y1="160" y2="160"></line>
-              <line stroke="#edeeeb" x1="0" x2="800" y1="220" y2="220"></line>
-              {/* Baseline Path */}
-              <path
-                d="M 0,200 Q 80,195 160,185 T 320,170 T 480,150 T 640,140 T 800,125"
-                fill="none"
-                stroke="#c0c9c2"
-                strokeDasharray="3"
-                strokeWidth="2"
-              ></path>
-              {/* Actual Trajectory Area Fill */}
-              <path
-                d="M 0,210 Q 80,190 160,175 T 320,130 T 480,95 T 560,35 T 640,70 T 720,45 T 800,25 L 800,220 L 0,220 Z"
-                fill="url(#bookingGrad)"
-              ></path>
-              {/* Actual Line */}
-              <path
-                d="M 0,210 Q 80,190 160,175 T 320,130 T 480,95 T 560,35 T 640,70 T 720,45 T 800,25"
-                fill="none"
-                stroke="#225944"
-                strokeLinecap="round"
-                strokeWidth="3.5"
-              ></path>
-              {/* Highlight Hotspot (July Semester Wave) */}
-              <circle cx="560" cy="35" fill="#EECA3A" r="6" stroke="#225944" strokeWidth="2"></circle>
-              {/* Highlight Current Peak */}
-              <circle cx="800" cy="25" fill="#225944" r="6" stroke="#ffffff" strokeWidth="2"></circle>
-            </svg>
-          </div>
+          {liveBookings.length > 0 ? (
+            <div className="w-full h-64 flex items-end justify-between gap-2 p-4 bg-[#F8FAF6] rounded-2xl border border-[#E5E1D6]">
+              {liveBookings.slice(0, 10).map((b, idx) => (
+                <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                  <div className="w-full bg-[#225944] rounded-t-lg transition-all" style={{ height: `${Math.min(100, Math.max(15, (Number(b.value?.replace(/\D/g, '') || 100) / 1000) * 100))}%` }}></div>
+                  <span className="text-[10px] font-bold text-[#6B6B63] truncate w-full text-center">{b.id}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-[#F8FAF6] rounded-2xl border border-dashed border-[#E5E1D6]">
+              <div className="w-12 h-12 rounded-full bg-[#225944]/10 text-[#225944] flex items-center justify-center mb-3">
+                <span className="material-symbols-outlined text-2xl">ssid_chart</span>
+              </div>
+              <h4 className="text-sm font-extrabold text-[#171A18]">No Booking Trajectory Data Yet</h4>
+              <p className="text-xs text-[#6B6B63] mt-1 max-w-sm font-medium">
+                Real-time booking trends will render here automatically as students place orders across PGs, Meals, Laundry, and Services.
+              </p>
+            </div>
+          )}
 
-          <div className="flex items-center justify-between text-[#6B6B63] text-xs font-semibold pt-2 border-t border-[#E5E1D6] mt-2">
-            <span>Jan</span>
-            <span>Feb</span>
-            <span>Mar</span>
-            <span>Apr</span>
-            <span>May</span>
-            <span>Jun</span>
-            <span className="text-[#225944] font-bold">Jul (Intake)</span>
-            <span>Aug</span>
-            <span>Sep</span>
-            <span className="text-[#225944] font-bold">Oct (Now)</span>
+          <div className="flex items-center justify-between text-[#6B6B63] text-xs font-semibold pt-3 border-t border-[#E5E1D6] mt-4">
+            <span>Database Status: Active</span>
+            <span className="text-[#225944] font-bold">{liveBookings.length} Total Bookings Recorded</span>
           </div>
         </div>
 
-        {/* Chart 3: Service-Wise Bookings Distribution Donut (4 Cols) */}
+        {/* Chart 3: Service-Wise Bookings Distribution */}
         <div className="xl:col-span-4 bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6] mb-3">
             <h3 className="text-base font-extrabold text-[#171A18]">Service Distribution</h3>
             <span className="px-2 py-0.5 rounded-full bg-[#F3F4F0] text-[#6B6B63] text-[10px] font-bold uppercase">
-              MTD Volume
+              Live Volume
             </span>
           </div>
 
-          {/* Donut Layout with Pure Inline SVG */}
-          <div className="relative flex items-center justify-center my-4">
-            <svg className="w-44 h-44 -rotate-90" viewBox="0 0 160 160">
-              <circle
-                cx="80"
-                cy="80"
-                fill="transparent"
-                r="55"
-                stroke="#225944"
-                strokeDasharray="131.3 214.2"
-                strokeDashoffset="0"
-                strokeWidth="20"
-              ></circle>
-              <circle
-                cx="80"
-                cy="80"
-                fill="transparent"
-                r="55"
-                stroke="#EECA3A"
-                strokeDasharray="117.5 228"
-                strokeDashoffset="-131.3"
-                strokeWidth="20"
-              ></circle>
-              <circle
-                cx="80"
-                cy="80"
-                fill="transparent"
-                r="55"
-                stroke="#3b82f6"
-                strokeDasharray="62.2 283.3"
-                strokeDashoffset="-248.8"
-                strokeWidth="20"
-              ></circle>
-              <circle
-                cx="80"
-                cy="80"
-                fill="transparent"
-                r="55"
-                stroke="#8b5cf6"
-                strokeDasharray="34.5 311"
-                strokeDashoffset="-311"
-                strokeWidth="20"
-              ></circle>
-            </svg>
-            <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-2xl font-extrabold text-[#171A18] leading-none">10,840</span>
-              <span className="text-[10px] font-bold text-[#6B6B63] uppercase mt-1">Monthly Txns</span>
+          <div className="relative flex flex-col items-center justify-center my-4 py-4">
+            <div className="w-36 h-36 rounded-full border-4 border-dashed border-[#E5E1D6] flex flex-col items-center justify-center bg-[#F8FAF6]">
+              <span className="text-3xl font-extrabold text-[#171A18] leading-none">{liveBookings.length}</span>
+              <span className="text-[10px] font-bold text-[#6B6B63] uppercase mt-1">Bookings</span>
             </div>
+            <p className="text-xs font-semibold text-[#6B6B63] mt-3">
+              {liveBookings.length > 0 ? 'Live category breakdown active' : 'No transaction data recorded yet'}
+            </p>
           </div>
 
-          {/* Legend Items */}
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between p-2 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#225944]"></span>
-                <span className="text-[#171A18] font-bold">PG & Hostel Stays</span>
+                <span className="text-[#171A18] font-bold">PG &amp; Hostel Stays</span>
               </div>
-              <span className="text-[#225944] font-extrabold">38% (4,119)</span>
+              <span className="text-[#225944] font-extrabold">
+                {liveBookings.filter(b => b.vertical?.includes('PG')).length} Bookings
+              </span>
             </div>
 
-            <div className="flex items-center justify-between p-2 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#EECA3A]"></span>
-                <span className="text-[#171A18] font-bold">Daily Meals & Tiffins</span>
+                <span className="text-[#171A18] font-bold">Daily Meals &amp; Tiffins</span>
               </div>
-              <span className="text-amber-800 font-extrabold">34% (3,685)</span>
+              <span className="text-amber-800 font-extrabold">
+                {liveBookings.filter(b => b.vertical?.includes('Meal')).length} Bookings
+              </span>
             </div>
 
-            <div className="flex items-center justify-between p-2 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                <span className="text-[#171A18] font-bold">Laundry & Garment Care</span>
+                <span className="text-[#171A18] font-bold">Laundry &amp; Garment Care</span>
               </div>
-              <span className="text-blue-700 font-extrabold">18% (1,951)</span>
+              <span className="text-blue-700 font-extrabold">
+                {liveBookings.filter(b => b.vertical?.includes('Laundry')).length} Bookings
+              </span>
             </div>
 
-            <div className="flex items-center justify-between p-2 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-purple-500"></span>
-                <span className="text-[#171A18] font-bold">Doorstep Tech & Home</span>
+                <span className="text-[#171A18] font-bold">Doorstep Services</span>
               </div>
-              <span className="text-purple-700 font-extrabold">10% (1,085)</span>
+              <span className="text-purple-700 font-extrabold">
+                {liveBookings.filter(b => b.vertical?.includes('Service') || b.vertical?.includes('Repair')).length} Bookings
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Row 5: Revenue Trajectory & Demand Heatmap Analytics */}
+      {/* Row 5: Revenue Trajectory & Demand Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart 2: Revenue Stream Trajectory */}
         <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6] mb-3">
             <div>
-              <h3 className="text-base font-extrabold text-[#171A18]">Revenue & Net Take</h3>
-              <p className="text-xs text-[#6B6B63]">Last 6 Months (May – Oct 2026 in ₹ Lakhs)</p>
+              <h3 className="text-base font-extrabold text-[#171A18]">Revenue &amp; Net Take</h3>
+              <p className="text-xs text-[#6B6B63]">Verified payment revenue from PostgreSQL</p>
             </div>
             <span className="px-2.5 py-0.5 rounded-full bg-[#225944]/10 text-[#225944] text-[10px] font-bold">
-              10% Avg Take
+              PostgreSQL Live
             </span>
           </div>
 
-          <div className="h-44 w-full flex items-end justify-between gap-3 pt-4 pb-2">
-            {[
-              { month: 'May', gmv: '52%', net: '18%', gmvVal: '₹18.2 L' },
-              { month: 'Jun', gmv: '64%', net: '22%', gmvVal: '₹22.4 L' },
-              { month: 'Jul', gmv: '98%', net: '35%', gmvVal: '₹35.1 L', isPeak: true },
-              { month: 'Aug', gmv: '85%', net: '30%', gmvVal: '₹30.5 L' },
-              { month: 'Sep', gmv: '92%', net: '33%', gmvVal: '₹33.0 L' },
-              { month: 'Oct', gmv: '100%', net: '39%', gmvVal: '₹38.45 L', isCurrent: true },
-            ].map((m, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                <div className="w-full flex items-end justify-center gap-1 h-32">
-                  <div
-                    className={`w-3.5 rounded-t-sm ${
-                      m.isCurrent ? 'bg-[#225944]' : m.isPeak ? 'bg-[#EECA3A]' : 'bg-slate-300'
-                    }`}
-                    style={{ height: m.gmv }}
-                    title={`GMV: ${m.gmvVal}`}
-                  ></div>
-                  <div
-                    className="w-3.5 bg-[#184232] rounded-t-sm"
-                    style={{ height: m.net }}
-                    title={`Net: ${m.gmvVal}`}
-                  ></div>
-                </div>
-                <span className={`text-xs font-bold ${m.isCurrent ? 'text-[#225944]' : 'text-[#6B6B63]'}`}>
-                  {m.month}
-                </span>
-              </div>
-            ))}
+          <div className="h-44 flex flex-col items-center justify-center text-center p-6 bg-[#F8FAF6] rounded-2xl border border-dashed border-[#E5E1D6] my-2">
+            <span className="text-3xl font-extrabold text-[#225944]">
+              ₹{(dbStats?.totalRevenue || 0).toLocaleString('en-IN')}
+            </span>
+            <span className="text-xs font-semibold text-[#6B6B63] mt-1.5">
+              {(dbStats?.totalRevenue || 0) > 0 ? 'Total verified payment revenue' : 'No verified revenue recorded yet'}
+            </span>
           </div>
 
           <div className="pt-2 border-t border-[#E5E1D6] flex items-center justify-between text-xs font-semibold text-[#6B6B63]">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded bg-[#225944]"></span> Gross Booking GMV
+              <span className="w-2.5 h-2.5 rounded bg-[#225944]"></span> Verified Payments ({dbStats?.verifiedPaymentsCount || 0})
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded bg-[#184232]"></span> Net Margin
+              <span className="w-2.5 h-2.5 rounded bg-amber-500"></span> Pending ({dbStats?.pendingPaymentsCount || 0})
             </span>
           </div>
         </div>
 
-        {/* Chart 4: New User Cohort Acquisition */}
+        {/* Chart 4: User Cohort Acquisition */}
         <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6] mb-3">
             <div>
               <h3 className="text-base font-extrabold text-[#171A18]">Cohort Acquisition</h3>
-              <p className="text-xs text-[#6B6B63]">Students vs Young Working Professionals</p>
+              <p className="text-xs text-[#6B6B63]">User Demographic Insights</p>
             </div>
             <span className="material-symbols-outlined text-[#225944] text-[20px]">how_to_reg</span>
           </div>
 
-          <div className="space-y-4 my-auto">
-            <div>
-              <div className="flex justify-between text-xs font-bold mb-1">
-                <span className="text-[#171A18]">Engineering & Med Students</span>
-                <span className="text-[#225944]">8,920 (71.5%)</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#225944] h-full rounded-full" style={{ width: '71.5%' }}></div>
-              </div>
+          <div className="py-8 text-center space-y-2 my-auto">
+            <div className="w-10 h-10 rounded-full bg-slate-100 text-[#6B6B63] flex items-center justify-center mx-auto mb-2">
+              <span className="material-symbols-outlined text-xl">groups</span>
             </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-bold mb-1">
-                <span className="text-[#171A18]">Bhilai Steel Plant / IT Pros</span>
-                <span className="text-amber-800">2,640 (21.2%)</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#EECA3A] h-full rounded-full" style={{ width: '21.2%' }}></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-bold mb-1">
-                <span className="text-[#171A18]">Faculty & Visiting Researchers</span>
-                <span className="text-purple-700">920 (7.3%)</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-purple-600 h-full rounded-full" style={{ width: '7.3%' }}></div>
-              </div>
-            </div>
+            <p className="text-xs font-extrabold text-[#171A18]">Cohort Data Unavailable</p>
+            <p className="text-[11px] text-[#6B6B63] max-w-xs mx-auto font-medium">
+              Student vs professional demographics will populate automatically as registered users complete campus profile verification.
+            </p>
           </div>
 
           <div className="p-3 bg-[#F8FAF6] rounded-2xl border border-[#E5E1D6] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#225944] text-[18px]">verified</span>
-              <span className="text-xs font-bold text-[#171A18]">Aadhaar / College ID Gate</span>
+              <span className="text-xs font-bold text-[#171A18]">Registered Users</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-[#225944]/10 text-[#225944] text-[10px] font-extrabold">
-              96.4% Verified
+              {dbStats?.totalUsers || 0} Accounts
             </span>
           </div>
         </div>
@@ -674,78 +566,24 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6] mb-3">
             <div>
-              <h3 className="text-base font-extrabold text-[#171A18]">Campus Corridor Heatmap</h3>
-              <p className="text-xs text-[#6B6B63]">Live Demand Density Index</p>
+              <h3 className="text-base font-extrabold text-[#171A18]">Campus Corridor Analytics</h3>
+              <p className="text-xs text-[#6B6B63]">Corridor Demand Density</p>
             </div>
-            <span className="material-symbols-outlined text-amber-600 text-[20px]">local_fire_department</span>
+            <span className="material-symbols-outlined text-[#225944] text-[20px]">map</span>
           </div>
 
-          <div className="space-y-2.5 my-auto">
-            <div className="p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
-              <div className="flex justify-between text-xs font-bold mb-0.5">
-                <span className="text-[#171A18]">Junwani / BIT Corridor</span>
-                <span className="text-rose-600 font-extrabold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping"></span> Critical High (98%)
-                </span>
-              </div>
-              <div className="text-[10px] text-[#6B6B63] flex gap-2">
-                <span>PG: ★ 99%</span>
-                <span>•</span>
-                <span>Meals: ★ 94%</span>
-                <span>•</span>
-                <span>Laundry: ★ 89%</span>
-              </div>
+          <div className="py-8 text-center space-y-2 my-auto">
+            <div className="w-10 h-10 rounded-full bg-slate-100 text-[#6B6B63] flex items-center justify-center mx-auto mb-2">
+              <span className="material-symbols-outlined text-xl">share_location</span>
             </div>
-
-            <div className="p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
-              <div className="flex justify-between text-xs font-bold mb-0.5">
-                <span className="text-[#171A18]">Smriti Nagar Coaching Hub</span>
-                <span className="text-[#225944] font-extrabold">High (88%)</span>
-              </div>
-              <div className="text-[10px] text-[#6B6B63] flex gap-2">
-                <span>PG: ★ 86%</span>
-                <span>•</span>
-                <span>Meals: ★ 92%</span>
-                <span>•</span>
-                <span>Services: ★ 79%</span>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
-              <div className="flex justify-between text-xs font-bold mb-0.5">
-                <span className="text-[#171A18]">Nehru Nagar (East & West)</span>
-                <span className="text-[#6B6B63]">Moderate (72%)</span>
-              </div>
-              <div className="text-[10px] text-[#6B6B63] flex gap-2">
-                <span>PG: ★ 70%</span>
-                <span>•</span>
-                <span>Meals: ★ 68%</span>
-                <span>•</span>
-                <span>Services: ★ 85%</span>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6]">
-              <div className="flex justify-between text-xs font-bold mb-0.5">
-                <span className="text-[#171A18]">Civic Center & Sectors</span>
-                <span className="text-[#6B6B63]">Balanced (64%)</span>
-              </div>
-              <div className="text-[10px] text-[#6B6B63] flex gap-2">
-                <span>Hostels: ★ 60%</span>
-                <span>•</span>
-                <span>Daily Tiffin: ★ 74%</span>
-              </div>
-            </div>
+            <p className="text-xs font-extrabold text-[#171A18]">Location Heatmap Unavailable</p>
+            <p className="text-[11px] text-[#6B6B63] max-w-xs mx-auto font-medium">
+              Location analytics will appear automatically after student bookings &amp; corridor order data are recorded.
+            </p>
           </div>
 
-          <div className="pt-2 flex justify-end border-t border-[#E5E1D6] mt-2">
-            <button
-              onClick={() => alert('Opening Corridor GIS Matrix Map...')}
-              className="text-xs font-bold text-[#225944] hover:underline flex items-center gap-1"
-            >
-              <span>View Full Corridor GIS Matrix</span>
-              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            </button>
+          <div className="pt-2 flex justify-between items-center border-t border-[#E5E1D6] mt-2">
+            <span className="text-[11px] font-semibold text-[#6B6B63]">Corridors: Junwani, Smriti Nagar, Nehru Nagar, Sector 1-6</span>
           </div>
         </div>
       </div>

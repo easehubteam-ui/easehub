@@ -245,16 +245,16 @@ export const MealsManagement: React.FC = () => {
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-[#171A18]">64</span>
+              <span className="text-3xl font-extrabold text-[#171A18]">{providers.length}</span>
               <span className="inline-flex items-center text-[#225944] text-xs font-bold">
-                <span className="material-symbols-outlined text-[14px]">trending_up</span> +6 auditing
+                Registered
               </span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-[#E5E1D6] flex items-center justify-between text-xs font-semibold text-[#6B6B63]">
-            <span>58 active online</span>
+            <span>{providers.filter(p => p.status === 'active').length} active online</span>
             <span className="inline-flex items-center gap-1 font-bold text-[#225944]">
-              <span className="material-symbols-outlined text-[14px]">verified</span> 100% FSSAI
+              <span className="material-symbols-outlined text-[14px]">verified</span> Database Verified
             </span>
           </div>
         </div>
@@ -263,20 +263,18 @@ export const MealsManagement: React.FC = () => {
         <div className="p-5 rounded-2xl bg-white border border-[#E5E1D6] shadow-xs flex flex-col justify-between relative overflow-hidden group">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#6B6B63]">Daily Meals Dispatched</span>
+              <span className="text-xs font-bold text-[#6B6B63]">Active Mess Partners</span>
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-800 flex items-center justify-center">
                 <span className="material-symbols-outlined text-[18px]">lunch_dining</span>
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-[#171A18]">3,685</span>
-              <span className="text-xs font-semibold text-[#6B6B63]">meals today</span>
+              <span className="text-3xl font-extrabold text-[#171A18]">{providers.length}</span>
+              <span className="text-xs font-semibold text-[#6B6B63]">partners</span>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#E5E1D6] flex items-center gap-2 text-xs font-bold text-[#6B6B63]">
-            <span className="bg-[#F8FAF6] px-2 py-0.5 rounded border border-[#E5E1D6]">B: 820</span>
-            <span className="bg-[#F8FAF6] px-2 py-0.5 rounded border border-[#E5E1D6]">L: 1,540</span>
-            <span className="bg-[#F8FAF6] px-2 py-0.5 rounded border border-[#E5E1D6]">D: 1,325</span>
+          <div className="mt-4 pt-3 border-t border-[#E5E1D6] flex items-center justify-between text-xs font-bold text-[#6B6B63]">
+            <span>Veg &amp; Non-Veg Tiffin Services</span>
           </div>
         </div>
 
@@ -284,19 +282,18 @@ export const MealsManagement: React.FC = () => {
         <div className="p-5 rounded-2xl bg-white border border-[#E5E1D6] shadow-xs flex flex-col justify-between relative overflow-hidden group">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#6B6B63]">Monthly Subscriptions</span>
+              <span className="text-xs font-bold text-[#6B6B63]">Subscription Plans</span>
               <div className="w-8 h-8 rounded-lg bg-[#225944]/10 text-[#225944] flex items-center justify-center">
                 <span className="material-symbols-outlined text-[18px]">card_membership</span>
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-[#171A18]">1,420</span>
-              <span className="text-xs font-bold text-[#225944]">94% renewal</span>
+              <span className="text-3xl font-extrabold text-[#171A18]">{providers.length}</span>
+              <span className="text-xs font-bold text-[#225944]">Active Menu Plans</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-[#E5E1D6] flex items-center justify-between text-xs font-semibold text-[#6B6B63]">
-            <span>Avg plan: ₹2,400/mo</span>
-            <span className="text-[#225944] font-bold">₹34.08L Run-rate</span>
+            <span>Daily &amp; Monthly Tiffin Options</span>
           </div>
         </div>
 
