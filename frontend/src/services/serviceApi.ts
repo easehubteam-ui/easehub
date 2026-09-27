@@ -30,23 +30,23 @@ const mapServiceFromDB = (record: any): ExtraServiceItem => {
   return {
     id: record.id,
     _id: record.id,
-    code: record.slug || `SRV-${record.id.slice(0, 6)}`,
-    name: record.name,
-    slug: record.slug,
+    code: record.slug || `SRV-${record.id ? record.id.slice(0, 6) : '101'}`,
+    name: record.name || 'Unnamed Service',
+    slug: record.slug || '',
     category: record.category || 'General',
-    description: record.description || 'Professional & Verified Service',
-    basePrice: Number(record.starting_price) || 299,
+    description: record.description || '',
+    basePrice: record.starting_price !== null && record.starting_price !== undefined ? Number(record.starting_price) : 0,
     priceUnit: 'per visit',
-    providerName: 'EaseHub Verified Technician',
-    providerPhone: '9876543210',
-    corridor: record.city || 'City Wide',
-    rating: 4.9,
-    reviewCount: 30,
+    providerName: record.provider_name || record.providerName || '',
+    providerPhone: record.provider_phone || record.providerPhone || '',
+    corridor: record.city || record.coverage_area || '',
+    rating: record.rating !== null && record.rating !== undefined ? Number(record.rating) : 0,
+    reviewCount: record.review_count !== null && record.review_count !== undefined ? Number(record.review_count) : 0,
     images: Array.isArray(record.images) && record.images.length > 0 ? record.images : (record.image ? [record.image] : []),
     isActive: record.is_active ?? true,
     location: {
       address: record.address || '',
-      landmark: '',
+      landmark: record.landmark || '',
       city: record.city || '',
       state: record.state || '',
       pincode: record.pincode || '',
@@ -59,12 +59,13 @@ const mapServiceFromDB = (record: any): ExtraServiceItem => {
 };
 
 export const serviceApi = {
-  getAll: async (): Promise<ExtraServiceItem[]> => {
+  getAll: async (includeInactive: boolean = false): Promise<ExtraServiceItem[]> => {
     try {
-      const { data, error } = await insforge.database
-        .from('services')
-        .select('*')
-        .eq('is_active', true);
+      let query = insforge.database.from('services').select('*');
+      if (!includeInactive) {
+        query = query.eq('is_active', true);
+      }
+      const { data, error } = await query;
 
       if (error || !Array.isArray(data)) return [];
       return data.map(mapServiceFromDB);
@@ -72,8 +73,8 @@ export const serviceApi = {
       return [];
     }
   },
-  getServices: async (): Promise<ExtraServiceItem[]> => {
-    return serviceApi.getAll();
+  getServices: async (includeInactive: boolean = false): Promise<ExtraServiceItem[]> => {
+    return serviceApi.getAll(includeInactive);
   },
   getById: async (id: string): Promise<ExtraServiceItem | null> => {
     try {
@@ -92,21 +93,21 @@ export const serviceApi = {
     const slug = data.slug || data.code || `service-${Date.now()}`;
     const dbPayload = {
       slug,
-      name: data.name || 'New Extra Service',
-      description: data.description || 'Verified Home Service',
+      name: data.name,
+      description: data.description || '',
       category: data.category || 'General',
-      image: Array.isArray(data.images) && data.images.length > 0 ? data.images[0] : '',
+      image: Array.isArray(data.images) && data.images.length > 0 ? data.images[0] : null,
       images: data.images || [],
-      starting_price: data.basePrice || 299,
-      pricing: { basePrice: data.basePrice || 299, unit: data.priceUnit || 'per visit' },
-      coverage_area: data.corridor || 'City Wide',
+      starting_price: data.basePrice ?? 0,
+      pricing: { basePrice: data.basePrice ?? 0, unit: data.priceUnit || 'per visit' },
+      coverage_area: data.corridor || data.location?.city || '',
       address: data.location?.address || '',
       city: data.location?.city || '',
       state: data.location?.state || '',
       pincode: data.location?.pincode || '',
       latitude: data.location?.latitude ?? null,
       longitude: data.location?.longitude ?? null,
-      is_active: true
+      is_active: data.isActive ?? true
     };
 
     await insforge.database.from('services').insert([dbPayload]);
@@ -116,22 +117,22 @@ export const serviceApi = {
   },
   update: async (id: string, data: Partial<ExtraServiceItem>): Promise<ExtraServiceItem | null> => {
     const dbPayload: any = {};
-    if (data.name) dbPayload.name = data.name;
-    if (data.category) dbPayload.category = data.category;
-    if (data.description) dbPayload.description = data.description;
+    if (data.name !== undefined) dbPayload.name = data.name;
+    if (data.category !== undefined) dbPayload.category = data.category;
+    if (data.description !== undefined) dbPayload.description = data.description;
     if (data.basePrice !== undefined) dbPayload.starting_price = data.basePrice;
-    if (data.images) {
+    if (data.images !== undefined) {
       dbPayload.images = data.images;
-      dbPayload.image = data.images[0] || '';
+      dbPayload.image = Array.isArray(data.images) && data.images.length > 0 ? data.images[0] : null;
     }
     if (data.isActive !== undefined) dbPayload.is_active = data.isActive;
     if (data.location) {
-      dbPayload.address = data.location.address;
-      dbPayload.city = data.location.city;
-      dbPayload.state = data.location.state;
-      dbPayload.pincode = data.location.pincode;
-      dbPayload.latitude = data.location.latitude;
-      dbPayload.longitude = data.location.longitude;
+      dbPayload.address = data.location.address || '';
+      dbPayload.city = data.location.city || '';
+      dbPayload.state = data.location.state || '';
+      dbPayload.pincode = data.location.pincode || '';
+      dbPayload.latitude = data.location.latitude ?? null;
+      dbPayload.longitude = data.location.longitude ?? null;
     }
 
     await insforge.database.from('services').update(dbPayload).eq('id', id);
@@ -139,6 +140,14 @@ export const serviceApi = {
   },
   delete: async (id: string) => {
     await insforge.database.from('services').update({ is_active: false }).eq('id', id);
+    return { success: true };
+  },
+  deactivate: async (id: string) => {
+    await insforge.database.from('services').update({ is_active: false }).eq('id', id);
+    return { success: true };
+  },
+  activate: async (id: string) => {
+    await insforge.database.from('services').update({ is_active: true }).eq('id', id);
     return { success: true };
   },
   updateLocation: async (id: string, location: PGLocation) => {

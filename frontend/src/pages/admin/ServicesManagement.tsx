@@ -31,22 +31,46 @@ interface CustomQuery {
   status: 'pending_quote' | 'tech_assigned' | 'resolved';
 }
 
-const defaultCategories: ServiceCategory[] = [];
-
-
 export const ServicesManagement: React.FC = () => {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
+  const [activeChip, setActiveChip] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  
+  // Confirmation Modal state for Deactivate / Reactivate
+  const [confirmModal, setConfirmModal] = useState<{
+    type: 'deactivate' | 'reactivate';
+    category: ServiceCategory;
+  } | null>(null);
+
+  // Form editable state for inspector
+  const [editBasePrice, setEditBasePrice] = useState<number>(0);
+  const [editNightSurge, setEditNightSurge] = useState<number>(0);
+  const [editSlaMins, setEditSlaMins] = useState<number>(0);
 
   const fetchCategories = async () => {
     try {
-      const list = await serviceApi.getServices();
+      setLoading(true);
+      setError('');
+      // includeInactive = true so admin can view and manage both active and inactive records
+      const list = await serviceApi.getServices(true);
       if (Array.isArray(list)) {
         const mapped: ServiceCategory[] = list.map((s: any) => ({
           id: s._id || s.id || s.code,
           code: s.code || `#SRV-${(s.id || 'BH101').slice(0, 6)}`,
           name: s.name,
-          icon: 'plumbing',
+          icon: s.category?.toLowerCase().includes('electric')
+            ? 'electric_bolt'
+            : s.category?.toLowerCase().includes('plumb')
+            ? 'plumbing'
+            : s.category?.toLowerCase().includes('clean')
+            ? 'cleaning_services'
+            : 'build',
           basePrice: s.basePrice || 0,
           nightSurge: 50,
           extendedLaborRate: '₹100 / 30 mins',
@@ -63,31 +87,28 @@ export const ServicesManagement: React.FC = () => {
         }));
         setCategories(mapped);
         if (mapped.length > 0) {
-          setSelectedCategory(mapped[0]);
-          setEditBasePrice(mapped[0].basePrice);
-          setEditNightSurge(mapped[0].nightSurge);
-          setEditSlaMins(mapped[0].slaMins);
+          // preserve selection if already selected
+          const currentSelected = selectedCategory ? mapped.find((m) => m.id === selectedCategory.id) : null;
+          const target = currentSelected || mapped[0];
+          setSelectedCategory(target);
+          setEditBasePrice(target.basePrice);
+          setEditNightSurge(target.nightSurge);
+          setEditSlaMins(target.slaMins);
+        } else {
+          setSelectedCategory(null);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load services:', err);
+      setError('Unable to load services. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchCategories();
   }, []);
-
-  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
-  const [activeChip, setActiveChip] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  // Form editable state for inspector
-  const [editBasePrice, setEditBasePrice] = useState<number>(0);
-  const [editNightSurge, setEditNightSurge] = useState<number>(0);
-  const [editSlaMins, setEditSlaMins] = useState<number>(0);
 
   const customQueries: CustomQuery[] = [
     { id: 'Q-901', studentName: 'Sneha Patel', location: 'Royal Boys PG, Room 204 (Junwani)', timeAgo: '15m ago', issue: 'Need laptop charger repair & 5-socket surge protector board setup.', status: 'pending_quote' },
@@ -112,35 +133,46 @@ export const ServicesManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteCategory = async (cat: ServiceCategory) => {
-    if (!window.confirm(`Are you sure you want to delete/deactivate service category "${cat.name}"?`)) {
-      return;
-    }
+  const executeDeactivate = async (cat: ServiceCategory) => {
     try {
-      await serviceApi.delete(cat.id);
+      await serviceApi.deactivate(cat.id);
       setToastMsg(`Deactivated service category: ${cat.name}`);
-      if (selectedCategory?.id === cat.id) {
-        setSelectedCategory(null);
-      }
       await fetchCategories();
       setTimeout(() => setToastMsg(null), 3500);
     } catch (err: any) {
-      console.error('Failed to delete service:', err);
-      alert(err.message || 'Failed to delete service category.');
+      console.error('Failed to deactivate service:', err);
+      alert(err.message || 'Failed to deactivate service category.');
+    } finally {
+      setConfirmModal(null);
     }
   };
 
-  const handleSaveTariffs = () => {
+  const executeReactivate = async (cat: ServiceCategory) => {
+    try {
+      await serviceApi.activate(cat.id);
+      setToastMsg(`Reactivated service category: ${cat.name}`);
+      await fetchCategories();
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch (err: any) {
+      console.error('Failed to reactivate service:', err);
+      alert(err.message || 'Failed to reactivate service category.');
+    } finally {
+      setConfirmModal(null);
+    }
+  };
+
+  const handleSaveTariffs = async () => {
     if (!selectedCategory) return;
-    const updated = categories.map((c) =>
-      c.id === selectedCategory.id
-        ? { ...c, basePrice: editBasePrice, nightSurge: editNightSurge, slaMins: editSlaMins, slaGuarantee: `${editSlaMins} min SLA` }
-        : c
-    );
-    setCategories(updated);
-    setSelectedCategory({ ...selectedCategory, basePrice: editBasePrice, nightSurge: editNightSurge, slaMins: editSlaMins });
-    setToastMsg(`Saved & propagated updated tariffs for ${selectedCategory.name}!`);
-    setTimeout(() => setToastMsg(null), 3500);
+    try {
+      await serviceApi.update(selectedCategory.id, {
+        basePrice: editBasePrice,
+      });
+      setToastMsg(`Saved updated base tariff (₹${editBasePrice}) for ${selectedCategory.name}!`);
+      await fetchCategories();
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch (err: any) {
+      alert('Failed to save tariff update to database.');
+    }
   };
 
   const handleExportCsv = () => {
@@ -168,7 +200,7 @@ export const ServicesManagement: React.FC = () => {
       if (editingCategory) {
         await serviceApi.update(editingCategory.id, {
           name: data.name,
-          category: data.category || 'CLEANING',
+          category: data.category || 'Cleaning',
           basePrice: data.basePrice,
           description: data.description,
           images: data.photos,
@@ -188,10 +220,10 @@ export const ServicesManagement: React.FC = () => {
       } else {
         await serviceApi.create({
           name: data.name,
-          category: data.category || 'CLEANING',
+          category: data.category || 'Cleaning',
           basePrice: data.basePrice,
           priceUnit: 'per session',
-          providerName: data.primaryTechName || 'EaseHub Master Tech',
+          providerName: data.primaryTechName || 'EaseHub Partner',
           description: data.description,
           images: data.photos,
           corridor: data.coverageCorridors?.[0] || 'Bhilai',
@@ -235,35 +267,39 @@ export const ServicesManagement: React.FC = () => {
       extendedLaborRate: cat.extendedLaborRate,
       includedScope: [],
       excludedItems: '',
-      address: loc.address || 'Central Service Dispatch Center, Junwani Road',
-      landmark: loc.landmark || 'Opposite BIT Gate 2',
+      address: loc.address || '',
+      landmark: loc.landmark || '',
       city: loc.city || 'Bhilai',
       state: loc.state || 'Chhattisgarh',
-      pincode: loc.pincode || '490020',
+      pincode: loc.pincode || '',
       coverageCorridors: cat.coverageCorridors,
       slaMins: cat.slaMins,
       slaGuarantee: cat.slaGuarantee,
       latitude: loc.latitude || 21.198409,
       longitude: loc.longitude || 81.332444,
-      primaryTechName: 'EaseHub Master Tech',
-      primaryTechRole: 'Master Tech',
-      primaryTechRating: 4.9,
+      primaryTechName: raw.providerName || '',
+      primaryTechRole: 'Technician',
+      primaryTechRating: cat.rawItem?.rating || 0,
       activeTechsCount: cat.activeTechs,
       status: cat.status,
     };
   };
 
   const filteredCategories = categories.filter((c) => {
-    const matchesQuery = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.code.toLowerCase().includes(searchQuery.toLowerCase());
+    const nameStr = (c.name || '').toLowerCase();
+    const codeStr = (c.code || '').toLowerCase();
+    const catStr = (c.rawItem?.category || '').toLowerCase();
+    const q = (searchQuery || '').toLowerCase();
+
+    const matchesQuery = !q || nameStr.includes(q) || codeStr.includes(q) || catStr.includes(q);
+
     if (activeChip === 'all') return matchesQuery;
-    if (activeChip === 'electrician') return matchesQuery && c.id === 'electrical';
-    if (activeChip === 'plumber') return matchesQuery && c.id === 'plumbing';
-    if (activeChip === 'cleaning') return matchesQuery && c.id === 'cleaning';
-    if (activeChip === 'internet') return matchesQuery && c.id === 'internet';
-    if (activeChip === 'water') return matchesQuery && c.id === 'water';
-    if (activeChip === 'vehicle') return matchesQuery && c.id === 'vehicle';
-    if (activeChip === 'appliance') return matchesQuery && c.id === 'appliance';
-    if (activeChip === 'custom') return matchesQuery && c.id === 'custom';
+    if (activeChip === 'active') return matchesQuery && c.status === 'active';
+    if (activeChip === 'inactive') return matchesQuery && c.status === 'disabled';
+    if (activeChip === 'electrician') return matchesQuery && (catStr.includes('electric') || c.id === 'electrical');
+    if (activeChip === 'plumber') return matchesQuery && (catStr.includes('plumb') || c.id === 'plumbing');
+    if (activeChip === 'cleaning') return matchesQuery && (catStr.includes('clean') || c.id === 'cleaning');
+    if (activeChip === 'appliance') return matchesQuery && catStr.includes('appliance');
     return matchesQuery;
   });
 
@@ -274,6 +310,59 @@ export const ServicesManagement: React.FC = () => {
         <div className="fixed top-20 right-6 z-50 bg-[#02412e] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce">
           <span className="material-symbols-outlined text-[#fcd747]">check_circle</span>
           <span className="font-semibold text-sm">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Deactivate / Reactivate */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E1D6] space-y-4 animate-in fade-in duration-150">
+            <div className="flex items-center gap-3 text-amber-700">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                confirmModal.type === 'deactivate' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
+              }`}>
+                <span className="material-symbols-outlined text-2xl">
+                  {confirmModal.type === 'deactivate' ? 'warning' : 'published_with_changes'}
+                </span>
+              </div>
+              <div>
+                <h3 className="font-extrabold text-lg text-[#171A18]">
+                  {confirmModal.type === 'deactivate' ? 'Deactivate Service' : 'Reactivate Service'}
+                </h3>
+                <p className="text-xs text-[#6B6B63] font-semibold">{confirmModal.category.name}</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-[#404944] leading-relaxed">
+              {confirmModal.type === 'deactivate'
+                ? 'This service will no longer be visible to customers on the /services page or customer search.'
+                : 'This service will immediately become visible to customers again on the public /services catalog.'}
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2.5 rounded-xl bg-[#edeeeb] text-[#191c1a] font-bold text-xs hover:bg-[#e1e3df] transition"
+              >
+                Cancel
+              </button>
+              {confirmModal.type === 'deactivate' ? (
+                <button
+                  onClick={() => executeDeactivate(confirmModal.category)}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition shadow-sm"
+                >
+                  Confirm Deactivate
+                </button>
+              ) : (
+                <button
+                  onClick={() => executeReactivate(confirmModal.category)}
+                  className="px-5 py-2.5 rounded-xl bg-[#02412e] text-white font-bold text-xs hover:bg-[#225944] transition shadow-sm"
+                >
+                  Confirm Reactivate
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -305,13 +394,6 @@ export const ServicesManagement: React.FC = () => {
             <span>Export Rate Card</span>
           </button>
           <button
-            onClick={() => setToastMsg('Emergency SOS Dispatch Grid active across all 4 campus corridors!')}
-            className="px-4 py-2.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 font-semibold text-xs transition flex items-center gap-2 border border-rose-500/20"
-          >
-            <span className="material-symbols-outlined text-[18px]">e911_emergency</span>
-            <span>Emergency SOS Grid</span>
-          </button>
-          <button
             onClick={handleOpenAddModal}
             className="px-5 py-2.5 rounded-full bg-[#225944] hover:bg-[#02412e] text-white font-bold text-xs transition shadow-md flex items-center gap-2"
           >
@@ -321,12 +403,11 @@ export const ServicesManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Bento KPI Summary Cards */}
+      {/* Bento KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric Card 1 */}
         <div className="p-5 rounded-2xl bg-[#f8faf6] border border-[#c0c9c2]/50 shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Active Services</span>
+            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Total Services</span>
             <div className="w-9 h-9 rounded-xl bg-[#225944]/10 text-[#02412e] flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">category</span>
             </div>
@@ -334,44 +415,41 @@ export const ServicesManagement: React.FC = () => {
           <div className="mt-4">
             <div className="text-2xl font-black text-[#191c1a]">{categories.length} Services</div>
             <div className="text-xs text-[#225944] font-medium mt-1 flex items-center gap-1">
-              <span>{categories.length} Doorstep Categories Available</span>
+              <span>{categories.filter(c => c.status === 'active').length} Active | {categories.filter(c => c.status !== 'active').length} Inactive</span>
             </div>
           </div>
         </div>
 
-        {/* Metric Card 2 */}
         <div className="p-5 rounded-2xl bg-[#f8faf6] border border-[#c0c9c2]/50 shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Verified Partners</span>
-            <div className="w-9 h-9 rounded-xl bg-[#fcd747]/20 text-[#715d00] flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">engineering</span>
+            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Live Active Services</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-800 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px]">check_circle</span>
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-[#191c1a]">{categories.length} Listings</div>
+            <div className="text-2xl font-black text-[#191c1a]">{categories.filter(c => c.status === 'active').length} Live</div>
             <div className="text-xs text-[#707973] font-medium mt-1">
-              <strong className="text-[#02412e]">{categories.length} Active Listings</strong>
+              <strong className="text-[#02412e]">Visible on customer /services page</strong>
             </div>
           </div>
         </div>
 
-        {/* Metric Card 3 */}
         <div className="p-5 rounded-2xl bg-[#f8faf6] border border-[#c0c9c2]/50 shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Service Coverage</span>
+            <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Service Corridors</span>
             <div className="w-9 h-9 rounded-xl bg-[#225944]/10 text-[#02412e] flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">speed</span>
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-[#191c1a]">{categories.length} Categories</div>
+            <div className="text-2xl font-black text-[#191c1a]">4 Corridors</div>
             <div className="text-xs text-[#225944] font-medium mt-1 flex items-center gap-1">
               <span>Bhilai &amp; Durg Campus Coverage</span>
             </div>
           </div>
         </div>
 
-        {/* Metric Card 4 */}
         <div className="p-5 rounded-2xl bg-[#f8faf6] border border-[#c0c9c2]/50 shadow-sm flex flex-col justify-between hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[#707973] uppercase tracking-wider">Custom Student Queries</span>
@@ -380,10 +458,10 @@ export const ServicesManagement: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-[#191c1a]">12 Pending</div>
-            <div className="text-xs text-rose-600 font-bold mt-1 flex items-center gap-1">
+            <div className="text-2xl font-black text-[#191c1a]">{customQueries.length} Pending</div>
+            <div className="text-xs text-amber-700 font-bold mt-1 flex items-center gap-1">
               <span className="material-symbols-outlined text-[14px]">warning</span>
-              <span>3 High Priority / SOS Urgent</span>
+              <span>Student Custom Tickets Queue</span>
             </div>
           </div>
         </div>
@@ -394,15 +472,13 @@ export const ServicesManagement: React.FC = () => {
         {/* Category Chips Scroll */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           {[
-            { id: 'all', label: 'All Services (9)' },
-            { id: 'electrician', label: '⚡ Electrician' },
-            { id: 'plumber', label: '🚰 Plumber' },
+            { id: 'all', label: `All Services (${categories.length})` },
+            { id: 'active', label: `🟢 Active (${categories.filter(c => c.status === 'active').length})` },
+            { id: 'inactive', label: `🔴 Inactive (${categories.filter(c => c.status !== 'active').length})` },
+            { id: 'electrician', label: '⚡ Electrical' },
+            { id: 'plumber', label: '🚰 Plumbing' },
             { id: 'cleaning', label: '🧹 Cleaning' },
-            { id: 'internet', label: '🌐 Internet Setup' },
-            { id: 'water', label: '💧 Water Can' },
-            { id: 'vehicle', label: '🛵 Bike Service' },
-            { id: 'appliance', label: '❄️ AC/Appliance' },
-            { id: 'custom', label: '❓ Custom (12)' },
+            { id: 'appliance', label: '❄️ Appliance' },
           ].map((chip) => (
             <button
               key={chip.id}
@@ -439,142 +515,153 @@ export const ServicesManagement: React.FC = () => {
           <div className="bg-[#f8faf6] rounded-2xl border border-[#c0c9c2]/50 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-[#c0c9c2]/40 flex items-center justify-between">
               <div>
-                <h2 className="font-bold text-base text-[#191c1a]">Services Catalog & Tariff Master</h2>
-                <p className="text-xs text-[#707973]">Click any service row to configure tariffs, SLAs &amp; assigned technicians</p>
+                <h2 className="font-bold text-base text-[#191c1a]">Services Catalog &amp; Tariff Master</h2>
+                <p className="text-xs text-[#707973]">Click any service row to configure tariffs, SLAs &amp; details</p>
               </div>
               <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-[#225944]/10 text-[#02412e]">
-                {filteredCategories.length} Categories Live
+                {filteredCategories.length} Categories Displayed
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#edeeeb] text-[11px] font-extrabold text-[#707973] uppercase tracking-wider border-b border-[#c0c9c2]/40">
-                    <th className="py-3 px-4">Service Category</th>
-                    <th className="py-3 px-4">Base Tariff</th>
-                    <th className="py-3 px-4">Night Surge</th>
-                    <th className="py-3 px-4">Tech Pool</th>
-                    <th className="py-3 px-4">SLA Commitment</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#c0c9c2]/30 text-xs">
-                  {filteredCategories.map((cat) => {
-                    const isSelected = selectedCategory?.id === cat.id;
-                    return (
-                      <tr
-                        key={cat.id}
-                        onClick={() => handleSelectCategory(cat)}
-                        className={`cursor-pointer transition hover:bg-[#225944]/5 ${
-                          isSelected ? 'bg-[#225944]/10 border-l-4 border-[#02412e]' : ''
-                        }`}
-                      >
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-[#225944]/10 text-[#02412e] flex items-center justify-center shrink-0">
-                              <span className="material-symbols-outlined text-[18px]">{cat.icon}</span>
-                            </div>
-                            <div>
-                              <div className="font-bold text-[#191c1a]">{cat.name}</div>
-                              <div className="text-[10px] font-mono text-[#707973]">{cat.code}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-[#02412e]">₹{cat.basePrice}</td>
-                        <td className="py-3.5 px-4 text-[#707973]">₹{cat.nightSurge}</td>
-                        <td className="py-3.5 px-4">
-                          <span className="font-semibold text-[#191c1a]">{cat.activeTechs} Techs</span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-800 text-[10px] font-bold">
-                            {cat.slaGuarantee}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 text-[10px] font-bold uppercase">
-                            {cat.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditCategory(cat);
-                              }}
-                              className="p-1.5 rounded-lg text-[#707973] hover:bg-[#e1e3df] hover:text-[#02412e] transition"
-                              title="Edit Service"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">edit</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteCategory(cat);
-                              }}
-                              className="p-1.5 rounded-lg text-[#707973] hover:bg-rose-100 hover:text-rose-700 transition"
-                              title="Delete Service"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSelectCategory(cat);
-                              }}
-                              className={`p-1.5 rounded-lg transition ${
-                                isSelected ? 'bg-[#02412e] text-white' : 'text-[#707973] hover:bg-[#e1e3df]'
-                              }`}
-                              title="Inspect Details"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">tune</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Weekly Demand & Dispatch Rhythm Chart */}
-          <div className="p-5 bg-[#f8faf6] rounded-2xl border border-[#c0c9c2]/50 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-sm text-[#191c1a]">Weekly Demand &amp; Dispatch Rhythm</h3>
-                <p className="text-xs text-[#707973]">Daily work order dispatch load for {selectedCategory?.name || 'Service'}</p>
+            {loading ? (
+              <div className="p-12 text-center text-[#707973] font-bold text-sm">Loading services catalog from database...</div>
+            ) : error ? (
+              <div className="p-12 text-center bg-rose-50/50 p-6 m-4 rounded-2xl border border-rose-200">
+                <div className="material-symbols-outlined text-rose-600 text-3xl mb-2">warning</div>
+                <div className="font-bold text-rose-900 text-sm">{error}</div>
+                <button
+                  onClick={fetchCategories}
+                  className="mt-3 px-4 py-2 bg-rose-600 text-white font-bold text-xs rounded-xl hover:bg-rose-700 transition"
+                >
+                  Retry
+                </button>
               </div>
-              <span className="text-xs font-bold text-[#02412e] bg-[#225944]/10 px-2.5 py-1 rounded-md">
-                Weekend Peak Detected
-              </span>
-            </div>
+            ) : filteredCategories.length === 0 ? (
+              <div className="p-12 text-center bg-[#f8faf6] p-8 m-4 rounded-2xl border border-[#c0c9c2]/50 space-y-3">
+                <div className="w-14 h-14 bg-[#225944]/10 text-[#02412e] rounded-2xl flex items-center justify-center mx-auto">
+                  <span className="material-symbols-outlined text-3xl">build</span>
+                </div>
+                <h3 className="font-extrabold text-base text-[#191c1a]">No services found.</h3>
+                <p className="text-xs text-[#707973] font-medium">Add your first service to make it available to customers.</p>
+                <button
+                  onClick={handleOpenAddModal}
+                  className="mt-2 px-5 py-2.5 bg-[#02412e] text-white font-bold text-xs rounded-full hover:bg-[#225944] transition shadow-sm inline-flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                  <span>+ Add Service</span>
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#edeeeb] text-[11px] font-extrabold text-[#707973] uppercase tracking-wider border-b border-[#c0c9c2]/40">
+                      <th className="py-3 px-4">Service Category</th>
+                      <th className="py-3 px-4">Base Tariff</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#c0c9c2]/30 text-xs">
+                    {filteredCategories.map((cat) => {
+                      const isSelected = selectedCategory?.id === cat.id;
+                      const hasImage = Boolean(cat.rawItem?.images?.[0]);
 
-            {/* Simple Bar Chart Visualization */}
-            <div className="h-36 flex items-end justify-between gap-2 pt-4 px-2 border-b border-[#c0c9c2]/40 pb-2">
-              {selectedCategory?.demandWeekly ? selectedCategory.demandWeekly.map((item, idx) => {
-                const maxVal = Math.max(...(selectedCategory?.demandWeekly || []).map((d) => d.count), 1);
-                const heightPercent = Math.round((item.count / maxVal) * 100);
-                const isPeak = item.count === maxVal;
-                return (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group">
-                    <span className="text-[10px] font-bold text-[#707973] group-hover:text-[#02412e]">{item.count}</span>
-                    <div className="w-full bg-[#e1e3df] rounded-t-md h-28 relative overflow-hidden flex items-end">
-                      <div
-                        style={{ height: `${heightPercent}%` }}
-                        className={`w-full rounded-t-md transition-all duration-500 ${
-                          isPeak ? 'bg-[#fcd747]' : 'bg-[#225944]'
-                        }`}
-                      />
-                    </div>
-                    <span className="text-[11px] font-semibold text-[#404944]">{item.day}</span>
-                  </div>
-                );
-              }) : null}
-            </div>
+                      return (
+                        <tr
+                          key={cat.id}
+                          onClick={() => handleSelectCategory(cat)}
+                          className={`cursor-pointer transition hover:bg-[#225944]/5 ${
+                            isSelected ? 'bg-[#225944]/10 border-l-4 border-[#02412e]' : ''
+                          }`}
+                        >
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-[#225944]/10 text-[#02412e] flex items-center justify-center shrink-0 overflow-hidden border border-[#c0c9c2]/40">
+                                {hasImage ? (
+                                  <img src={cat.rawItem.images[0]} alt={cat.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="material-symbols-outlined text-[20px]">{cat.icon}</span>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-bold text-[#191c1a]">{cat.name}</div>
+                                <div className="text-[10px] font-mono text-[#707973]">
+                                  {cat.rawItem?.category || 'General'} | {cat.code}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-[#02412e]">
+                            {cat.basePrice ? `₹${cat.basePrice}` : <span className="text-[#707973] font-normal italic">Price not set</span>}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              cat.status === 'active'
+                                ? 'bg-emerald-500/10 text-emerald-800 border border-emerald-500/20'
+                                : 'bg-rose-500/10 text-rose-700 border border-rose-500/20'
+                            }`}>
+                              {cat.status === 'active' ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditCategory(cat);
+                                }}
+                                className="p-1.5 rounded-lg text-[#707973] hover:bg-[#e1e3df] hover:text-[#02412e] transition"
+                                title="Edit Service"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">edit</span>
+                              </button>
+
+                              {cat.status === 'active' ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmModal({ type: 'deactivate', category: cat });
+                                  }}
+                                  className="p-1.5 rounded-lg text-[#707973] hover:bg-rose-100 hover:text-rose-700 transition"
+                                  title="Deactivate Service"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">block</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmModal({ type: 'reactivate', category: cat });
+                                  }}
+                                  className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-100 transition"
+                                  title="Reactivate Service"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                </button>
+                              )}
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectCategory(cat);
+                                }}
+                                className={`p-1.5 rounded-lg transition ${
+                                  isSelected ? 'bg-[#02412e] text-white' : 'text-[#707973] hover:bg-[#e1e3df]'
+                                }`}
+                                title="Inspect Details"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">tune</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
@@ -585,174 +672,118 @@ export const ServicesManagement: React.FC = () => {
               No service category selected.
             </div>
           ) : (
-          <div className="bg-[#f8faf6] rounded-2xl border border-[#c0c9c2]/50 shadow-sm p-5 space-y-5">
-            {/* Inspector Header */}
-            <div className="pb-4 border-b border-[#c0c9c2]/40 flex items-start justify-between">
-              <div>
-                <span className="text-[10px] font-mono text-[#707973] uppercase tracking-wider">{selectedCategory.code}</span>
-                <h2 className="text-lg font-extrabold text-[#191c1a]">{selectedCategory.name}</h2>
-                <p className="text-xs text-[#404944] mt-0.5">{selectedCategory.description}</p>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-800 text-xs font-bold shrink-0">
-                Active / Ready
-              </span>
-            </div>
-
-            {/* Standard Visit Tariffs Section */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-extrabold text-[#707973] uppercase tracking-wider">Standard Visit Tariffs &amp; Fees</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-[#edeeeb]">
-                  <label className="block text-[11px] font-bold text-[#404944] mb-1">Base Visit Fee (₹)</label>
-                  <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#c0c9c2]/60">
-                    <span className="text-xs font-bold text-[#707973]">₹</span>
-                    <input
-                      type="number"
-                      value={editBasePrice}
-                      onChange={(e) => setEditBasePrice(Number(e.target.value))}
-                      className="w-full text-sm font-bold text-[#191c1a] focus:outline-none"
-                    />
+            <div className="bg-[#f8faf6] rounded-2xl border border-[#c0c9c2]/50 shadow-sm p-5 space-y-5">
+              {/* Inspector Header */}
+              <div className="pb-4 border-b border-[#c0c9c2]/40 flex items-start justify-between gap-3">
+                <div className="flex gap-3">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-[#c0c9c2]/60 overflow-hidden flex items-center justify-center shrink-0">
+                    {selectedCategory.rawItem?.images?.[0] ? (
+                      <img src={selectedCategory.rawItem.images[0]} alt={selectedCategory.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined text-2xl text-[#02412e]">{selectedCategory.icon}</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-[#707973] uppercase tracking-wider">{selectedCategory.code}</span>
+                    <h2 className="text-lg font-extrabold text-[#191c1a]">{selectedCategory.name}</h2>
+                    <p className="text-xs text-[#404944] mt-0.5">{selectedCategory.description || 'No description provided.'}</p>
                   </div>
                 </div>
-
-                <div className="p-3 rounded-xl bg-[#edeeeb]">
-                  <label className="block text-[11px] font-bold text-[#404944] mb-1">Night Surge (10 PM - 6 AM)</label>
-                  <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#c0c9c2]/60">
-                    <span className="text-xs font-bold text-[#707973]">₹</span>
-                    <input
-                      type="number"
-                      value={editNightSurge}
-                      onChange={(e) => setEditNightSurge(Number(e.target.value))}
-                      className="w-full text-sm font-bold text-[#191c1a] focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-[#edeeeb] text-xs">
-                <span className="font-bold text-[#404944]">Extended Labour Rate:</span>
-                <p className="text-[#707973] text-[11px] mt-0.5">{selectedCategory.extendedLaborRate}</p>
-              </div>
-            </div>
-
-            {/* SLA & Dispatch Commitment */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-extrabold text-[#707973] uppercase tracking-wider">SLA &amp; Dispatch Commitment</h3>
-              <div className="p-3.5 rounded-xl bg-[#225944]/10 border border-[#225944]/20 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold text-[#02412e]">Emergency SLA Commitment</div>
-                  <div className="text-[11px] text-[#404944]">Max arrival window limit</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={editSlaMins}
-                    onChange={(e) => setEditSlaMins(Number(e.target.value))}
-                    className="w-16 text-center font-extrabold text-sm py-1 bg-white rounded-lg border border-[#225944]"
-                  />
-                  <span className="text-xs font-bold text-[#02412e]">Mins</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Assigned Technician Pool */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-extrabold text-[#707973] uppercase tracking-wider">Assigned Technician Pool</h3>
-                <span className="text-xs font-bold text-[#02412e]">{selectedCategory.assignedTechs.length} Pinned Techs</span>
-              </div>
-              <div className="space-y-2">
-                {selectedCategory.assignedTechs.map((tech, idx) => (
-                  <div key={idx} className="p-2.5 rounded-xl bg-[#edeeeb] flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img src={tech.avatar} alt={tech.name} className="w-8 h-8 rounded-full object-cover border border-[#c0c9c2]" />
-                      <div>
-                        <div className="font-bold text-xs text-[#191c1a]">{tech.name}</div>
-                        <div className="text-[10px] text-[#707973]">{tech.role}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-bold text-[#715d00] flex items-center gap-1 justify-end">
-                        <span className="material-symbols-outlined text-[14px]">star</span>
-                        <span>{tech.rating}</span>
-                      </div>
-                      <div className="text-[10px] text-[#707973]">{tech.jobs} Jobs</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Coverage Corridors */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-extrabold text-[#707973] uppercase tracking-wider">Campus Coverage Corridors</h3>
-              <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-[#191c1a]">
-                {['Junwani BIT Gate Corridor', 'Smriti Nagar Student Hub', 'Nehru Nagar Residential', 'Civic Center Outer'].map(
-                  (corridor, idx) => (
-                    <label key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-[#edeeeb] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        defaultChecked={selectedCategory.coverageCorridors.some((c) => corridor.includes(c))}
-                        className="rounded text-[#02412e] focus:ring-[#02412e]"
-                      />
-                      <span className="text-[11px] truncate">{corridor}</span>
-                    </label>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Pending Custom Student Queries Queue */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-extrabold text-[#707973] uppercase tracking-wider">Pending Custom Queries</h3>
-                <span className="text-xs font-bold text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                  {customQueries.length} Unresolved
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold shrink-0 uppercase ${
+                  selectedCategory.status === 'active'
+                    ? 'bg-emerald-500/10 text-emerald-800'
+                    : 'bg-rose-500/10 text-rose-700'
+                }`}>
+                  {selectedCategory.status === 'active' ? 'Active' : 'Inactive'}
                 </span>
               </div>
 
-              <div className="space-y-2">
-                {customQueries.map((q) => (
-                  <div key={q.id} className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#191c1a]">{q.studentName}</span>
-                      <span className="text-[10px] font-mono text-[#707973]">{q.timeAgo}</span>
+              {/* Standard Visit Tariffs Section */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-extrabold text-[#707973] uppercase tracking-wider">Standard Visit Tariffs &amp; Fees</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-xl bg-[#edeeeb]">
+                    <label className="block text-[11px] font-bold text-[#404944] mb-1">Base Visit Fee (₹)</label>
+                    <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#c0c9c2]/60">
+                      <span className="text-xs font-bold text-[#707973]">₹</span>
+                      <input
+                        type="number"
+                        value={editBasePrice}
+                        onChange={(e) => setEditBasePrice(Number(e.target.value))}
+                        className="w-full text-sm font-bold text-[#191c1a] focus:outline-none"
+                      />
                     </div>
-                    <div className="text-[11px] text-[#707973]">{q.location}</div>
-                    <p className="text-xs font-medium text-[#404944] pt-1">"{q.issue}"</p>
                   </div>
-                ))}
+
+                  <div className="p-3 rounded-xl bg-[#edeeeb]">
+                    <label className="block text-[11px] font-bold text-[#404944] mb-1">Night Surge (10 PM - 6 AM)</label>
+                    <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#c0c9c2]/60">
+                      <span className="text-xs font-bold text-[#707973]">₹</span>
+                      <input
+                        type="number"
+                        value={editNightSurge}
+                        onChange={(e) => setEditNightSurge(Number(e.target.value))}
+                        className="w-full text-sm font-bold text-[#191c1a] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Details */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-extrabold text-[#707973] uppercase tracking-wider">Dispatch Center Location</h3>
+                <div className="p-3 rounded-xl bg-[#edeeeb] text-xs space-y-1">
+                  <div className="font-bold text-[#191c1a]">
+                    {selectedCategory.rawItem?.location?.address || selectedCategory.rawItem?.city || 'Location not specified'}
+                  </div>
+                  {selectedCategory.rawItem?.location?.latitude && (
+                    <div className="text-[11px] font-mono text-[#707973]">
+                      GPS: {selectedCategory.rawItem.location.latitude}, {selectedCategory.rawItem.location.longitude}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons Footer */}
+              <div className="pt-3 border-t border-[#c0c9c2]/40 space-y-2">
+                <button
+                  onClick={handleSaveTariffs}
+                  className="w-full py-3 rounded-xl bg-[#02412e] hover:bg-[#225944] text-white font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                  <span>Save Tariff Update</span>
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleEditCategory(selectedCategory)}
+                    className="py-2.5 rounded-xl bg-[#225944]/10 hover:bg-[#225944]/20 text-[#02412e] font-semibold text-xs transition flex items-center justify-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                    <span>Edit Service</span>
+                  </button>
+
+                  {selectedCategory.status === 'active' ? (
+                    <button
+                      onClick={() => setConfirmModal({ type: 'deactivate', category: selectedCategory })}
+                      className="py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 font-semibold text-xs transition flex items-center justify-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">block</span>
+                      <span>Deactivate Service</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmModal({ type: 'reactivate', category: selectedCategory })}
+                      className="py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 font-semibold text-xs transition flex items-center justify-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                      <span>Reactivate Service</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-
-            {/* Action Buttons Footer */}
-            <div className="pt-3 border-t border-[#c0c9c2]/40 space-y-2">
-              <button
-                onClick={handleSaveTariffs}
-                className="w-full py-3 rounded-xl bg-[#02412e] hover:bg-[#225944] text-white font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                <span>Save &amp; Propagate Tariffs</span>
-              </button>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => handleEditCategory(selectedCategory)}
-                  className="py-2 rounded-xl bg-[#225944]/10 hover:bg-[#225944]/20 text-[#02412e] font-semibold text-xs transition flex items-center justify-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[16px]">edit</span>
-                  <span>Edit Service</span>
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(selectedCategory)}
-                  className="py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 font-semibold text-xs transition flex items-center justify-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[16px]">delete</span>
-                  <span>Delete Service</span>
-                </button>
-              </div>
-            </div>
-          </div>
           )}
         </div>
       </div>
