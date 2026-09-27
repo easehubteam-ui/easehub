@@ -7,8 +7,8 @@ export interface PGLocation {
   city: string;
   state: string;
   pincode: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface PGProperty {

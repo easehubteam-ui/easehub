@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import LocationMap from '../common/LocationMap';
+import LocationPicker from '../common/LocationPicker';
 import { storageApi } from '../../services/storageApi';
 
 export interface LaundryFormData {
@@ -25,8 +25,8 @@ export interface LaundryFormData {
   state: string;
   pincode: string;
   corridor: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   // Delivery & Operations
   turnaroundHours: number;
   pickupTimings: string;
@@ -41,6 +41,7 @@ export interface AddLaundryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmitLaundry: (data: LaundryFormData) => void;
+  initialData?: Partial<LaundryFormData>;
 }
 
 const defaultLaundryPhotos: string[] = [];
@@ -60,32 +61,33 @@ export const AddLaundryModal: React.FC<AddLaundryModalProps> = ({
   isOpen,
   onClose,
   onSubmitLaundry,
+  initialData,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<LaundryFormData>({
-    name: 'Campus Express Laundry & Dry Cleaners',
-    ownerName: 'Vikram Singh',
-    ownerPhone: '98765 67890',
-    email: 'laundry@easehub.in',
-    photos: defaultLaundryPhotos,
-    pricePerKg: 40,
-    steamIronPerPc: 10,
-    heavyBlanketPrice: 150,
-    dryCleanBasePrice: 120,
-    expressSurgeFee: 49,
-    minOrderWeight: 5,
-    servicesOffered: ['Wash & Fold', 'Steam Ironing', 'Heavy Blanket Wash', 'Express 24h Delivery'],
-    address: 'Shop 8, Coaching Zone Sector 7, Smriti Nagar',
-    landmark: 'Near BIT Hostels Gate 1',
-    city: 'Bhilai',
-    state: 'Chhattisgarh',
-    pincode: '490020',
-    corridor: 'Smriti Nagar',
-    latitude: 21.200150,
-    longitude: 81.334100,
+    name: initialData?.name || '',
+    ownerName: initialData?.ownerName || '',
+    ownerPhone: initialData?.ownerPhone || '',
+    email: initialData?.email || '',
+    photos: initialData?.photos || defaultLaundryPhotos,
+    pricePerKg: initialData?.pricePerKg || 0,
+    steamIronPerPc: initialData?.steamIronPerPc || 0,
+    heavyBlanketPrice: initialData?.heavyBlanketPrice || 0,
+    dryCleanBasePrice: initialData?.dryCleanBasePrice || 0,
+    expressSurgeFee: initialData?.expressSurgeFee || 0,
+    minOrderWeight: initialData?.minOrderWeight || 3,
+    servicesOffered: initialData?.servicesOffered || ['Wash & Fold', 'Steam Ironing'],
+    address: initialData?.address || '',
+    landmark: initialData?.landmark || '',
+    city: initialData?.city || 'Bhilai',
+    state: initialData?.state || 'Chhattisgarh',
+    pincode: initialData?.pincode || '',
+    corridor: initialData?.corridor || 'Smriti Nagar',
+    latitude: initialData?.latitude ?? null,
+    longitude: initialData?.longitude ?? null,
     turnaroundHours: 24,
     pickupTimings: '8:00 AM - 11:00 AM & 5:00 PM - 8:00 PM',
     doorstepDelivery: true,
@@ -477,60 +479,40 @@ export const AddLaundryModal: React.FC<AddLaundryModalProps> = ({
                     <p className="text-xs text-[#6B6B63]">Pin central laundry workshop location on map.</p>
                   </div>
 
-                  <form onSubmit={handleSearchLocation} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={mapSearchQuery}
-                      onChange={(e) => setMapSearchQuery(e.target.value)}
-                      placeholder="Search hub address (e.g. Smriti Nagar Bhilai)..."
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#E5E1D6] text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#225944]"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSearchingMap}
-                      className="px-4 py-2.5 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#184232] transition-colors shrink-0 flex items-center gap-1.5"
+                  <LocationPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    address={formData.address}
+                    landmark={formData.landmark}
+                    city={formData.city}
+                    state={formData.state}
+                    pincode={formData.pincode}
+                    onLocationSelect={(loc) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        address: loc.address || prev.address,
+                        landmark: loc.landmark || prev.landmark,
+                        city: loc.city || prev.city,
+                        state: loc.state || prev.state,
+                        pincode: loc.pincode || prev.pincode,
+                      }));
+                    }}
+                  />
+
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E5E1D6] space-y-2 shadow-xs text-xs">
+                    <label className="block font-bold text-[#171A18] mb-1">Primary Coverage Corridor *</label>
+                    <select
+                      value={formData.corridor}
+                      onChange={(e) => setFormData({ ...formData, corridor: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-bold text-[#171A18]"
                     >
-                      <span className="material-symbols-outlined text-[18px]">search</span>
-                      {isSearchingMap ? 'Locating...' : 'Locate'}
-                    </button>
-                  </form>
-
-                  <div className="bg-white p-3 rounded-2xl border border-[#E5E1D6] space-y-2 shadow-xs">
-                    <LocationMap
-                      latitude={formData.latitude}
-                      longitude={formData.longitude}
-                      title={formData.name}
-                      address={formData.address}
-                      interactive={true}
-                      onLocationChange={handleLocationChange}
-                      className="w-full h-56 rounded-xl border border-[#E5E1D6]"
-                    />
-                  </div>
-
-                  <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3 shadow-xs text-xs">
-                    <div>
-                      <label className="block font-bold text-[#171A18] mb-1">Street Address *</label>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-semibold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-[#171A18] mb-1">Primary Coverage Corridor *</label>
-                      <select
-                        value={formData.corridor}
-                        onChange={(e) => setFormData({ ...formData, corridor: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-bold text-[#171A18]"
-                      >
-                        <option value="Smriti Nagar">Smriti Nagar Corridor</option>
-                        <option value="Junwani">Junwani (BIT Corridor)</option>
-                        <option value="Nehru Nagar">Nehru Nagar</option>
-                        <option value="Civic Center">Civic Center</option>
-                      </select>
-                    </div>
+                      <option value="Smriti Nagar">Smriti Nagar Corridor</option>
+                      <option value="Junwani">Junwani (BIT Corridor)</option>
+                      <option value="Nehru Nagar">Nehru Nagar</option>
+                      <option value="Civic Center">Civic Center</option>
+                    </select>
                   </div>
                 </div>
               )}

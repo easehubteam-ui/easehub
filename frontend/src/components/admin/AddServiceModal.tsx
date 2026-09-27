@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import LocationMap from '../common/LocationMap';
+import LocationPicker from '../common/LocationPicker';
 import { storageApi } from '../../services/storageApi';
 
 export interface ServiceFormData {
@@ -25,8 +25,8 @@ export interface ServiceFormData {
   coverageCorridors: string[];
   slaMins: number;
   slaGuarantee: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   // Tech Assignment
   primaryTechName: string;
   primaryTechRole: string;
@@ -75,8 +75,8 @@ const emptyFormData: ServiceFormData = {
   coverageCorridors: [],
   slaMins: 30,
   slaGuarantee: '30 min SLA',
-  latitude: 0,
-  longitude: 0,
+  latitude: null,
+  longitude: null,
   primaryTechName: '',
   primaryTechRole: '',
   primaryTechRating: 5.0,
@@ -479,9 +479,31 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
               {currentStep === 3 && (
                 <div className="space-y-4">
                   <div className="pb-2 border-b border-[#E5E1D6]">
-                    <h3 className="text-lg font-extrabold text-[#171A18]">3. Coverage Area & Response SLA</h3>
-                    <p className="text-xs text-[#6B6B63]">Select corridors and promised technician response time.</p>
+                    <h3 className="text-lg font-extrabold text-[#171A18]">3. Coverage Area & Exact Location</h3>
+                    <p className="text-xs text-[#6B6B63]">Select corridors and pin dispatch hub location on interactive map.</p>
                   </div>
+
+                  <LocationPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    address={formData.address}
+                    landmark={formData.landmark}
+                    city={formData.city}
+                    state={formData.state}
+                    pincode={formData.pincode}
+                    onLocationSelect={(loc) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        address: loc.address || prev.address,
+                        landmark: loc.landmark || prev.landmark,
+                        city: loc.city || prev.city,
+                        state: loc.state || prev.state,
+                        pincode: loc.pincode || prev.pincode,
+                      }));
+                    }}
+                  />
 
                   <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3 shadow-xs text-xs">
                     <label className="block font-bold text-[#171A18]">Supported Student Corridors</label>
@@ -507,32 +529,21 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
                   </div>
 
                   <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3.5 shadow-xs text-xs">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block font-bold text-[#171A18] mb-1">Promised SLA (Minutes)</label>
-                        <input
-                          type="number"
-                          value={formData.slaMins}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value) || 30;
-                            setFormData({
-                              ...formData,
-                              slaMins: val,
-                              slaGuarantee: `${val} min Express SLA`,
-                            });
-                          }}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-bold text-[#225944]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-bold text-[#171A18] mb-1">Dispatch Hub Address</label>
-                        <input
-                          type="text"
-                          value={formData.address}
-                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-semibold text-xs"
-                        />
-                      </div>
+                    <div>
+                      <label className="block font-bold text-[#171A18] mb-1">Promised SLA (Minutes)</label>
+                      <input
+                        type="number"
+                        value={formData.slaMins}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 30;
+                          setFormData({
+                            ...formData,
+                            slaMins: val,
+                            slaGuarantee: `${val} min Express SLA`,
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-bold text-[#225944]"
+                      />
                     </div>
                   </div>
                 </div>

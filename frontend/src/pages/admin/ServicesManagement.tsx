@@ -230,8 +230,8 @@ export const ServicesManagement: React.FC = () => {
             city: data.city,
             state: data.state,
             pincode: data.pincode,
-            latitude: data.latitude,
-            longitude: data.longitude,
+            latitude: data.latitude ?? undefined,
+            longitude: data.longitude ?? undefined,
           },
         });
         setToastMsg(`Updated service category: ${data.name}!`);
@@ -252,8 +252,8 @@ export const ServicesManagement: React.FC = () => {
             city: data.city,
             state: data.state,
             pincode: data.pincode,
-            latitude: data.latitude,
-            longitude: data.longitude,
+            latitude: data.latitude ?? undefined,
+            longitude: data.longitude ?? undefined,
           },
         });
         setToastMsg(`Published new service category: ${data.name}!`);
@@ -293,8 +293,8 @@ export const ServicesManagement: React.FC = () => {
       coverageCorridors: cat.coverageCorridors,
       slaMins: cat.slaMins,
       slaGuarantee: cat.slaGuarantee,
-      latitude: loc.latitude || 21.198409,
-      longitude: loc.longitude || 81.332444,
+      latitude: loc.latitude ?? null,
+      longitude: loc.longitude ?? null,
       primaryTechName: raw.providerName || '',
       primaryTechRole: 'Technician',
       primaryTechRating: cat.rawItem?.rating || 0,

@@ -67,8 +67,8 @@ export const MealsPage: React.FC = () => {
               city: m.location?.city || 'Bhilai',
               state: m.location?.state || 'Chhattisgarh',
               pincode: m.location?.pincode || '',
-              latitude: lat,
-              longitude: lng,
+              latitude: lat ?? undefined,
+              longitude: lng ?? undefined,
             },
           };
         });

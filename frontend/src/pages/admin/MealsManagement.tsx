@@ -741,13 +741,13 @@ export const MealsManagement: React.FC = () => {
                     title="Kitchen Location Setup & Live Map Pin"
                     initialValues={
                       selectedProvider.location || {
-                        address: selectedProvider.address,
-                        landmark: selectedProvider.distance,
+                        address: selectedProvider.name || '',
+                        landmark: '',
                         city: 'Bhilai',
                         state: 'Chhattisgarh',
-                        pincode: '490020',
-                        latitude: 21.198409,
-                        longitude: 81.332444,
+                        pincode: '',
+                        latitude: null,
+                        longitude: null,
                       }
                     }
                     onSaveLocation={(updatedLocation) => {

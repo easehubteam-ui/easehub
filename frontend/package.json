@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@insforge/sdk": "^1.5.2",
+    "@types/leaflet": "^1.9.22",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
     "framer-motion": "^13.4.3",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.477.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

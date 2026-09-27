@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import LocationMap from '../common/LocationMap';
+import LocationPicker from '../common/LocationPicker';
 import { storageApi } from '../../services/storageApi';
 
 export interface MealProviderFormData {
@@ -31,8 +31,8 @@ export interface MealProviderFormData {
   pincode: string;
   corridor: string;
   distance: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   // Capacity & Operations
   kitchenCapacity: string;
   deliveryRadius: string;
@@ -49,6 +49,7 @@ export interface AddMealProviderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmitProvider: (data: MealProviderFormData) => void;
+  initialData?: Partial<MealProviderFormData>;
 }
 
 const defaultMealPhotos: string[] = [];
@@ -70,38 +71,39 @@ export const AddMealProviderModal: React.FC<AddMealProviderModalProps> = ({
   isOpen,
   onClose,
   onSubmitProvider,
+  initialData,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<MealProviderFormData>({
-    name: 'Annapurna Royal Student Mess',
-    fssai: '20524098711045',
-    businessType: 'Mess',
-    ownerName: 'Ramesh Sharma',
-    ownerPhone: '98765 12345',
-    email: 'annapurna@easehub.in',
-    photos: defaultMealPhotos,
-    tags: ['Pure Veg', 'North Indian', 'Unlimited Rotis', 'RO Water Prepared'],
-    dailyPrice: 80,
-    monthlyPrice: 2400,
-    breakfastMenu: 'Poha / Aloo Paratha with Curd, Boiled Sprouts & Special Chai',
-    breakfastPrice: 40,
-    lunchMenu: '4 Butter Rotis (Wheat), Steamed Basmati Rice, Dal Tadka, Paneer Masala & Salad',
-    lunchPrice: 80,
-    dinnerMenu: 'Phulkas, Jeera Rice, Dal Makhani, Mixed Veg Korma & Special Dessert',
-    dinnerPrice: 80,
-    flexiTrialPrice: 1300,
-    address: 'Plot 12, Junwani Main Road, Near BIT Gate 2',
-    landmark: 'Near BIT Durg Campus Gate 2',
-    city: 'Bhilai',
-    state: 'Chhattisgarh',
-    pincode: '490020',
-    corridor: 'Junwani',
-    distance: '400m to BIT Gate 2',
-    latitude: 21.198409,
-    longitude: 81.332444,
+    name: initialData?.name || '',
+    fssai: initialData?.fssai || '',
+    businessType: initialData?.businessType || 'Mess',
+    ownerName: initialData?.ownerName || '',
+    ownerPhone: initialData?.ownerPhone || '',
+    email: initialData?.email || '',
+    photos: initialData?.photos || defaultMealPhotos,
+    tags: initialData?.tags || ['Pure Veg', 'North Indian'],
+    dailyPrice: initialData?.dailyPrice || 0,
+    monthlyPrice: initialData?.monthlyPrice || 0,
+    breakfastMenu: initialData?.breakfastMenu || '',
+    breakfastPrice: initialData?.breakfastPrice || 0,
+    lunchMenu: initialData?.lunchMenu || '',
+    lunchPrice: initialData?.lunchPrice || 0,
+    dinnerMenu: initialData?.dinnerMenu || '',
+    dinnerPrice: initialData?.dinnerPrice || 0,
+    flexiTrialPrice: initialData?.flexiTrialPrice || 0,
+    address: initialData?.address || '',
+    landmark: initialData?.landmark || '',
+    city: initialData?.city || 'Bhilai',
+    state: initialData?.state || 'Chhattisgarh',
+    pincode: initialData?.pincode || '',
+    corridor: initialData?.corridor || 'Junwani',
+    distance: initialData?.distance || '',
+    latitude: initialData?.latitude ?? null,
+    longitude: initialData?.longitude ?? null,
     kitchenCapacity: '350 Meals/day',
     deliveryRadius: '4.5 km buffer',
     breakfastTiming: '7:30 AM - 9:30 AM',
@@ -540,60 +542,29 @@ export const AddMealProviderModal: React.FC<AddMealProviderModalProps> = ({
                     <p className="text-xs text-[#6B6B63]">Pin map location for accurate student doorstep tiffin delivery.</p>
                   </div>
 
-                  {/* Geocode Search */}
-                  <form onSubmit={handleSearchLocation} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={mapSearchQuery}
-                      onChange={(e) => setMapSearchQuery(e.target.value)}
-                      placeholder="Search address (e.g. Junwani Main Road Bhilai)..."
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#E5E1D6] text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#225944]"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSearchingMap}
-                      className="px-4 py-2.5 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#184232] transition-colors shrink-0 flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">search</span>
-                      {isSearchingMap ? 'Locating...' : 'Locate'}
-                    </button>
-                  </form>
+                  <LocationPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    address={formData.address}
+                    landmark={formData.landmark}
+                    city={formData.city}
+                    state={formData.state}
+                    pincode={formData.pincode}
+                    onLocationSelect={(loc) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        address: loc.address || prev.address,
+                        landmark: loc.landmark || prev.landmark,
+                        city: loc.city || prev.city,
+                        state: loc.state || prev.state,
+                        pincode: loc.pincode || prev.pincode,
+                      }));
+                    }}
+                  />
 
-                  {/* Leaflet Map */}
-                  <div className="bg-white p-3 rounded-2xl border border-[#E5E1D6] space-y-2 shadow-xs">
-                    <div className="flex items-center justify-between text-xs px-1">
-                      <span className="font-bold text-[#171A18] flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[#225944] text-[18px]">location_on</span>
-                        Drag pin to exact kitchen entry
-                      </span>
-                      <span className="font-mono text-[11px] text-[#6B6B63]">
-                        {formData.latitude}, {formData.longitude}
-                      </span>
-                    </div>
-
-                    <LocationMap
-                      latitude={formData.latitude}
-                      longitude={formData.longitude}
-                      title={formData.name}
-                      address={formData.address}
-                      interactive={true}
-                      onLocationChange={handleLocationChange}
-                      className="w-full h-56 rounded-xl border border-[#E5E1D6]"
-                    />
-                  </div>
-
-                  {/* Address Inputs */}
-                  <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3 shadow-xs text-xs">
-                    <div>
-                      <label className="block font-bold text-[#171A18] mb-1">Street Address *</label>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-semibold"
-                      />
-                    </div>
-
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E5E1D6] space-y-2 shadow-xs text-xs">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block font-bold text-[#171A18] mb-1">Delivery Corridor *</label>

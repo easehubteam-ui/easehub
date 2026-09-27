@@ -710,13 +710,13 @@ export const PGManagement: React.FC = () => {
                       title="Exact Location Setup & Live Map Pin"
                       initialValues={
                         selectedPG.location || {
-                          address: `${selectedPG.name}, ${selectedPG.corridor}`,
-                          landmark: 'Near BIT Gate 2',
+                          address: selectedPG.name || '',
+                          landmark: '',
                           city: 'Bhilai',
                           state: 'Chhattisgarh',
-                          pincode: '490020',
-                          latitude: 21.198409,
-                          longitude: 81.332444,
+                          pincode: '',
+                          latitude: null,
+                          longitude: null,
                         }
                       }
                       onSaveLocation={(updatedLocation) => {
@@ -862,8 +862,8 @@ export const PGManagement: React.FC = () => {
                 city: formData.city,
                 state: formData.state,
                 pincode: formData.pincode,
-                latitude: formData.latitude,
-                longitude: formData.longitude,
+                latitude: formData.latitude ?? undefined,
+                longitude: formData.longitude ?? undefined,
               },
               status: 'active',
             });

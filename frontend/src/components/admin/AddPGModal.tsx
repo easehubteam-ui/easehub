@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import LocationMap from '../common/LocationMap';
+import LocationPicker from '../common/LocationPicker';
 import { storageApi } from '../../services/storageApi';
 
 export interface PGFormData {
@@ -17,8 +17,8 @@ export interface PGFormData {
   city: string;
   state: string;
   pincode: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   corridor: string;
   // Details
   totalBeds: number;
@@ -37,33 +37,34 @@ export interface AddPGModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmitPG: (data: PGFormData) => void;
+  initialData?: Partial<PGFormData>;
 }
 
 const defaultPhotos: string[] = [];
 
-export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmitPG }) => {
+export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmitPG, initialData }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [formData, setFormData] = useState<PGFormData>({
-    name: 'Royal Deluxe Student Haven',
-    propertyType: 'PG',
-    gender: 'BOYS',
-    landlordName: 'Rajesh Kumar',
-    landlordPhone: '98765 43210',
-    email: 'owner@example.com',
-    description: 'A comfortable and well-maintained PG with modern amenities, located near BIT Durg. Perfect for students with a peaceful environment and easy access to nearby facilities.',
-    photos: defaultPhotos,
-    address: 'Plot 18, Junwani Main Road, Near BIT Gate 2',
-    landmark: 'Near BIT Durg Campus',
-    city: 'Bhilai',
-    state: 'Chhattisgarh',
-    pincode: '490020',
-    latitude: 21.198409,
-    longitude: 81.332444,
-    corridor: 'Junwani',
+    name: initialData?.name || '',
+    propertyType: initialData?.propertyType || 'PG',
+    gender: initialData?.gender || 'BOYS',
+    landlordName: initialData?.landlordName || '',
+    landlordPhone: initialData?.landlordPhone || '',
+    email: initialData?.email || '',
+    description: initialData?.description || '',
+    photos: initialData?.photos || defaultPhotos,
+    address: initialData?.address || '',
+    landmark: initialData?.landmark || '',
+    city: initialData?.city || 'Bhilai',
+    state: initialData?.state || 'Chhattisgarh',
+    pincode: initialData?.pincode || '',
+    latitude: initialData?.latitude ?? null,
+    longitude: initialData?.longitude ?? null,
+    corridor: initialData?.corridor || 'Junwani',
     totalBeds: 30,
     vacantBeds: 8,
     monthlyRent: 6000,
@@ -476,116 +477,40 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
                     <p className="text-xs text-[#6B6B63]">Pin the exact location of the property on the interactive map.</p>
                   </div>
 
-                  {/* Address Search Form */}
-                  <form onSubmit={handleSearchLocation} className="bg-white p-3 rounded-2xl border border-[#E5E1D6] flex items-center gap-2 shadow-xs">
-                    <span className="material-symbols-outlined text-[#225944] text-[20px] ml-1">search</span>
-                    <input
-                      type="text"
-                      value={mapSearchQuery}
-                      onChange={(e) => setMapSearchQuery(e.target.value)}
-                      placeholder="Search address, area or landmark (e.g. Junwani Bhilai)"
-                      className="w-full bg-transparent border-none text-xs font-medium text-[#171A18] focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSearchingMap}
-                      className="px-4 py-2 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#184232] transition-colors shrink-0"
+                  <LocationPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    address={formData.address}
+                    landmark={formData.landmark}
+                    city={formData.city}
+                    state={formData.state}
+                    pincode={formData.pincode}
+                    onLocationSelect={(loc) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        address: loc.address || prev.address,
+                        landmark: loc.landmark || prev.landmark,
+                        city: loc.city || prev.city,
+                        state: loc.state || prev.state,
+                        pincode: loc.pincode || prev.pincode,
+                      }));
+                    }}
+                  />
+
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E5E1D6] space-y-2 shadow-xs text-xs">
+                    <label className="block font-bold text-[#171A18]">Campus Corridor Selection</label>
+                    <select
+                      value={formData.corridor}
+                      onChange={(e) => setFormData({ ...formData, corridor: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-bold cursor-pointer text-xs"
                     >
-                      {isSearchingMap ? 'Searching...' : 'Find'}
-                    </button>
-                  </form>
-
-                  {/* Interactive Leaflet Map */}
-                  <div className="bg-white p-3 rounded-2xl border border-[#E5E1D6] shadow-xs space-y-2">
-                    <LocationMap
-                      latitude={formData.latitude}
-                      longitude={formData.longitude}
-                      title={formData.name}
-                      address={formData.address}
-                      zoom={16}
-                      interactive={true}
-                      onLocationChange={handleLocationChange}
-                      className="w-full h-64 rounded-xl overflow-hidden border border-[#E5E1D6]"
-                    />
-
-                    <div className="flex items-center justify-between text-[11px] pt-1 px-1">
-                      <span className="font-bold text-[#225944] flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">location_on</span>
-                        <span>Exact location selected ({formData.latitude}, {formData.longitude})</span>
-                      </span>
-                      <span className="text-[#6B6B63]">Drag marker or click map to adjust</span>
-                    </div>
-                  </div>
-
-                  {/* Manual Coordinates & Address Inputs */}
-                  <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-3 shadow-xs text-xs">
-                    <div>
-                      <label className="block font-bold text-[#171A18] mb-1">Full Street Address *</label>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        placeholder="Plot number, building name, street..."
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-medium"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block font-bold text-[#171A18] mb-1">Landmark</label>
-                        <input
-                          type="text"
-                          value={formData.landmark}
-                          onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
-                          placeholder="e.g. Near BIT Gate 2"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-medium"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-[#171A18] mb-1">Campus Corridor</label>
-                        <select
-                          value={formData.corridor}
-                          onChange={(e) => setFormData({ ...formData, corridor: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-bold cursor-pointer"
-                        >
-                          <option value="Junwani">Junwani (BIT Durg)</option>
-                          <option value="Smriti Nagar">Smriti Nagar</option>
-                          <option value="Nehru Nagar">Nehru Nagar</option>
-                          <option value="Civic Center">Civic Center</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <label className="block font-bold text-[#171A18] mb-1">City</label>
-                        <input
-                          type="text"
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-bold text-[#171A18] mb-1">State</label>
-                        <input
-                          type="text"
-                          value={formData.state}
-                          onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-bold text-[#171A18] mb-1">Pincode</label>
-                        <input
-                          type="text"
-                          value={formData.pincode}
-                          onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-[#F8FAF6] border border-[#E5E1D6] font-mono font-bold"
-                        />
-                      </div>
-                    </div>
+                      <option value="Junwani">Junwani (BIT Durg)</option>
+                      <option value="Smriti Nagar">Smriti Nagar</option>
+                      <option value="Nehru Nagar">Nehru Nagar</option>
+                      <option value="Civic Center">Civic Center</option>
+                    </select>
                   </div>
                 </div>
               )}
