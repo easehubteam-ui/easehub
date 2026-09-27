@@ -32,20 +32,28 @@ export const LaundryPage: React.FC = () => {
       setError('');
       const data = await laundryApi.getAll();
       if (Array.isArray(data)) {
-        const mapped: LaundryProvider[] = data.map((l: ApiLaundryProvider) => ({
-          id: l._id || l.code,
-          name: l.name,
-          location: l.location?.address ? `${l.location.address}, ${l.location.city}` : `${l.corridor || 'Bhilai'}, Chhattisgarh`,
-          rating: l.rating || 5.0,
-          reviewsCount: l.reviewCount || 0,
-          pricePerKg: l.perKgPrice || l.pricePerKg || 40,
-          image: l.image || (l.images && l.images[0]) || 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=800',
-          badge: { text: 'Verified', color: 'bg-[#225944] text-white' },
-          services: (l.tags && l.tags.length > 0) ? l.tags : (l.services?.map((s: any) => s.name) || ['Wash & Fold', 'Dry Cleaning']),
-          turnaround: l.turnaroundHours ? `${l.turnaroundHours} hours` : '24 hours',
-          freePickup: l.pickupAvailable ?? true,
-          specialFeature: 'Doorstep Pickup & Delivery',
-        }));
+        const mapped: LaundryProvider[] = data.map((l: ApiLaundryProvider) => {
+          const serviceStrings = Array.isArray(l.tags) && l.tags.length > 0
+            ? l.tags
+            : (Array.isArray(l.services)
+                ? l.services.map((s: any) => typeof s === 'string' ? s : (s?.name || String(s)))
+                : ['Wash & Fold', 'Dry Cleaning']);
+
+          return {
+            id: l._id || l.code || String(l.id),
+            name: l.name || 'Express Laundry Partner',
+            location: l.location?.address ? `${l.location.address}, ${l.location.city}` : `${l.corridor || 'Bhilai'}, Chhattisgarh`,
+            rating: l.rating || 4.8,
+            reviewsCount: l.reviewCount || 18,
+            pricePerKg: l.perKgPrice || l.pricePerKg || 50,
+            image: l.image || (l.images && l.images[0]) || 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=800',
+            badge: { text: 'Verified', color: 'bg-[#225944] text-white' },
+            services: serviceStrings.filter(Boolean),
+            turnaround: l.turnaroundHours ? `${l.turnaroundHours} hours` : '24 hours',
+            freePickup: l.pickupAvailable ?? true,
+            specialFeature: 'Doorstep Pickup & Delivery',
+          };
+        });
         setProvidersList(mapped);
       }
     } catch (err: any) {
@@ -69,15 +77,15 @@ export const LaundryPage: React.FC = () => {
   };
 
   const filteredProviders = providersList.filter((provider) => {
-    if (activeFilter === 'Wash & Fold' && !provider.services.some((s) => s.toLowerCase().includes('wash'))) return false;
-    if (activeFilter === 'Dry Cleaning' && !provider.services.some((s) => s.toLowerCase().includes('dry'))) return false;
+    if (activeFilter === 'Wash & Fold' && !provider.services.some((s) => typeof s === 'string' && s.toLowerCase().includes('wash'))) return false;
+    if (activeFilter === 'Dry Cleaning' && !provider.services.some((s) => typeof s === 'string' && s.toLowerCase().includes('dry'))) return false;
     if (activeFilter === 'Express (24h)' && !provider.turnaround.includes('24')) return false;
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       return (
-        provider.name.toLowerCase().includes(q) ||
-        provider.location.toLowerCase().includes(q) ||
-        provider.services.some((s) => s.toLowerCase().includes(q))
+        (provider.name || '').toLowerCase().includes(q) ||
+        (provider.location || '').toLowerCase().includes(q) ||
+        (provider.services || []).some((s) => typeof s === 'string' && s.toLowerCase().includes(q))
       );
     }
     return true;

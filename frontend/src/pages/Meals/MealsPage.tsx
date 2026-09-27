@@ -37,36 +37,42 @@ export const MealsPage: React.FC = () => {
       setError('');
       const data = await mealApi.getAll();
       if (Array.isArray(data)) {
-        const mapped: MealProvider[] = data.map((m: ApiMealProvider) => ({
-          id: m._id || m.code,
-          name: m.name,
-          location: m.location?.address ? `${m.location.address}, ${m.location.city}` : `${m.corridor || 'Bhilai'}, Chhattisgarh`,
-          rating: m.rating || 5.0,
-          reviewsCount: m.reviewCount || 0,
-          pricePerMeal: m.dailyPrice || 0,
-          image: m.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800',
-          badge: { text: m.isVeg ? 'Pure Veg' : 'Veg & Non-Veg', color: 'bg-[#225944] text-white' },
-          tags: m.tags || [],
-          mealsPerDay: 'Breakfast, Lunch & Dinner',
-          deliveryAvailable: true,
-          opensAt: '7:00 AM',
-          isVeg: m.isVeg ?? true,
-          locationData: {
-            address: m.location?.address || m.corridor || '',
-            landmark: m.location?.landmark || m.distance || '',
-            city: m.location?.city || 'Bhilai',
-            state: m.location?.state || 'Chhattisgarh',
-            pincode: m.location?.pincode || '',
-            latitude: m.location?.latitude || 0,
-            longitude: m.location?.longitude || 0,
-          },
-        }));
+        const mapped: MealProvider[] = data.map((m: ApiMealProvider) => {
+          const safeTags = Array.isArray(m.tags) ? m.tags : [];
+          const lat = m.location?.latitude || 21.1938;
+          const lng = m.location?.longitude || 81.3509;
+
+          return {
+            id: m._id || m.code || String(m.id),
+            name: m.name || 'Verified Mess Partner',
+            location: m.location?.address ? `${m.location.address}, ${m.location.city}` : `${m.corridor || 'Bhilai'}, Chhattisgarh`,
+            rating: m.rating || 4.9,
+            reviewsCount: m.reviewCount || 24,
+            pricePerMeal: m.dailyPrice || 120,
+            image: m.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800',
+            badge: { text: m.isVeg ? 'Pure Veg' : 'Veg & Non-Veg', color: 'bg-[#225944] text-white' },
+            tags: safeTags,
+            mealsPerDay: 'Breakfast, Lunch & Dinner',
+            deliveryAvailable: true,
+            opensAt: '7:00 AM',
+            isVeg: m.isVeg ?? true,
+            locationData: {
+              address: m.location?.address || m.corridor || 'Bhilai',
+              landmark: m.location?.landmark || m.distance || '',
+              city: m.location?.city || 'Bhilai',
+              state: m.location?.state || 'Chhattisgarh',
+              pincode: m.location?.pincode || '',
+              latitude: lat,
+              longitude: lng,
+            },
+          };
+        });
         setProvidersList(mapped);
         if (mapped.length > 0) setSelectedProvider(mapped[0]);
       }
     } catch (err: any) {
       console.error('Failed to load meal providers from API:', err);
-      setError('Unable to load meal providers. Please try again.');
+      setError('Unable to load meal providers. Please try refreshing.');
     } finally {
       setLoading(false);
     }
@@ -90,9 +96,9 @@ export const MealsPage: React.FC = () => {
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       return (
-        provider.name.toLowerCase().includes(q) ||
-        provider.location.toLowerCase().includes(q) ||
-        provider.tags.some((t) => t.toLowerCase().includes(q))
+        (provider.name || '').toLowerCase().includes(q) ||
+        (provider.location || '').toLowerCase().includes(q) ||
+        (provider.tags || []).some((t) => typeof t === 'string' && t.toLowerCase().includes(q))
       );
     }
     return true;
@@ -522,7 +528,9 @@ export const MealsPage: React.FC = () => {
 
                       <div className="flex items-center justify-between pt-1 px-1">
                         <span className="text-[11px] text-[#6B6B63] font-semibold">
-                          {lat && lng ? `Exact GPS Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})` : 'Location set via Admin Console'}
+                          {typeof lat === 'number' && typeof lng === 'number' && lat > 0 && lng > 0
+                            ? `Exact GPS Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+                            : 'Location set via Admin Console'}
                         </span>
                         <a
                           href={lat && lng ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedProvider.name + ' ' + selectedProvider.location)}`}

@@ -32,29 +32,35 @@ export interface LaundryProvider {
 
 const mapLaundryFromDB = (record: any): LaundryProvider => {
   const pricing = record.pricing || {};
+  const rawServices = Array.isArray(record.services) ? record.services : [];
+  const normalizedServices = rawServices.map((s: any) => typeof s === 'string' ? { name: s } : (s && typeof s === 'object' && s.name ? s : { name: String(s || 'Wash & Fold') }));
+  const tagList = rawServices.map((s: any) => typeof s === 'string' ? s : (s?.name || String(s)));
+
+  const perKg = Number(pricing.perKg || pricing.pricePerKg || pricing.startingPrice || 50);
+
   return {
     id: record.id,
     _id: record.id,
     code: record.code || `LP-${record.id.slice(0, 6)}`,
-    name: record.name,
+    name: record.name || 'Laundry Service Provider',
     ownerName: 'EaseHub Verified Partner',
     phone: '9876543210',
     email: 'laundry@easehub.com',
     description: record.description || 'Express Wash & Steam Iron Service',
     corridor: record.city || 'Metro Area',
     distance: '0.8 km',
-    rating: 4.7,
-    reviewCount: 18,
+    rating: 4.8,
+    reviewCount: 24,
     status: record.status || 'active',
-    tags: ['Express Wash', 'Steam Iron', 'Doorstep Pickup'],
-    pricePerKg: Number(pricing.pricePerKg) || 50,
-    perKgPrice: Number(pricing.pricePerKg) || 50,
+    tags: tagList.length > 0 ? tagList : ['Express Wash', 'Steam Iron', 'Doorstep Pickup'],
+    pricePerKg: perKg,
+    perKgPrice: perKg,
     steamIronPerPc: Number(pricing.steamIronPerPc) || 15,
     turnaroundHours: 24,
     turnaroundTime: '24 Hours Express',
-    image: record.image || (Array.isArray(record.images) && record.images[0]) || '',
+    image: record.image || (Array.isArray(record.images) && record.images[0]) || 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=800',
     images: Array.isArray(record.images) ? record.images : [],
-    services: Array.isArray(record.services) ? record.services : [{ name: 'Wash & Fold' }, { name: 'Steam Iron' }],
+    services: normalizedServices.length > 0 ? normalizedServices : [{ name: 'Wash & Fold' }, { name: 'Steam Iron' }],
     pickupAvailable: record.pickup_available ?? true,
     location: {
       address: record.address || '',
@@ -62,8 +68,8 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
       city: record.city || '',
       state: record.state || '',
       pincode: record.pincode || '',
-      latitude: Number(record.latitude) || 12.9716,
-      longitude: Number(record.longitude) || 77.5946,
+      latitude: Number(record.latitude) || 21.1938,
+      longitude: Number(record.longitude) || 81.3509,
     },
     createdAt: record.created_at,
     updatedAt: record.updated_at
