@@ -130,7 +130,7 @@ export const HomePage: React.FC = () => {
             <div className="lg:col-span-5">
               <div className="relative rounded-2xl overflow-hidden border border-[#E5E1D6] shadow-sm bg-[#F7F5EF]">
                 <img
-                  src="/logo.jpg"
+                  src="/logo.png"
                   alt="EaseHub Campus Partners"
                   className="w-full h-72 sm:h-80 object-cover"
                 />

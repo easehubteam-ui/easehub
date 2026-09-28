@@ -43,7 +43,7 @@ export const CustomerLayout: React.FC = () => {
           {/* Logo Branding */}
           <Link to="/dashboard" className="flex items-center gap-2.5 group shrink-0">
             <img
-              src="/logo.jpg"
+              src="/logo.png"
               alt="EaseHub Logo"
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover shadow-xs border border-[#E5E1D6] group-hover:scale-105 transition-transform"
             />

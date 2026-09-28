@@ -13,7 +13,7 @@ export const AppLayout: React.FC = () => {
       {/* Top Application Bar */}
       <header className="border-b border-white/10 bg-black/60 backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <Link to="/dashboard" className="flex items-center gap-2 font-extrabold text-xl text-[#225944]">
-          <img src="/logo.jpg" alt="EaseHub Logo" className="w-8 h-8 rounded-lg object-cover border border-[#EECA3A]/30" />
+          <img src="/logo.png" alt="EaseHub Logo" className="w-8 h-8 rounded-lg object-cover border border-[#EECA3A]/30" />
           <span className="text-white">
             Ease<span className="text-[#EECA3A]">Hub App</span>
           </span>

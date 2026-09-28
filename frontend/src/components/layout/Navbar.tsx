@@ -64,7 +64,7 @@ export const Navbar: React.FC = () => {
         {/* Left: Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 shrink-0">
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="EaseHub Logo"
             className="w-9 h-9 rounded-xl object-cover border border-[#E5E1D6]"
           />

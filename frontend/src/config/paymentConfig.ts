@@ -9,7 +9,7 @@ export const paymentConfig = {
   easehubUpiId: '6201614778@paytm',
   
   // Payment QR Asset Configuration
-  qrImageUrl: '/logo.jpg', // Public QR asset if available
+  qrImageUrl: '/logo.png', // Public QR asset if available
   isQrAvailable: true,
 
   // Helper for tel: links

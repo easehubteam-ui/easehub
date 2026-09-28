@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 space-y-5">
             <Link to="/" className="inline-flex items-center gap-2.5 group">
               <img
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="EaseHub Logo"
                 className="w-9 h-9 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
               />

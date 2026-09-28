@@ -85,7 +85,7 @@ export const RegisterPage: React.FC = () => {
 
                 <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
                   <img
-                    src="/logo.jpg"
+                    src="/logo.png"
                     alt="EaseHub Logo"
                     className="w-10 h-10 rounded-xl object-cover shadow-xs border border-[#E5E1D6] group-hover:scale-105 transition-transform"
                   />
