@@ -38,8 +38,8 @@ export const CustomerLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#171A18] flex flex-col font-sans relative pb-20 md:pb-0">
       {/* App-like Top Navigation Bar for Logged-In Customers */}
-      <header className="sticky top-0 z-40 bg-white border-b border-[#E5E1D6] shadow-xs">
-        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
+      <header className="sticky top-3 z-40 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto my-2 pointer-events-auto transition-all duration-300">
+        <div className="w-full rounded-full px-4 sm:px-6 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] flex items-center justify-between gap-4 transition-all duration-300">
           
           {/* Logo Branding */}
           <Link to="/dashboard" className="flex items-center gap-2.5 group shrink-0">

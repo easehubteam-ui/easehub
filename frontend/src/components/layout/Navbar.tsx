@@ -58,8 +58,8 @@ export const Navbar: React.FC = () => {
       <div
         className={`w-full rounded-full px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 transition-all duration-300 ${
           scrolled
-            ? 'bg-white/95 backdrop-blur-xl border border-[#E5E1D6] shadow-xl'
-            : 'bg-white/85 backdrop-blur-md border border-white/60 shadow-lg'
+            ? 'bg-white/80 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_0_rgba(0,0,0,0.12)]'
+            : 'bg-white/50 backdrop-blur-md border border-white/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)]'
         }`}
       >
         {/* Left: Brand Logo & Tagline */}
@@ -226,7 +226,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden mt-2 bg-white/95 backdrop-blur-xl border border-[#E5E1D6] rounded-3xl p-3 space-y-1 text-sm font-semibold shadow-xl animate-in fade-in">
+        <div className="lg:hidden mt-2 bg-white/75 backdrop-blur-xl border border-white/60 rounded-3xl p-3 space-y-1 text-sm font-semibold shadow-xl animate-in fade-in">
           {navLinks.map((link) => (
             <Link
               key={link.path}
