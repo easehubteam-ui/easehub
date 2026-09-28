@@ -19,8 +19,11 @@ export const CustomerPaymentPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Booking payload passed via route state or fetched from latest pending booking
+  // Booking payload passed via route state or URL search parameters
   const routeState = location.state || {};
+  const queryParams = new URLSearchParams(location.search);
+  const urlBookingId = queryParams.get('bookingId') || queryParams.get('id') || '';
+
   const [bookingDetails, setBookingDetails] = useState<{
     bookingId?: string;
     amount: number;
@@ -28,7 +31,7 @@ export const CustomerPaymentPage: React.FC = () => {
     providerName?: string;
     address?: string;
   }>({
-    bookingId: routeState.bookingId || '',
+    bookingId: routeState.bookingId || urlBookingId || '',
     amount: routeState.amount || 0,
     serviceName: routeState.serviceName || 'EaseHub Accommodation & Living Service',
     providerName: routeState.providerName || 'EaseHub Verified Partner',
@@ -59,23 +62,53 @@ export const CustomerPaymentPage: React.FC = () => {
     }
   };
 
-  // Fetch latest pending booking if amount is missing
+  // Synchronize state with PostgreSQL database on mount & refresh
   useEffect(() => {
-    if (isAuthenticated && user && user.role === 'customer' && !bookingDetails.amount) {
-      bookingApi.getMyBookings().then((bList) => {
-        if (Array.isArray(bList) && bList.length > 0) {
-          const latest = bList[0];
-          setBookingDetails({
-            bookingId: latest.bookingNumber || latest.id || latest._id,
-            amount: latest.amount || 4500,
-            serviceName: latest.roomType || latest.serviceName || 'EaseHub Student Stay',
-            providerName: latest.serviceName || 'EaseHub Partner',
-            address: latest.address || 'Bhilai, CG',
-          });
+    let isMounted = true;
+    if (isAuthenticated && user && user.role === 'customer') {
+      bookingApi.getMyBookings().then(async (bList) => {
+        if (!isMounted || !Array.isArray(bList) || bList.length === 0) return;
+
+        let target = bList[0];
+        const searchId = bookingDetails.bookingId || urlBookingId;
+        if (searchId) {
+          const found = bList.find((b: any) => b.id === searchId || b.bookingNumber === searchId || b._id === searchId);
+          if (found) target = found;
+        }
+
+        const bId = target.id || target._id || target.bookingNumber;
+        setBookingDetails({
+          bookingId: bId,
+          amount: target.amount || 4500,
+          serviceName: target.notes || target.serviceName || target.roomType || 'EaseHub Student Stay',
+          providerName: 'EaseHub Verified Partner',
+          address: target.address || 'Bhilai, CG',
+        });
+
+        // Query payments table for existing payment record
+        try {
+          const payments = await paymentApi.getPayments();
+          const existing = payments.find((p: any) => p.bookingId === bId || p.booking_id === bId);
+          if (existing && isMounted) {
+            setUtrInput(existing.utr !== '—' ? existing.utr || '' : '');
+            setUploadedPath(existing.screenshotUrl || '');
+
+            const st = (existing.status || '').toLowerCase();
+            if (st === 'verified' || st === 'completed') {
+              setPaymentState({ status: 'verified', utr: existing.utr || '' });
+            } else if (st === 'rejected') {
+              setPaymentState({ status: 'rejected', utr: existing.utr || '', rejectionReason: existing.rejectionReason });
+            } else if (st.includes('pending')) {
+              setPaymentState({ status: 'pending', utr: existing.utr || '' });
+            }
+          }
+        } catch (pErr) {
+          console.warn('Failed to load existing payment state from DB:', pErr);
         }
       }).catch(() => {});
     }
-  }, [isAuthenticated, user, bookingDetails.amount]);
+    return () => { isMounted = false; };
+  }, [isAuthenticated, user, urlBookingId]);
 
   if (authLoading) {
     return (
@@ -241,6 +274,69 @@ export const CustomerPaymentPage: React.FC = () => {
               <MessageSquare className="w-4 h-4" />
               <span>Chat with Support (+91 6201614778)</span>
             </a>
+          </div>
+        </div>
+      )}
+
+      {paymentState.status === 'verified' && (
+        <div className="p-6 rounded-3xl bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-950 space-y-4 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 font-extrabold text-base text-emerald-900">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              <span>Payment Verified &amp; Booking Confirmed! 🎉</span>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-extrabold uppercase tracking-wider">
+              VERIFIED
+            </span>
+          </div>
+
+          <div className="space-y-2 text-xs text-emerald-900 font-medium leading-relaxed">
+            <p className="text-sm font-bold">Your booking is officially confirmed.</p>
+            <p>
+              Transaction UTR <strong className="font-mono text-[#171A18]">{paymentState.utr}</strong> has been audited and approved by EaseHub Admin.
+            </p>
+          </div>
+
+          <div className="pt-3 border-t border-emerald-500/20 flex flex-wrap items-center justify-between gap-3">
+            <Link
+              to="/bookings"
+              className="px-5 py-2.5 rounded-xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5"
+            >
+              <span>View Confirmed Booking</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {paymentState.status === 'rejected' && (
+        <div className="p-6 rounded-3xl bg-rose-500/10 border-2 border-rose-500/30 text-rose-950 space-y-4 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 font-extrabold text-base text-rose-900">
+              <AlertTriangle className="w-6 h-6 text-rose-600" />
+              <span>Payment Verification Rejected</span>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-extrabold uppercase tracking-wider">
+              REJECTED
+            </span>
+          </div>
+
+          <div className="space-y-2 text-xs text-rose-900 font-medium leading-relaxed">
+            <p className="text-sm font-bold">Rejection Reason:</p>
+            <p className="p-3 rounded-xl bg-white/60 font-mono text-xs border border-rose-200 text-rose-900">
+              {paymentState.rejectionReason || 'UTR transaction reference or receipt image could not be verified by Admin.'}
+            </p>
+            <p>Please review your payment details, re-upload a clear screenshot, and re-submit for verification below.</p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setPaymentState({ status: 'idle', utr: '' })}
+              className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs transition shadow-xs"
+            >
+              Re-submit Payment Proof
+            </button>
           </div>
         </div>
       )}

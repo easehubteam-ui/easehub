@@ -58,56 +58,117 @@ export const bookingApi = {
     const { data: userRes } = await insforge.auth.getCurrentUser();
     if (!userRes?.user) throw new Error('Authentication required');
 
-    const { data: profiles } = await insforge.database
+    let { data: profiles } = await insforge.database
       .from('users')
       .select('id')
       .eq('auth_user_id', userRes.user.id);
 
-    const profile = Array.isArray(profiles) && profiles.length > 0 ? profiles[0] : null;
-    if (!profile) throw new Error('User profile not found');
+    let profile = Array.isArray(profiles) && profiles.length > 0 ? profiles[0] : null;
 
-    const payload = {
-      userId: profile.id,
-      serviceId: (data as any).serviceId || null,
-      bookingType: data.serviceType || 'SERVICE',
-      scheduledDate: data.scheduledDate || new Date().toISOString(),
-      scheduledTime: data.scheduledTime || '',
-      address: data.address || '',
-      notes: data.description || '',
-      amount: data.amount || 0
-    };
+    if (!profile) {
+      const { data: emailProfiles } = await insforge.database
+        .from('users')
+        .select('id')
+        .eq('email', userRes.user.email || '');
 
-    try {
-      const res = await insforge.functions.invoke('create-booking', { body: payload });
-      if (res.data) return res.data;
-    } catch (err) {
-      console.warn('create-booking edge function call failed, performing direct DB insert:', err);
+      if (Array.isArray(emailProfiles) && emailProfiles.length > 0) {
+        profile = emailProfiles[0];
+      } else {
+        const authUser: any = userRes.user;
+        const { data: insertedUser } = await insforge.database
+          .from('users')
+          .insert([{
+            auth_user_id: authUser.id,
+            name: authUser.name || authUser.profile?.name || 'EaseHub Customer',
+            email: authUser.email || '',
+            phone: authUser.phone || authUser.profile?.phone || '6201614778',
+            role: 'customer'
+          }])
+          .select('id');
+        if (insertedUser && insertedUser.length > 0) {
+          profile = insertedUser[0];
+        }
+      }
     }
 
-    const bkNum = 'BK' + Date.now().toString().slice(-6);
+    if (!profile?.id) throw new Error('User profile resolution failed');
+
+    // Clean booking type for PostgreSQL enum constraint: ('PG', 'MEAL', 'LAUNDRY', 'SERVICE')
+    let cleanType = (data.serviceType || 'PG').toUpperCase();
+    if (cleanType === 'MEALS') cleanType = 'MEAL';
+    if (!['PG', 'MEAL', 'LAUNDRY', 'SERVICE'].includes(cleanType)) {
+      cleanType = 'PG';
+    }
+
+    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const bkNum = `EHB-${dateStr}-${randomSuffix}`;
+
     const { data: inserted, error: dbErr } = await insforge.database
       .from('bookings')
       .insert([{
         booking_number: bkNum,
         user_id: profile.id,
-        service_name: data.serviceName || 'EaseHub Service',
-        booking_type: data.serviceType || 'SERVICE',
-        scheduled_date: payload.scheduledDate,
-        address: payload.address,
-        amount: payload.amount,
-        status: 'PENDING'
+        service_id: (data as any).serviceId || null,
+        booking_type: cleanType,
+        status: 'PENDING',
+        scheduled_date: data.scheduledDate || new Date().toISOString(),
+        scheduled_time: data.scheduledTime || null,
+        address: data.address || 'Bhilai, Chhattisgarh',
+        notes: data.serviceName || data.description || 'EaseHub Accommodation & Living Service',
+        amount: data.amount || 4500
       }])
       .select('*');
 
-    if (inserted && inserted.length > 0) {
-      return inserted[0];
-    }
-
     if (dbErr) {
       console.error('Direct booking insert error:', dbErr);
+      throw new Error(`Unable to create booking in database: ${dbErr.message}`);
     }
 
-    return { id: bkNum, bookingNumber: bkNum, booking_number: bkNum };
+    if (!inserted || inserted.length === 0) {
+      throw new Error('Failed to create booking record in database.');
+    }
+
+    const bookingRow = inserted[0];
+
+    // Initialize payment record in 'payments' table linked by booking_id
+    try {
+      await insforge.database
+        .from('payments')
+        .insert([{
+          booking_id: bookingRow.id,
+          user_id: profile.id,
+          amount: bookingRow.amount,
+          payment_method: 'qr',
+          status: 'VERIFICATION_PENDING'
+        }]);
+    } catch (payErr) {
+      console.warn('Payment record initialization notice:', payErr);
+    }
+
+    // Fire edge function in background if deployed
+    insforge.functions.invoke('create-booking', {
+      body: {
+        bookingId: bookingRow.id,
+        userId: profile.id,
+        bookingNumber: bkNum,
+        amount: bookingRow.amount
+      }
+    }).catch(() => {});
+
+    return {
+      id: bookingRow.id,
+      _id: bookingRow.id,
+      bookingNumber: bookingRow.booking_number,
+      booking_number: bookingRow.booking_number,
+      userId: bookingRow.user_id,
+      serviceName: bookingRow.notes,
+      amount: Number(bookingRow.amount),
+      status: bookingRow.status,
+      scheduledDate: bookingRow.scheduled_date,
+      address: bookingRow.address,
+      createdAt: bookingRow.created_at
+    };
   },
   updateStatus: async (id: string, status: string, vendor?: string, roomNumber?: string) => {
     const res = await insforge.functions.invoke('update-booking-status', {
