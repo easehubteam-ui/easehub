@@ -1,870 +1,580 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Navbar from '../../components/layout/Navbar';
-
-type TabType = 'pg' | 'meals' | 'laundry' | 'repairs';
-
-interface MapNode {
-  id: string;
-  name: string;
-  locality: string;
-  embedUrl: string;
-}
-
-const mapNodes: MapNode[] = [
-  {
-    id: 'junwani',
-    name: 'Junwani Campus Zone',
-    locality: 'BIT Durg Gate 2',
-    embedUrl: 'https://maps.google.com/maps?q=Bhilai%20Institute%20of%20Technology%20Durg,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
-  },
-  {
-    id: 'smriti-nagar',
-    name: 'Smriti Nagar Locality',
-    locality: 'Smriti Nagar',
-    embedUrl: 'https://maps.google.com/maps?q=Smriti%20Nagar%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
-  },
-  {
-    id: 'civic-center',
-    name: 'Civic Center Area',
-    locality: 'Civic Center',
-    embedUrl: 'https://maps.google.com/maps?q=Civic%20Center%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
-  },
-  {
-    id: 'nehru-nagar',
-    name: 'Nehru Nagar Sector',
-    locality: 'Nehru Nagar',
-    embedUrl: 'https://maps.google.com/maps?q=Nehru%20Nagar%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
-  },
-  {
-    id: 'rungta',
-    name: 'Rungta College Corridor',
-    locality: 'Kurud Corridor',
-    embedUrl: 'https://maps.google.com/maps?q=Rungta%20College%20Bhilai,%20Chhattisgarh&t=&z=15&ie=UTF8&iwloc=&output=embed',
-  },
-];
-
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import {
+  Search,
+  ArrowRight,
+  Bed,
+  Utensils,
+  Shirt,
+  Wrench,
+  Check,
+  Star,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  Clock,
+  Layers,
+} from 'lucide-react';
+import { pgApi, PGProperty } from '../../services/pgApi';
+import { mealApi, MealProvider } from '../../services/mealApi';
+import { laundryApi, LaundryProvider } from '../../services/laundryApi';
+import { serviceApi, ExtraServiceItem } from '../../services/serviceApi';
 
 export const HomePage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('pg');
-  const [emailOrPhone, setEmailOrPhone] = useState('');
-  const [subscribedMessage, setSubscribedMessage] = useState(false);
-  const [selectedMapNode, setSelectedMapNode] = useState<MapNode>(mapNodes[0]);
   const navigate = useNavigate();
 
-  const handleCTAFormSubmit = (e: React.FormEvent) => {
+  // Search Input State
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // PostgreSQL Real Database States
+  const [pgListings, setPgListings] = useState<PGProperty[]>([]);
+  const [mealProviders, setMealProviders] = useState<MealProvider[]>([]);
+  const [laundryProviders, setLaundryProviders] = useState<LaundryProvider[]>([]);
+  const [extraServices, setExtraServices] = useState<ExtraServiceItem[]>([]);
+  const [loadingDb, setLoadingDb] = useState(true);
+
+  // Mouse Parallax Motion States for Desktop
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const mouseXSpring = useSpring(mousePos.x, { stiffness: 60, damping: 20 });
+  const mouseYSpring = useSpring(mousePos.y, { stiffness: 60, damping: 20 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Small normalized mouse delta (-1 to 1)
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      setMousePos({ x, y });
+    };
+
+    if (window.innerWidth > 768) {
+      window.addEventListener('mousemove', handleMouseMove);
+    }
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Load Real PostgreSQL Database Records
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingDb(true);
+
+    Promise.all([
+      pgApi.getAll().catch(() => [] as PGProperty[]),
+      mealApi.getAll().catch(() => [] as MealProvider[]),
+      laundryApi.getAll().catch(() => [] as LaundryProvider[]),
+      serviceApi.getAll().catch(() => [] as ExtraServiceItem[]),
+    ]).then(([pgs, meals, laundries, services]) => {
+      if (!isMounted) return;
+      setPgListings(Array.isArray(pgs) ? pgs.slice(0, 4) : []);
+      setMealProviders(Array.isArray(meals) ? meals.slice(0, 4) : []);
+      setLaundryProviders(Array.isArray(laundries) ? laundries.slice(0, 4) : []);
+      setExtraServices(Array.isArray(services) ? services.slice(0, 4) : []);
+      setLoadingDb(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Handle Search Submission
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (emailOrPhone.trim()) {
-      setSubscribedMessage(true);
-      setTimeout(() => setSubscribedMessage(false), 5000);
-      setEmailOrPhone('');
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      navigate('/pg');
+      return;
+    }
+
+    if (q.includes('meal') || q.includes('tiffin') || q.includes('food') || q.includes('mess')) {
+      navigate('/meals');
+    } else if (q.includes('laundry') || q.includes('wash') || q.includes('cloth')) {
+      navigate('/laundry');
+    } else if (q.includes('repair') || q.includes('clean') || q.includes('electric') || q.includes('plumb') || q.includes('service')) {
+      navigate('/services');
+    } else {
+      navigate('/pg');
     }
   };
 
   return (
-    <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen">
+    <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen overflow-x-hidden selection:bg-[#EECA3A] selection:text-[#171A18]">
+      
+      {/* ---------------------------------------------------- */}
+      {/* HERO MASTER SECTION (Matching Provided Wireframe) */}
+      {/* ---------------------------------------------------- */}
+      <section className="relative pt-4 pb-12 md:pt-8 md:pb-20 overflow-hidden">
+        
+        {/* Subtle Background Organic Glows */}
+        <div className="absolute top-0 right-[5%] w-[600px] h-[600px] bg-[#EECA3A]/15 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-1/3 left-[-5%] w-[500px] h-[500px] bg-[#225944]/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      <main className="w-full">
-        {/* HERO MASTER SECTION */}
-        <section className="relative w-full pt-6 pb-16 md:pt-10 md:pb-24 overflow-hidden bg-gradient-to-b from-[#F7F5EF] via-[#E9F1ED]/40 to-[#F7F5EF]">
-          {/* Subtle architectural background glow */}
-          <div className="absolute -top-24 right-[-5%] w-[550px] h-[550px] bg-[#EECA3A]/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
-          <div className="absolute top-1/2 left-[-10%] w-[480px] h-[480px] bg-[#225944]/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
-
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
-            {/* Top Split: Headline & Visual Collage */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              {/* Left: Copy & Value Proposition */}
-              <div className="lg:col-span-7 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#225944]/10 text-[#225944]">
-                  <span className="material-symbols-outlined text-[15px]">verified</span>
-                  <span className="text-[11px] tracking-wider uppercase font-bold">The All-In-One Co-Living Ecosystem</span>
-                </div>
-
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[#171A18] tracking-tight leading-[1.15]">
-                  Your Entire Student Living, <br className="hidden sm:inline" />
-                  <span className="text-[#225944] relative inline-block">
-                    Sorted In One Place.
-                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-[#EECA3A] opacity-80" fill="none" preserveAspectRatio="none" viewBox="0 0 240 12">
-                      <path d="M2 9C58 2 178 3 238 9" stroke="currentColor" strokeLinecap="round" strokeWidth="4" />
-                    </svg>
-                  </span>
-                </h1>
-
-                <p className="text-lg text-[#6B6B63] max-w-xl leading-relaxed">
-                  Verified PG & Hostels, nutritious daily tiffins, hygienic door-to-door laundry, and reliable maintenance across Bhilai & Durg campuses.
-                </p>
-
-                {/* Quick Metrics Badges */}
-                <div className="pt-2 flex flex-wrap items-center gap-3 text-[#6B6B63]">
-                  <div className="flex items-center gap-1.5 bg-white px-3.5 py-1.5 rounded-full shadow-sm border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[18px]">verified_user</span>
-                    <span className="text-xs font-semibold text-[#171A18]">100% Verified Places</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white px-3.5 py-1.5 rounded-full shadow-sm border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#EECA3A] text-[18px]">skillet</span>
-                    <span className="text-xs font-semibold text-[#171A18]">Fresh Homestyle Food</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white px-3.5 py-1.5 rounded-full shadow-sm border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[18px]">local_laundry_service</span>
-                    <span className="text-xs font-semibold text-[#171A18]">24h Turnaround</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white px-3.5 py-1.5 rounded-full shadow-sm border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[18px]">money_off</span>
-                    <span className="text-xs font-semibold text-[#171A18]">Zero Brokerage</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Bento Hero Composition */}
-              <div className="lg:col-span-5 relative">
-                <div className="relative rounded-3xl bg-white p-4 shadow-[0_6px_16px_rgba(23,26,24,0.04),0_20px_40px_rgba(34,89,68,0.08)] border border-[#E5E1D6]">
-                  <div className="relative h-[340px] md:h-[390px] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-[#225944] via-[#1a4535] to-[#113125] p-6 text-white flex flex-col justify-between">
-                    <div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EECA3A] text-[#171A18] text-xs font-bold mb-3">
-                        <span>EaseHub Living Ecosystem</span>
-                      </div>
-                      <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight text-[#EECA3A]">
-                        Verified Student Living & Services
-                      </h2>
-                      <p className="text-xs text-white/80 mt-2 max-w-sm">
-                        Direct access to PGs, daily tiffin messes, doorstep laundry pickups, and on-demand maintenance.
-                      </p>
-                    </div>
-
-                    {/* Floating Mini Micro-cards */}
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                      <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl flex items-center gap-3 shadow-md border border-[#E5E1D6] text-[#171A18]">
-                        <div className="w-10 h-10 rounded-lg bg-[#EECA3A]/20 text-[#171A18] flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[20px]">restaurant</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] text-[#6B6B63] uppercase font-bold">Hot Tiffin</p>
-                          <p className="text-xs font-bold text-[#171A18] truncate">Cooked Fresh Daily</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl flex items-center gap-3 shadow-md border border-[#E5E1D6] text-[#171A18]">
-                        <div className="w-10 h-10 rounded-lg bg-[#225944]/10 text-[#225944] flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[20px]">local_laundry_service</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] text-[#6B6B63] uppercase font-bold">Laundry Pick</p>
-                          <p className="text-xs font-bold text-[#171A18] truncate">Doorstep Pickup</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Multi-tab Unified Search & Discovery Bar */}
-            <div className="w-full bg-white rounded-3xl p-4 md:p-6 shadow-[0_4px_12px_rgba(23,26,24,0.04),0_18px_36px_rgba(34,89,68,0.06)] border border-[#E5E1D6] -mt-2 z-20">
-              {/* Interactive Service Mode Tabs */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 border-b border-[#E5E1D6]" id="discovery-tabs">
-                <button
-                  onClick={() => setActiveTab('pg')}
-                  className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                    activeTab === 'pg'
-                      ? 'bg-[#225944] text-white shadow-sm'
-                      : 'bg-[#F7F5EF] text-[#6B6B63] hover:text-[#171A18]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">bed</span>
-                  <span>Find PG / Hostel</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('meals')}
-                  className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                    activeTab === 'meals'
-                      ? 'bg-[#225944] text-white shadow-sm'
-                      : 'bg-[#F7F5EF] text-[#6B6B63] hover:text-[#171A18]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">restaurant</span>
-                  <span>Daily Meals & Tiffins</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('laundry')}
-                  className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                    activeTab === 'laundry'
-                      ? 'bg-[#225944] text-white shadow-sm'
-                      : 'bg-[#F7F5EF] text-[#6B6B63] hover:text-[#171A18]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">local_laundry_service</span>
-                  <span>Laundry Pickup</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('repairs')}
-                  className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                    activeTab === 'repairs'
-                      ? 'bg-[#225944] text-white shadow-sm'
-                      : 'bg-[#F7F5EF] text-[#6B6B63] hover:text-[#171A18]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">handyman</span>
-                  <span>Doorstep Repairs</span>
-                </button>
-              </div>
-
-              {/* Tab Content Panels */}
-              {activeTab === 'pg' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                  <div className="md:col-span-4 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">location_on</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Campus / Locality</label>
-                      <input
-                        type="text"
-                        defaultValue="Junwani, Bhilai"
-                        className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none placeholder-[#6B6B63]"
-                        placeholder="e.g. Junwani, BIT Durg, Smriti Nagar"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">group</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Room Category</label>
-                      <select className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none cursor-pointer border-none p-0">
-                        <option>Single Room (Private)</option>
-                        <option>Double Sharing</option>
-                        <option>Triple Sharing</option>
-                        <option>Girls Only PG</option>
-                        <option>Boys Only PG</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-2 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">payments</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Max Budget</label>
-                      <select className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none cursor-pointer border-none p-0">
-                        <option>Under ₹6,000</option>
-                        <option>Under ₹8,000</option>
-                        <option>Under ₹12,000</option>
-                        <option>Any Budget</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <button
-                      onClick={() => navigate('/pg')}
-                      className="w-full h-12 rounded-2xl bg-[#EECA3A] hover:bg-[#e0bd2c] text-[#171A18] text-sm font-extrabold flex items-center justify-center gap-2 shadow-md transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">search</span>
-                      <span>Explore PG Listings</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'meals' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                  <div className="md:col-span-5 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">map</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Delivery Locality</label>
-                      <input
-                        type="text"
-                        defaultValue="Civic Center, Bhilai"
-                        className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none placeholder-[#6B6B63]"
-                        placeholder="Locality, Hostel name, or College"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-4 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">restaurant_menu</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Diet & Meal Type</label>
-                      <select className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none cursor-pointer border-none p-0">
-                        <option>Pure Veg Daily Thali</option>
-                        <option>Veg + Non-Veg Alternate</option>
-                        <option>Breakfast + Dinner Pack</option>
-                        <option>3 Meals All Inclusive</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <button
-                      onClick={() => navigate('/meals')}
-                      className="w-full h-12 rounded-2xl bg-[#EECA3A] hover:bg-[#e0bd2c] text-[#171A18] text-sm font-extrabold flex items-center justify-center gap-2 shadow-md transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">skillet</span>
-                      <span>Find Mess Plans</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'laundry' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                  <div className="md:col-span-5 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">pin_drop</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Pickup Address</label>
-                      <input
-                        type="text"
-                        defaultValue="Nehru Nagar East, Bhilai"
-                        className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none placeholder-[#6B6B63]"
-                        placeholder="Hostel room or residence address"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-4 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">local_shipping</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Turnaround Speed</label>
-                      <select className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none cursor-pointer border-none p-0">
-                        <option>Standard 24-48 Hours (₹45/kg)</option>
-                        <option>Express 24h Wash & Steam Press</option>
-                        <option>Shoe & Heavy Bedding Deep Clean</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <button
-                      onClick={() => navigate('/laundry')}
-                      className="w-full h-12 rounded-2xl bg-[#EECA3A] hover:bg-[#e0bd2c] text-[#171A18] text-sm font-extrabold flex items-center justify-center gap-2 shadow-md transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">schedule</span>
-                      <span>Book Pickup</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'repairs' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                  <div className="md:col-span-5 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">home_repair_service</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Issue / Service Type</label>
-                      <input
-                        type="text"
-                        defaultValue="Electrician & Wiring Check"
-                        className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none placeholder-[#6B6B63]"
-                        placeholder="Electrician, Tap Leak, AC servicing"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-4 bg-[#F7F5EF] rounded-2xl px-4 py-2.5 flex items-center gap-3 border border-[#E5E1D6]">
-                    <span className="material-symbols-outlined text-[#225944] text-[22px]">event</span>
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[10px] text-[#6B6B63] uppercase font-bold">Preferred Time</label>
-                      <select className="w-full bg-transparent text-sm font-bold text-[#171A18] focus:outline-none cursor-pointer border-none p-0">
-                        <option>Today - Urgent (Within 2 Hours)</option>
-                        <option>Today - Evening (5 PM - 8 PM)</option>
-                        <option>Tomorrow Morning (9 AM - 12 PM)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <button
-                      onClick={() => navigate('/services')}
-                      className="w-full h-12 rounded-2xl bg-[#EECA3A] hover:bg-[#e0bd2c] text-[#171A18] text-sm font-extrabold flex items-center justify-center gap-2 shadow-md transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">handyman</span>
-                      <span>Find Verified Pro</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick filter chips underneath the search bar */}
-              <div className="pt-4 flex flex-wrap items-center gap-2 text-[#6B6B63]">
-                <span className="text-xs font-bold text-[#171A18] mr-1">Trending:</span>
-                <Link to="/pg" className="px-3 py-1 rounded-full bg-[#F7F5EF] hover:bg-[#E5E1D6] text-xs font-medium text-[#171A18] transition-colors">
-                  BIT Durg Girls Hostel
-                </Link>
-                <Link to="/pg" className="px-3 py-1 rounded-full bg-[#F7F5EF] hover:bg-[#E5E1D6] text-xs font-medium text-[#171A18] transition-colors">
-                  Single Room AC Junwani
-                </Link>
-                <Link to="/meals" className="px-3 py-1 rounded-full bg-[#F7F5EF] hover:bg-[#E5E1D6] text-xs font-medium text-[#171A18] transition-colors">
-                  Monthly Pure Veg Tiffin
-                </Link>
-                <Link to="/laundry" className="px-3 py-1 rounded-full bg-[#F7F5EF] hover:bg-[#E5E1D6] text-xs font-medium text-[#171A18] transition-colors">
-                  Wash & Fold Smriti Nagar
-                </Link>
-              </div>
-            </div>
+        {/* Floating Natural Leaves (Layered Motion Elements) */}
+        <motion.div
+          animate={{
+            y: [0, -12, 0],
+            rotate: [0, 8, 0],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          className="absolute top-12 left-4 md:left-12 opacity-80 pointer-events-none z-20 hidden sm:block"
+        >
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#225944]/20 to-transparent backdrop-blur-xs flex items-center justify-center text-[#225944]">
+            <Sparkles className="w-5 h-5 text-[#225944]" />
           </div>
-        </section>
+        </motion.div>
 
-        {/* THE 4 PILLARS OF EASEHUB (INTERACTIVE SERVICE CARDS) */}
-        <section className="w-full py-16 bg-[#F7F5EF]">
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <div>
-                <span className="text-xs font-bold text-[#225944] uppercase tracking-wider">Complete Student Convenience</span>
-                <h2 className="text-3xl font-extrabold text-[#171A18] mt-1">Explore The 4 Pillars of EaseHub</h2>
-              </div>
-              <p className="text-sm text-[#6B6B63] max-w-md">
-                Everything an outstation student or young professional requires to thrive with peace of mind.
-              </p>
-            </div>
-
-            {/* Bento Service Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Pillar 1: PG & Hostels */}
-              <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
-                <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#225944] to-[#163b2d] flex items-center justify-center text-white">
-                    <span className="material-symbols-outlined text-6xl text-[#EECA3A]">apartment</span>
-                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944] text-white text-[11px] font-bold border border-white/20">
-                      Verified Accommodation
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#225944] mb-1">
-                    <span className="material-symbols-outlined text-[20px]">apartment</span>
-                    <span className="text-xs font-bold uppercase">Living Spaces</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#171A18] mb-1">PG & Hostels</h3>
-                  <p className="text-xs text-[#6B6B63] mb-4 leading-relaxed">
-                    Secure single and sharing spaces near your college. Includes Wi-Fi, power backup, study desks, and biometric safety.
-                  </p>
-                </div>
-                <div className="pt-3 flex items-center justify-between border-t border-[#E5E1D6]">
-                  <div>
-                    <span className="text-[10px] text-[#6B6B63] uppercase">Starting from</span>
-                    <p className="text-lg text-[#225944] font-extrabold">₹4,500<span className="text-xs font-normal text-[#6B6B63]">/mo</span></p>
-                  </div>
-                  <Link
-                    to="/pg"
-                    className="w-10 h-10 rounded-full bg-[#225944]/10 group-hover:bg-[#225944] text-[#225944] group-hover:text-white flex items-center justify-center transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 2: Meals & Tiffins */}
-              <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
-                <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#FFF3C4] to-[#EECA3A]/30 flex items-center justify-center text-[#171A18]">
-                    <span className="material-symbols-outlined text-6xl text-[#225944]">skillet</span>
-                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#EECA3A] text-[#171A18] text-[11px] font-bold">
-                      Certified Mess
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#225944] mb-1">
-                    <span className="material-symbols-outlined text-[20px]">restaurant</span>
-                    <span className="text-xs font-bold uppercase">Nutrition</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#171A18] mb-1">Mess & Tiffin Plans</h3>
-                  <p className="text-xs text-[#6B6B63] mb-4 leading-relaxed">
-                    Home-like food prepared with low-oil, high-nutrition recipes. Pause anytime during holidays or exam breaks.
-                  </p>
-                </div>
-                <div className="pt-3 flex items-center justify-between border-t border-[#E5E1D6]">
-                  <div>
-                    <span className="text-[10px] text-[#6B6B63] uppercase">Starting from</span>
-                    <p className="text-lg text-[#171A18] font-extrabold">₹60<span className="text-xs font-normal text-[#6B6B63]">/meal</span></p>
-                  </div>
-                  <Link
-                    to="/meals"
-                    className="w-10 h-10 rounded-full bg-[#EECA3A]/20 group-hover:bg-[#EECA3A] text-[#171A18] flex items-center justify-center transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 3: Laundry Care */}
-              <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
-                <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#E9F2EE] to-[#225944]/20 flex items-center justify-center text-[#225944]">
-                    <span className="material-symbols-outlined text-6xl">local_laundry_service</span>
-                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944] text-white text-[11px] font-bold">
-                      Doorstep Pickup
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#225944] mb-1">
-                    <span className="material-symbols-outlined text-[20px]">local_laundry_service</span>
-                    <span className="text-xs font-bold uppercase">Hygiene</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#171A18] mb-1">Smart Laundry Care</h3>
-                  <p className="text-xs text-[#6B6B63] mb-4 leading-relaxed">
-                    Hygienic wash, fabric-soft rinse, and wrinkle-free steam pressing. Doorstep collection and 24-48h dropoff guaranteed.
-                  </p>
-                </div>
-                <div className="pt-3 flex items-center justify-between border-t border-[#E5E1D6]">
-                  <div>
-                    <span className="text-[10px] text-[#6B6B63] uppercase">Starting from</span>
-                    <p className="text-lg text-[#225944] font-extrabold">₹45<span className="text-xs font-normal text-[#6B6B63]">/kg</span></p>
-                  </div>
-                  <Link
-                    to="/laundry"
-                    className="w-10 h-10 rounded-full bg-[#225944]/10 group-hover:bg-[#225944] text-[#225944] group-hover:text-white flex items-center justify-center transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 4: Home & Maintenance Repairs */}
-              <div className="group relative rounded-3xl bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all border border-[#E5E1D6]">
-                <div>
-                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-gradient-to-br from-[#F7F5EF] to-[#E5E1D6] flex items-center justify-center text-[#171A18]">
-                    <span className="material-symbols-outlined text-6xl text-[#225944]">handyman</span>
-                    <span className="absolute top-3 left-3 px-3 py-0.5 rounded-full bg-[#225944] text-white text-[11px] font-bold">
-                      Background Checked
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#225944] mb-1">
-                    <span className="material-symbols-outlined text-[20px]">handyman</span>
-                    <span className="text-xs font-bold uppercase">Repairs & Help</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#171A18] mb-1">Home & Maintenance</h3>
-                  <p className="text-xs text-[#6B6B63] mb-4 leading-relaxed">
-                    Electricians, plumbers, room deep cleaning, and appliance fixes. Fast turnaround within 2 hours for urgent fixes.
-                  </p>
-                </div>
-                <div className="pt-3 flex items-center justify-between border-t border-[#E5E1D6]">
-                  <div>
-                    <span className="text-[10px] text-[#6B6B63] uppercase">Starting from</span>
-                    <p className="text-lg text-[#225944] font-extrabold">₹199<span className="text-xs font-normal text-[#6B6B63]">/visit</span></p>
-                  </div>
-                  <Link
-                    to="/services"
-                    className="w-10 h-10 rounded-full bg-[#225944]/10 group-hover:bg-[#225944] text-[#225944] group-hover:text-white flex items-center justify-center transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
+        <motion.div
+          animate={{
+            y: [0, 10, 0],
+            rotate: [0, -6, 0],
+          }}
+          transition={{
+            duration: 7,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: 1,
+          }}
+          className="absolute top-1/2 right-6 md:right-16 opacity-75 pointer-events-none z-20 hidden md:block"
+        >
+          <div className="w-12 h-12 rounded-full bg-[#EECA3A]/20 backdrop-blur-xs flex items-center justify-center text-[#171A18]">
+            <span className="material-symbols-outlined text-2xl text-[#174532]">eco</span>
           </div>
-        </section>
+        </motion.div>
 
-        {/* LIVE CITY HUB & INTERACTIVE MAP DISCOVERY */}
-        <section className="w-full py-14 bg-[#E9F1ED]/50 border-y border-[#E5E1D6]">
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              {/* Interactive Live Map Component */}
-              <div className="lg:col-span-6 relative">
-                <div className="relative w-full h-[460px] rounded-3xl overflow-hidden shadow-xl bg-gray-200 border-2 border-[#225944]/30 flex flex-col justify-between">
-                  {/* Live Google Maps Interactive iFrame */}
-                  <iframe
-                    title="Bhilai Campus Live Interactive Map"
-                    src={selectedMapNode.embedUrl}
-                    className="w-full h-full border-0 filter contrast-105 saturate-110"
-                    allowFullScreen
-                    loading="lazy"
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Main Hero Split Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            
+            {/* LEFT HERO COLUMN: Copy & Functional Search */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="lg:col-span-6 space-y-6 z-10"
+            >
+              {/* Eyebrow Badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#225944]/10 text-[#225944] text-xs font-extrabold tracking-wider uppercase border border-[#225944]/15"
+              >
+                <span>CAMPUS LIFE MADE SIMPLE</span>
+                <span className="w-8 h-0.5 bg-[#EECA3A] rounded-full inline-block" />
+              </motion.div>
+
+              {/* Main Headline */}
+              <motion.h1
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#171A18] tracking-tight leading-[1.12]"
+              >
+                All Your <br />
+                Campus Needs <br />
+                in{' '}
+                <span className="relative inline-block text-[#225944]">
+                  One Place
+                  <svg
+                    className="absolute -bottom-2.5 left-0 w-full h-3.5 text-[#EECA3A]"
+                    viewBox="0 0 240 12"
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M2 9C58 2 178 3 238 9"
+                      stroke="currentColor"
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              </motion.h1>
+
+              {/* Subtitle Description */}
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="text-base sm:text-lg text-[#6B6B63] max-w-lg font-medium leading-relaxed"
+              >
+                Find the best PGs, Meals, Laundry, and Extra Services around your campus — fast, trusted, and affordable.
+              </motion.p>
+
+              {/* Large Functional Search Bar (Exact Wireframe Composition) */}
+              <motion.form
+                initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                onSubmit={handleSearchSubmit}
+                className="bg-white rounded-full p-2 pl-5 sm:pl-6 shadow-xl border border-[#E5E1D6] flex items-center justify-between gap-3 focus-within:ring-2 focus-within:ring-[#225944] focus-within:border-[#225944] transition-all"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Search className="w-5 h-5 text-[#225944] shrink-0" />
+                  <input
+                    id="hero-search-input"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search for PG, Meals, Laundry, Services..."
+                    className="w-full bg-transparent border-0 text-sm sm:text-base font-semibold text-[#171A18] placeholder-[#6B6B63] focus:outline-none p-0"
                   />
+                </div>
 
-                  {/* Map Overlay Top Banner */}
-                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 pointer-events-none">
-                    <div className="bg-[#225944] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 pointer-events-auto">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#EECA3A] animate-pulse"></span>
-                      <span className="text-xs font-extrabold">{selectedMapNode.name} • Verified Zone</span>
-                    </div>
+                <button
+                  type="submit"
+                  className="bg-[#225944] hover:bg-[#174532] active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 sm:px-8 py-3.5 rounded-full shadow-md transition-all flex items-center gap-2 shrink-0"
+                >
+                  <span>Search</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </motion.form>
+            </motion.div>
 
-                    <a
-                      href={`https://www.google.com/maps/search/PG+Hostel+near+${encodeURIComponent(selectedMapNode.name)}+Bhilai`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="bg-white/95 backdrop-blur-md hover:bg-white text-[#171A18] px-3.5 py-2 rounded-full shadow-lg text-xs font-bold flex items-center gap-1.5 transition pointer-events-auto border border-[#E5E1D6]"
-                    >
-                      <span className="material-symbols-outlined text-[16px] text-[#225944]">open_in_new</span>
-                      <span>Open G-Maps</span>
-                    </a>
+            {/* RIGHT HERO COLUMN: Realistic Campus Scene & Floating Layers */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              style={{
+                x: mousePos.x * 6,
+                y: mousePos.y * 6,
+              }}
+              className="lg:col-span-6 relative flex items-center justify-center"
+            >
+              {/* Main Visual Container matching Wireframe */}
+              <div className="relative w-full max-w-lg lg:max-w-none rounded-[36px] overflow-hidden bg-gradient-to-br from-white via-[#FFFDF7] to-[#F7F5EF] p-3 sm:p-4 shadow-2xl border border-[#E5E1D6]">
+                <div className="relative h-[340px] sm:h-[420px] md:h-[460px] w-full rounded-[28px] overflow-hidden group">
+                  {/* Base Scene Image */}
+                  <img
+                    src="/hero-wireframe.jpg"
+                    alt="EaseHub Campus Living Scene"
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+
+                  {/* Cursive / Handwritten Badge Text Overlay */}
+                  <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-white/40 -rotate-3 z-10">
+                    <span className="font-handwriting text-xl sm:text-2xl text-[#225944] font-bold block leading-none">
+                      Better Campus Life Together
+                    </span>
                   </div>
 
-                  {/* Interactive Locality Node Chips Overlay at Bottom of Map */}
-                  <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-[#E5E1D6] flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#171A18] flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[#225944] text-[16px]">location_on</span>
-                        <span>Select Locality to Focus Live Map:</span>
-                      </span>
-                      <Link to="/pg" className="text-[11px] font-bold text-[#225944] hover:underline flex items-center gap-0.5">
-                        <span>View Marketplace Map</span>
-                        <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                      </Link>
-                    </div>
-
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                      {mapNodes.map((node) => (
-                        <button
-                          key={node.id}
-                          type="button"
-                          onClick={() => setSelectedMapNode(node)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
-                            selectedMapNode.id === node.id
-                              ? 'bg-[#225944] text-white shadow-sm'
-                              : 'bg-[#F7F5EF] text-[#171A18] hover:bg-[#E5E1D6]'
-                          }`}
-                        >
-                          <span>{node.locality}</span>
-                        </button>
-                      ))}
-                    </div>
+                  {/* Live Status Micro Tag */}
+                  <div className="absolute bottom-6 left-6 bg-[#225944]/95 text-white backdrop-blur-md px-4 py-2 rounded-full shadow-lg flex items-center gap-2 z-10 border border-white/20">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#EECA3A] animate-ping" />
+                    <span className="text-xs font-extrabold tracking-wide">100% Verified Campus Living</span>
                   </div>
                 </div>
               </div>
+            </motion.div>
 
-              {/* Campus Quick Browse Directory */}
-              <div className="lg:col-span-6 space-y-4">
-                <div>
-                  <span className="text-xs font-bold text-[#225944] uppercase tracking-wider">Prime Educational Neighborhoods</span>
-                  <h2 className="text-3xl font-extrabold text-[#171A18] mt-1">Explore Student Localities &amp; Campuses</h2>
-                  <p className="text-sm text-[#6B6B63] mt-2 leading-relaxed">
-                    Stay close to your lecture halls, coaching institutes, and transit stops. Choose a locality to focus the live map instantly.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                  {mapNodes.map((node) => (
-                    <button
-                      key={node.id}
-                      type="button"
-                      onClick={() => setSelectedMapNode(node)}
-                      className={`p-4 rounded-2xl text-left transition-all border ${
-                        selectedMapNode.id === node.id
-                          ? 'bg-[#225944] text-white shadow-md border-[#225944]'
-                          : 'bg-white hover:bg-[#225944] hover:text-white group border-[#E5E1D6]'
-                      }`}
-                    >
-                      <p className={`text-sm font-bold ${selectedMapNode.id === node.id ? 'text-white' : 'text-[#171A18] group-hover:text-white'}`}>
-                        {node.locality}
-                      </p>
-                      <p className={`text-xs ${selectedMapNode.id === node.id ? 'text-white/80' : 'text-[#6B6B63] group-hover:text-white/80'}`}>
-                        Verified Area
-                      </p>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Quick Tip Panel */}
-                <div className="p-4 rounded-2xl bg-white border border-[#E5E1D6] flex items-center gap-4 shadow-sm">
-                  <div className="w-12 h-12 rounded-xl bg-[#EECA3A] text-[#171A18] flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[24px]">school</span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#171A18]">Are you an incoming 1st-year student?</p>
-                    <p className="text-xs text-[#6B6B63]">Get free guided campus roommate pairing & college orientation kit.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-        </section>
 
-        {/* HOW EASEHUB MAKES CAMPUS LIFE EASY (3-STEP FLOW) */}
-        <section className="w-full py-16 bg-[#F7F5EF]">
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
-            <div className="text-center max-w-2xl mx-auto space-y-1">
-              <span className="text-xs font-bold text-[#225944] uppercase tracking-wider">Frictionless Living</span>
-              <h2 className="text-3xl font-extrabold text-[#171A18]">How EaseHub Works For You</h2>
-              <p className="text-sm text-[#6B6B63]">
-                Say goodbye to shady brokers, bad hostel food, and laundry piles. We streamline college lifestyle in three direct steps.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-              {/* Step 1 */}
-              <div className="relative bg-white rounded-3xl p-6 shadow-sm border border-[#E5E1D6] flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-[#225944] text-white flex items-center justify-center mb-4 shadow-md">
-                  <span className="material-symbols-outlined text-[30px]">travel_explore</span>
-                </div>
-                <span className="text-[11px] text-[#EECA3A] uppercase font-extrabold mb-1">Step 01</span>
-                <h3 className="text-lg font-bold text-[#171A18] mb-2">Choose Your Services</h3>
-                <p className="text-xs text-[#6B6B63] leading-relaxed">
-                  Explore verified accommodations, compare meal reviews, and schedule laundry slots according to your college timetable.
-                </p>
-              </div>
-
-              {/* Step 2 */}
-              <div className="relative bg-white rounded-3xl p-6 shadow-sm border border-[#E5E1D6] flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-[#EECA3A] text-[#171A18] flex items-center justify-center mb-4 shadow-md">
-                  <span className="material-symbols-outlined text-[30px]">schedule_send</span>
-                </div>
-                <span className="text-[11px] text-[#225944] uppercase font-extrabold mb-1">Step 02</span>
-                <h3 className="text-lg font-bold text-[#171A18] mb-2">Instant Room & Plan Booking</h3>
-                <p className="text-xs text-[#6B6B63] leading-relaxed">
-                  Schedule an in-person room visit, start a 3-day meal trial, or request doorstep clothes pickup in less than 60 seconds.
-                </p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="relative bg-white rounded-3xl p-6 shadow-sm border border-[#E5E1D6] flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-[#225944] text-white flex items-center justify-center mb-4 shadow-md">
-                  <span className="material-symbols-outlined text-[30px]">sentiment_very_satisfied</span>
-                </div>
-                <span className="text-[11px] text-[#EECA3A] uppercase font-extrabold mb-1">Step 03</span>
-                <h3 className="text-lg font-bold text-[#171A18] mb-2">Focus On Your Ambition</h3>
-                <p className="text-xs text-[#6B6B63] leading-relaxed">
-                  Zero chore overhead. Consolidated monthly digital bills and 24/7 student assistance let you focus purely on your studies.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* STUDENT REVIEWS & SOCIAL PROOF */}
-        <section className="w-full py-16 bg-[#E9F1ED]/40 border-t border-[#E5E1D6]">
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          {/* ---------------------------------------------------- */}
+          {/* EXACT 4 SERVICE CARDS (Grid below Hero) */}
+          {/* ---------------------------------------------------- */}
+          <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+            
+            {/* Card 1: PG / Hostels */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              whileHover={{ y: -6 }}
+              className="bg-white rounded-3xl p-5 border border-[#E5E1D6] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+              onClick={() => navigate('/pg')}
+            >
               <div>
-                <span className="text-xs font-bold text-[#225944] uppercase tracking-wider">Trusted by 4,200+ Students</span>
-                <h2 className="text-3xl font-extrabold text-[#171A18] mt-1">Real Stories From Local Campuses</h2>
-              </div>
-
-              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-[#E5E1D6]">
-                <span className="text-base font-extrabold text-[#225944]">4.9 / 5.0</span>
-                <div className="flex text-[#EECA3A]">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="material-symbols-outlined text-[18px]">star</span>
-                  ))}
-                </div>
-                <span className="text-xs text-[#6B6B63]">Student Rating</span>
-              </div>
-            </div>
-
-            {/* Testimonial Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Review 1 */}
-              <div className="bg-white rounded-3xl p-6 flex flex-col justify-between shadow-sm border border-[#E5E1D6]">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-1 text-[#EECA3A]">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="material-symbols-outlined text-[18px]">star</span>
-                    ))}
-                  </div>
-                  <p className="text-sm text-[#171A18] italic leading-relaxed">
-                    "Finding a safe girls PG in Junwani with proper study desks and high-speed Wi-Fi was impossible until I found EaseHub. Zero brokerage and the room matched the photos 100%."
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 pt-4 border-t border-[#E5E1D6] mt-4">
-                  <div className="w-10 h-10 rounded-full bg-[#225944]/10 flex items-center justify-center text-[#225944] font-bold text-sm">
-                    AR
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#171A18]">Ananya Roy</p>
-                    <p className="text-[11px] text-[#6B6B63]">B.Tech 3rd Year • BIT Durg</p>
+                <div className="h-40 w-full rounded-2xl overflow-hidden mb-4 relative bg-[#E9F2EE] flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=600&q=80"
+                    alt="PG Hostels"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 left-3 w-10 h-10 rounded-xl bg-white/95 backdrop-blur-md text-[#225944] flex items-center justify-center shadow-md">
+                    <Bed className="w-5 h-5" />
                   </div>
                 </div>
-              </div>
-
-              {/* Review 2 */}
-              <div className="bg-white rounded-3xl p-6 flex flex-col justify-between shadow-sm border border-[#E5E1D6]">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-1 text-[#EECA3A]">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="material-symbols-outlined text-[18px]">star</span>
-                    ))}
-                  </div>
-                  <p className="text-sm text-[#171A18] italic leading-relaxed">
-                    "The monthly tiffin subscription saved my stomach! Authentic homemade food delivered piping hot right before my 1:00 PM break. I can even pause meals on weekends."
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 pt-4 border-t border-[#E5E1D6] mt-4">
-                  <div className="w-10 h-10 rounded-full bg-[#EECA3A]/30 flex items-center justify-center text-[#171A18] font-bold text-sm">
-                    PK
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#171A18]">Priyanshu Kumar</p>
-                    <p className="text-[11px] text-[#6B6B63]">Diploma Mechanical • CSIT Durg</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Review 3 */}
-              <div className="bg-white rounded-3xl p-6 flex flex-col justify-between shadow-sm border border-[#E5E1D6]">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-1 text-[#EECA3A]">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="material-symbols-outlined text-[18px]">star</span>
-                    ))}
-                  </div>
-                  <p className="text-sm text-[#171A18] italic leading-relaxed">
-                    "Between semester exams and lab submissions, laundry was my biggest stress. FreshThread pickups via EaseHub are clean, steam-pressed, and back in 24 hours. A total lifesaver."
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 pt-4 border-t border-[#E5E1D6] mt-4">
-                  <div className="w-10 h-10 rounded-full bg-[#225944]/10 flex items-center justify-center text-[#225944] font-bold text-sm">
-                    SD
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#171A18]">Srishti Dewangan</p>
-                    <p className="text-[11px] text-[#6B6B63]">MBA • Rungta Group</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* BOTTOM CONVERSION CTA BANNER */}
-        <section className="w-full py-16 bg-[#F7F5EF]">
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="relative rounded-3xl bg-[#EECA3A] p-8 md:p-12 overflow-hidden shadow-xl border border-amber-300">
-              {/* Graphic backdrop circle */}
-              <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-amber-200/50 blur-2xl pointer-events-none"></div>
-
-              <div className="relative z-10 max-w-2xl space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#171A18]/10 text-[#171A18]">
-                  <span className="material-symbols-outlined text-[16px]">celebration</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider">New Academic Season 2026</span>
-                </div>
-
-                <h2 className="text-3xl md:text-4xl font-extrabold text-[#171A18] tracking-tight leading-tight">
-                  Ready to elevate your college lifestyle?
-                </h2>
-
-                <p className="text-sm md:text-base text-[#171A18]/90 font-medium">
-                  Sign up now to unlock exclusive student discounts on PGs, get a free tiffin meal voucher, and 20% off your first laundry pickup.
+                <h3 className="text-xl font-extrabold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  PG / Hostels
+                </h3>
+                <p className="text-xs font-semibold text-[#6B6B63] mt-1">
+                  Comfortable Stay
                 </p>
+              </div>
 
-                {subscribedMessage ? (
-                  <div className="bg-[#225944] text-white p-4 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-md">
-                    <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                    <span>Welcome to EaseHub! Our campus concierge will get in touch shortly.</span>
+              <div className="pt-4 mt-4 border-t border-[#E5E1D6] flex items-center justify-between">
+                <span className="text-xs font-bold text-[#225944]">Explore Hostels</span>
+                <div className="w-9 h-9 rounded-full bg-[#225944] text-white flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-xs">
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 2: Meals & Mess */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              whileHover={{ y: -6 }}
+              className="bg-white rounded-3xl p-5 border border-[#E5E1D6] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+              onClick={() => navigate('/meals')}
+            >
+              <div>
+                <div className="h-40 w-full rounded-2xl overflow-hidden mb-4 relative bg-[#FFF9E6] flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80"
+                    alt="Meals & Mess"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 left-3 w-10 h-10 rounded-xl bg-white/95 backdrop-blur-md text-[#171A18] flex items-center justify-center shadow-md">
+                    <Utensils className="w-5 h-5 text-[#EECA3A]" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-extrabold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Meals &amp; Mess
+                </h3>
+                <p className="text-xs font-semibold text-[#6B6B63] mt-1">
+                  Healthy &amp; Tasty
+                </p>
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-[#E5E1D6] flex items-center justify-between">
+                <span className="text-xs font-bold text-[#225944]">View Mess Plans</span>
+                <div className="w-9 h-9 rounded-full bg-[#225944] text-white flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-xs">
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 3: Laundry */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              whileHover={{ y: -6 }}
+              className="bg-white rounded-3xl p-5 border border-[#E5E1D6] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+              onClick={() => navigate('/laundry')}
+            >
+              <div>
+                <div className="h-40 w-full rounded-2xl overflow-hidden mb-4 relative bg-[#EBF3FA] flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&w=600&q=80"
+                    alt="Laundry Pickup"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 left-3 w-10 h-10 rounded-xl bg-white/95 backdrop-blur-md text-[#225944] flex items-center justify-center shadow-md">
+                    <Shirt className="w-5 h-5" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-extrabold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Laundry
+                </h3>
+                <p className="text-xs font-semibold text-[#6B6B63] mt-1">
+                  Quick &amp; Reliable
+                </p>
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-[#E5E1D6] flex items-center justify-between">
+                <span className="text-xs font-bold text-[#225944]">Book Pickup</span>
+                <div className="w-9 h-9 rounded-full bg-[#225944] text-white flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-xs">
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 4: Extra Services */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              whileHover={{ y: -6 }}
+              className="bg-white rounded-3xl p-5 border border-[#E5E1D6] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+              onClick={() => navigate('/services')}
+            >
+              <div>
+                <div className="h-40 w-full rounded-2xl overflow-hidden mb-4 relative bg-[#F4EFFB] flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80"
+                    alt="Extra Services"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 left-3 w-10 h-10 rounded-xl bg-white/95 backdrop-blur-md text-[#225944] flex items-center justify-center shadow-md">
+                    <Wrench className="w-5 h-5" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-extrabold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Extra Services
+                </h3>
+                <p className="text-xs font-semibold text-[#6B6B63] mt-1">
+                  All You Need
+                </p>
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-[#E5E1D6] flex items-center justify-between">
+                <span className="text-xs font-bold text-[#225944]">Browse Services</span>
+                <div className="w-9 h-9 rounded-full bg-[#225944] text-white flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-xs">
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              </div>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------- */}
+      {/* REAL POSTGRESQL DATABASE CATALOG SECTION */}
+      {/* ---------------------------------------------------- */}
+      <section className="py-14 md:py-20 bg-white border-t border-[#E5E1D6]">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#225944] uppercase tracking-wider mb-1">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Verified Campus Marketplace</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-[#171A18] tracking-tight">
+                Live Listings Near Your Campus
+              </h2>
+            </div>
+            <p className="text-sm text-[#6B6B63] max-w-md font-medium">
+              Explore real properties and services added directly from verified partners in PostgreSQL.
+            </p>
+          </div>
+
+          {loadingDb ? (
+            <div className="py-16 text-center space-y-3">
+              <div className="w-10 h-10 border-4 border-[#225944] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs font-bold text-[#225944]">Connecting to InsForge Database...</p>
+            </div>
+          ) : (
+            <div className="space-y-12">
+              
+              {/* Real PGs Grid */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-[#E5E1D6]">
+                  <h3 className="text-lg font-extrabold text-[#171A18] flex items-center gap-2">
+                    <Bed className="w-5 h-5 text-[#225944]" />
+                    <span>Verified PG &amp; Hostels</span>
+                  </h3>
+                  <Link to="/pg" className="text-xs font-bold text-[#225944] hover:underline flex items-center gap-1">
+                    <span>View All PGs</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {pgListings.length === 0 ? (
+                  <div className="bg-[#F7F5EF] rounded-2xl p-8 text-center border border-[#E5E1D6] text-xs font-semibold text-[#6B6B63]">
+                    No PG listings added yet. Real properties created in the Admin Panel will render here.
                   </div>
                 ) : (
-                  <form onSubmit={handleCTAFormSubmit} className="flex flex-col sm:flex-row gap-2 pt-2">
-                    <input
-                      type="text"
-                      value={emailOrPhone}
-                      onChange={(e) => setEmailOrPhone(e.target.value)}
-                      placeholder="Enter your mobile number or college email"
-                      required
-                      className="flex-1 h-12 px-5 rounded-full bg-white text-[#171A18] text-sm focus:outline-none placeholder-[#6B6B63] shadow-sm border border-amber-200"
-                    />
-                    <button
-                      type="submit"
-                      className="h-12 px-8 rounded-full bg-[#225944] hover:bg-[#184232] text-white text-sm font-bold shadow-md transition-all shrink-0 flex items-center justify-center gap-2"
-                    >
-                      <span>Get Started Free</span>
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    </button>
-                  </form>
-                )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {pgListings.map((pg) => (
+                      <div
+                        key={pg.id || pg._id}
+                        onClick={() => navigate('/pg')}
+                        className="bg-[#F7F5EF] rounded-2xl p-4 border border-[#E5E1D6] shadow-xs hover:shadow-md transition cursor-pointer flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          <div className="h-36 w-full rounded-xl overflow-hidden bg-gray-200">
+                            {pg.images && pg.images[0] ? (
+                              <img src={pg.images[0]} alt={pg.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs text-[#6B6B63] font-bold">
+                                No Image Uploaded
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#225944]/10 text-[#225944] uppercase">
+                              {pg.gender} PG
+                            </span>
+                            <h4 className="font-extrabold text-sm text-[#171A18] mt-1 truncate">{pg.name}</h4>
+                            <p className="text-xs text-[#6B6B63] truncate">{pg.corridor || pg.location?.address || 'Bhilai'}</p>
+                          </div>
+                        </div>
 
-                <p className="text-xs text-[#171A18]/80 flex items-center gap-1.5 pt-1">
-                  <span className="material-symbols-outlined text-[16px]">lock</span>
-                  <span>No spam. Cancel or pause services anytime with 1-click.</span>
-                </p>
+                        <div className="pt-3 mt-3 border-t border-[#E5E1D6] flex items-center justify-between text-xs">
+                          <span className="font-black text-[#225944]">₹{pg.monthlyRent || 0}/mo</span>
+                          <span className="font-bold text-[#171A18] hover:underline">Details →</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Real Meals Grid */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-[#E5E1D6]">
+                  <h3 className="text-lg font-extrabold text-[#171A18] flex items-center gap-2">
+                    <Utensils className="w-5 h-5 text-[#EECA3A]" />
+                    <span>Mess &amp; Tiffin Subscriptions</span>
+                  </h3>
+                  <Link to="/meals" className="text-xs font-bold text-[#225944] hover:underline flex items-center gap-1">
+                    <span>View All Mess Plans</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {mealProviders.length === 0 ? (
+                  <div className="bg-[#F7F5EF] rounded-2xl p-8 text-center border border-[#E5E1D6] text-xs font-semibold text-[#6B6B63]">
+                    No meal providers added yet. Real tiffin providers created in the Admin Panel will render here.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {mealProviders.map((meal) => (
+                      <div
+                        key={meal.id || meal._id}
+                        onClick={() => navigate('/meals')}
+                        className="bg-[#F7F5EF] rounded-2xl p-4 border border-[#E5E1D6] shadow-xs hover:shadow-md transition cursor-pointer flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          <div className="h-36 w-full rounded-xl overflow-hidden bg-gray-200">
+                            {meal.image ? (
+                              <img src={meal.image} alt={meal.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs text-[#6B6B63] font-bold">
+                                No Image Uploaded
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#225944] text-white uppercase">
+                              {meal.isVeg ? 'Pure Veg' : 'Veg & Non-Veg'}
+                            </span>
+                            <h4 className="font-extrabold text-sm text-[#171A18] mt-1 truncate">{meal.name}</h4>
+                            <p className="text-xs text-[#6B6B63] truncate">{meal.corridor || 'Bhilai'}</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 mt-3 border-t border-[#E5E1D6] flex items-center justify-between text-xs">
+                          <span className="font-black text-[#225944]">₹{meal.dailyPrice || 80}/day</span>
+                          <span className="font-bold text-[#171A18] hover:underline">View Menu →</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
-          </div>
-        </section>
-      </main>
+          )}
+        </div>
+      </section>
+
     </div>
   );
 };
