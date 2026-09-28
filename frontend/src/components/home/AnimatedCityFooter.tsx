@@ -1,28 +1,29 @@
 import React from 'react';
+import campusSkylineImg from '../../assets/images/campus-skyline.png';
 
 export const AnimatedCityFooter: React.FC = () => {
   return (
-    <section className="relative w-full bg-[#F7F5EF] border-t border-[#E5E1D6] pt-10 pb-0 overflow-hidden select-none">
+    <section className="relative w-full bg-[#F7F5EF] border-t border-[#E5E1D6] pt-8 pb-0 overflow-hidden select-none block z-10">
       {/* 1. Subtle Section Tagline */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#225944]/10 text-[#225944] text-[11px] font-extrabold uppercase tracking-wider mb-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-5">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#225944]/10 text-[#225944] text-[11px] font-extrabold uppercase tracking-wider mb-2">
           <span className="w-2 h-2 rounded-full bg-[#225944] animate-pulse"></span>
           <span>Life around campus, made easier.</span>
         </div>
         <h3 className="text-xl sm:text-2xl font-extrabold text-[#171A18] tracking-tight">
           Connecting Colleges, Hostels &amp; Daily Services Across Chhattisgarh
         </h3>
-        <p className="text-xs sm:text-sm text-[#6B6B63] mt-1 max-w-xl mx-auto">
+        <p className="text-xs sm:text-sm text-[#6B6B63] mt-1 max-w-xl mx-auto font-medium">
           Trusted housing, tiffin plans, and doorstep care for students at BIT Durg, IIT Bhilai, Rungta &amp; CSVTU.
         </p>
       </div>
 
-      {/* 2. Panoramic Animated Scene Container */}
-      <div className="relative w-full h-[180px] sm:h-[240px] md:h-[280px] overflow-hidden bg-[#FAF9F5]">
+      {/* 2. Panoramic Animated Scene Container (Desktop 280-360px, Mobile 180-260px) */}
+      <div className="relative w-full h-[200px] sm:h-[280px] md:h-[340px] overflow-hidden bg-[#FAF9F5] block">
         
         {/* A. Background Clouds (Drifting RIGHT -> LEFT) */}
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <svg className="absolute top-4 left-0 w-full h-24 overflow-visible">
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          <svg className="absolute top-3 left-0 w-full h-28 overflow-visible">
             {/* Cloud Group 1 */}
             <g className="animate-cloud-slow opacity-80">
               <path
@@ -56,7 +57,7 @@ export const AnimatedCityFooter: React.FC = () => {
         {/* B. Birds Flying (Sky Layer, RIGHT -> LEFT) */}
         <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
           {/* Bird Group 1 (High, small, 22s loop) */}
-          <div className="absolute top-6 right-0 animate-bird-group-1 flex gap-4 text-[#225944]/70">
+          <div className="absolute top-6 right-0 animate-bird-group-1 flex gap-4 text-[#225944]/75">
             <svg className="w-5 h-4 animate-bird-flap" viewBox="0 0 24 16" fill="currentColor">
               <path d="M 0 12 Q 6 0 12 8 Q 18 0 24 12 Q 18 6 12 11 Q 6 6 0 12 Z" />
             </svg>
@@ -66,7 +67,7 @@ export const AnimatedCityFooter: React.FC = () => {
           </div>
 
           {/* Bird Group 2 (Mid-sky, 16s loop) */}
-          <div className="absolute top-12 right-0 animate-bird-group-2 flex gap-3 text-[#171A18]/60">
+          <div className="absolute top-12 right-0 animate-bird-group-2 flex gap-3 text-[#171A18]/65">
             <svg className="w-6 h-4 animate-bird-flap" viewBox="0 0 24 16" fill="currentColor">
               <path d="M 0 12 Q 6 0 12 8 Q 18 0 24 12 Q 18 6 12 11 Q 6 6 0 12 Z" />
             </svg>
@@ -79,99 +80,99 @@ export const AnimatedCityFooter: React.FC = () => {
           </div>
         </div>
 
-        {/* C. Continuous Skyline Panorama Track (Seamless Infinite Loop) */}
-        <div className="absolute bottom-0 left-0 h-full w-[200%] flex animate-panorama-track pointer-events-none z-20">
-          <div className="w-[50%] h-full relative flex items-end">
+        {/* C. Continuous Skyline Panorama Track (Seamless Infinite Loop with shrink-0) */}
+        <div className="absolute bottom-0 left-0 h-full w-[200%] flex shrink-0 animate-panorama-track pointer-events-none z-20">
+          <div className="w-[50%] shrink-0 h-full relative flex items-end overflow-hidden">
             <img
-              src="/images/campus-skyline.png"
+              src={campusSkylineImg}
               alt="EaseHub Campus Skyline Scene"
-              className="w-full h-full object-cover object-bottom select-none"
+              className="w-full h-full object-cover object-bottom select-none block"
             />
           </div>
-          <div className="w-[50%] h-full relative flex items-end">
+          <div className="w-[50%] shrink-0 h-full relative flex items-end overflow-hidden">
             <img
-              src="/images/campus-skyline.png"
+              src={campusSkylineImg}
               alt="EaseHub Campus Skyline Scene Duplicate"
-              className="w-full h-full object-cover object-bottom select-none"
+              className="w-full h-full object-cover object-bottom select-none block"
             />
           </div>
         </div>
 
         {/* D. Animated Wind Sway on Foreground Foliage (Subtle Tree Sway Overlay) */}
-        <div className="absolute bottom-6 left-0 w-full h-12 pointer-events-none z-25 overflow-hidden flex justify-around opacity-40">
-          <div className="w-8 h-8 rounded-full bg-[#225944]/20 blur-[1px] animate-tree-sway-slow"></div>
-          <div className="w-12 h-12 rounded-full bg-[#225944]/25 blur-[1px] animate-tree-sway-fast"></div>
-          <div className="w-10 h-10 rounded-full bg-[#4F7A65]/20 blur-[1px] animate-tree-sway-slow"></div>
+        <div className="absolute bottom-8 left-0 w-full h-14 pointer-events-none z-25 overflow-hidden flex justify-around opacity-40">
+          <div className="w-10 h-10 rounded-full bg-[#225944]/20 blur-[1px] animate-tree-sway-slow"></div>
+          <div className="w-14 h-14 rounded-full bg-[#225944]/25 blur-[1px] animate-tree-sway-fast"></div>
+          <div className="w-12 h-12 rounded-full bg-[#4F7A65]/20 blur-[1px] animate-tree-sway-slow"></div>
         </div>
 
         {/* E. Road Vehicles (Independent Animated Vehicles Traveling Across Road) */}
-        <div className="absolute bottom-0 left-0 w-full h-[22px] sm:h-[30px] md:h-[36px] pointer-events-none z-30 overflow-hidden">
+        <div className="absolute bottom-0 left-0 w-full h-[26px] sm:h-[34px] md:h-[42px] pointer-events-none z-30 overflow-hidden">
           
           {/* Vehicle 1: Yellow & Green College Bus (Slow: ~30s loop) */}
-          <div className="absolute bottom-1 sm:bottom-1.5 animate-drive-bus">
-            <div className="relative w-16 sm:w-20 md:w-24 h-6 sm:h-8 bg-[#EECA3A] border border-[#171A18] rounded-lg shadow-sm flex flex-col justify-between p-0.5">
+          <div className="absolute bottom-1.5 sm:bottom-2 animate-drive-bus">
+            <div className="relative w-18 sm:w-24 md:w-28 h-7 sm:h-9 bg-[#EECA3A] border border-[#171A18] rounded-lg shadow-sm flex flex-col justify-between p-0.5">
               {/* Bus Roof Stripes & Brand */}
               <div className="bg-[#225944] text-[7px] sm:text-[8px] font-black text-white px-1 py-0.2 rounded-xs flex items-center justify-between">
-                <span>EASEHUB BUS</span>
-                <span className="w-1 h-1 rounded-full bg-red-500"></span>
+                <span>EASEHUB SHUTTLE</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
               </div>
               {/* Bus Windows */}
               <div className="flex gap-1 px-1 py-0.5 bg-[#171A18]/10 rounded-xs">
-                <div className="flex-1 h-2 bg-white border border-[#171A18]/30 rounded-xs"></div>
-                <div className="flex-1 h-2 bg-white border border-[#171A18]/30 rounded-xs"></div>
-                <div className="flex-1 h-2 bg-white border border-[#171A18]/30 rounded-xs"></div>
-                <div className="flex-1 h-2 bg-white border border-[#171A18]/30 rounded-xs"></div>
+                <div className="flex-1 h-2.5 bg-white border border-[#171A18]/30 rounded-xs"></div>
+                <div className="flex-1 h-2.5 bg-white border border-[#171A18]/30 rounded-xs"></div>
+                <div className="flex-1 h-2.5 bg-white border border-[#171A18]/30 rounded-xs"></div>
+                <div className="flex-1 h-2.5 bg-white border border-[#171A18]/30 rounded-xs"></div>
               </div>
               {/* Wheels */}
-              <div className="absolute -bottom-1 left-2 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
-              <div className="absolute -bottom-1 right-3 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 left-2.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 right-3.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#171A18] border border-white"></div>
             </div>
           </div>
 
           {/* Vehicle 2: Iconic Indian Auto-Rickshaw (Medium: ~22s loop) */}
-          <div className="absolute bottom-1 sm:bottom-1.5 animate-drive-auto">
-            <div className="relative w-9 sm:w-11 md:w-13 h-5 sm:h-6 bg-[#225944] border border-[#171A18] rounded-t-lg rounded-b-xs p-0.5 shadow-sm">
+          <div className="absolute bottom-1.5 sm:bottom-2 animate-drive-auto">
+            <div className="relative w-10 sm:w-12 md:w-14 h-5.5 sm:h-7 bg-[#225944] border border-[#171A18] rounded-t-lg rounded-b-xs p-0.5 shadow-sm">
               {/* Auto Canopy (Yellow Top) */}
-              <div className="w-full h-2 bg-[#EECA3A] rounded-t-md border-b border-[#171A18]/40"></div>
+              <div className="w-full h-2.5 bg-[#EECA3A] rounded-t-md border-b border-[#171A18]/40"></div>
               {/* Windshield */}
-              <div className="w-3 h-2 bg-[#FAF9F5] border border-[#171A18]/30 rounded-xs ml-auto mt-0.5"></div>
+              <div className="w-3.5 h-2.5 bg-[#FAF9F5] border border-[#171A18]/30 rounded-xs ml-auto mt-0.5"></div>
               {/* Wheel */}
-              <div className="absolute -bottom-1 left-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#171A18] border border-white"></div>
-              <div className="absolute -bottom-1 right-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 left-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 right-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
             </div>
           </div>
 
           {/* Vehicle 3: White Sedan Student Car (Medium: ~24s loop) */}
-          <div className="absolute bottom-1.5 sm:bottom-2 animate-drive-car1">
-            <div className="relative w-11 sm:w-14 md:w-16 h-4 sm:h-5 bg-white border border-[#171A18] rounded-lg shadow-xs flex items-center px-1">
+          <div className="absolute bottom-2 sm:bottom-2.5 animate-drive-car1">
+            <div className="relative w-12 sm:w-16 md:w-18 h-4.5 sm:h-6 bg-white border border-[#171A18] rounded-lg shadow-xs flex items-center px-1">
               {/* Car Windows */}
-              <div className="w-6 h-2 bg-[#225944]/20 border border-[#171A18]/30 rounded-t-sm mx-auto"></div>
+              <div className="w-7 h-2.5 bg-[#225944]/20 border border-[#171A18]/30 rounded-t-sm mx-auto"></div>
               {/* Wheels */}
-              <div className="absolute -bottom-1 left-2 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#171A18] border border-white"></div>
-              <div className="absolute -bottom-1 right-2 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 left-2 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 right-2 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
             </div>
           </div>
 
           {/* Vehicle 4: Student Scooter / Bike (Fast: ~15s loop) */}
-          <div className="absolute bottom-1 sm:bottom-1.5 animate-drive-scooter">
-            <div className="relative w-7 sm:w-8 h-4 sm:h-5 flex items-end">
+          <div className="absolute bottom-1.5 sm:bottom-2 animate-drive-scooter">
+            <div className="relative w-8 sm:w-10 h-5 sm:h-6 flex items-end">
               {/* Rider with Helmet */}
-              <div className="absolute top-0 right-2 w-2 h-2 rounded-full bg-[#EECA3A] border border-[#171A18]"></div>
+              <div className="absolute top-0 right-2.5 w-2.5 h-2.5 rounded-full bg-[#EECA3A] border border-[#171A18]"></div>
               {/* Scooter Body */}
-              <div className="w-full h-2.5 bg-[#225944] rounded-full border border-[#171A18]"></div>
+              <div className="w-full h-3 bg-[#225944] rounded-full border border-[#171A18]"></div>
               {/* Wheels */}
-              <div className="absolute -bottom-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-[#171A18]"></div>
-              <div className="absolute -bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-[#171A18]"></div>
+              <div className="absolute -bottom-0.5 left-0.5 w-2 h-2 rounded-full bg-[#171A18]"></div>
+              <div className="absolute -bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-[#171A18]"></div>
             </div>
           </div>
 
           {/* Vehicle 5: Green Hatchback Car (Medium: ~19s loop) */}
-          <div className="absolute bottom-1.5 sm:bottom-2 animate-drive-car2">
-            <div className="relative w-10 sm:w-13 md:w-15 h-4 sm:h-5 bg-[#225944] border border-[#171A18] rounded-lg shadow-xs">
-              <div className="w-5 h-2 bg-[#EECA3A]/40 border border-white/40 rounded-t-sm mx-auto mt-0.5"></div>
+          <div className="absolute bottom-2 sm:bottom-2.5 animate-drive-car2">
+            <div className="relative w-11 sm:w-14 md:w-16 h-4.5 sm:h-6 bg-[#225944] border border-[#171A18] rounded-lg shadow-xs">
+              <div className="w-6 h-2.5 bg-[#EECA3A]/40 border border-white/40 rounded-t-sm mx-auto mt-0.5"></div>
               {/* Wheels */}
-              <div className="absolute -bottom-1 left-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#171A18] border border-white"></div>
-              <div className="absolute -bottom-1 right-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 left-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
+              <div className="absolute -bottom-1 right-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#171A18] border border-white"></div>
             </div>
           </div>
 
@@ -333,11 +334,11 @@ export const AnimatedCityFooter: React.FC = () => {
         }
 
         .animate-drive-bus {
-          animation: vehicleDriveBus 32s linear infinite 2s;
+          animation: vehicleDriveBus 32s linear infinite 0s;
           will-change: transform;
         }
         .animate-drive-auto {
-          animation: vehicleDriveAuto 23s linear infinite 7s;
+          animation: vehicleDriveAuto 23s linear infinite 5s;
           will-change: transform;
         }
         .animate-drive-car1 {
@@ -345,11 +346,11 @@ export const AnimatedCityFooter: React.FC = () => {
           will-change: transform;
         }
         .animate-drive-car2 {
-          animation: vehicleDriveCar2 20s linear infinite 11s;
+          animation: vehicleDriveCar2 20s linear infinite 9s;
           will-change: transform;
         }
         .animate-drive-scooter {
-          animation: vehicleDriveScooter 15s linear infinite 4s;
+          animation: vehicleDriveScooter 15s linear infinite 3s;
           will-change: transform;
         }
 
