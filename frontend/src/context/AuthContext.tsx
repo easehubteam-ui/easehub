@@ -134,16 +134,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { data, error } = await insforge.auth.signInWithPassword({ email, password });
       if (error || !data?.user) {
-        throw new Error(error?.message || 'Login failed. Please check your credentials.');
+        throw new Error(error?.message || 'Invalid email or password.');
       }
 
       const profile = await fetchOrSyncProfile(data.user);
       if (!profile) {
+        await insforge.auth.signOut();
+        setUser(null);
         throw new Error('Unable to retrieve user profile.');
+      }
+
+      // STRICT ROLE BOUNDARY FOR CUSTOMER LOGIN
+      if (profile.role === 'admin' || profile.role === 'superadmin') {
+        await insforge.auth.signOut();
+        setUser(null);
+        throw new Error('Please use the Admin Login to access the administrator panel.');
+      }
+
+      if (profile.role !== 'customer') {
+        await insforge.auth.signOut();
+        setUser(null);
+        throw new Error('Please use the Admin Login to access the administrator panel.');
       }
 
       if (!profile.isActive) {
         await insforge.auth.signOut();
+        setUser(null);
         throw new Error('Your account has been deactivated. Please contact support.');
       }
 
@@ -166,28 +182,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { data, error } = await insforge.auth.signInWithPassword({ email, password });
       if (error || !data?.user) {
-        throw new Error(error?.message || 'Administrator authentication failed.');
+        throw new Error(error?.message || 'Invalid admin credentials.');
       }
 
       const profile = await fetchOrSyncProfile(data.user);
       if (!profile) {
+        await insforge.auth.signOut();
+        setUser(null);
         throw new Error('Unable to retrieve administrator profile.');
       }
 
+      // STRICT ROLE BOUNDARY FOR ADMIN LOGIN
       if (profile.role !== 'admin' && profile.role !== 'superadmin') {
         await insforge.auth.signOut();
-        throw new Error('Access denied. Administrator privileges required.');
+        setUser(null);
+        throw new Error('Administrator access is required.');
       }
 
       if (!profile.isActive) {
         await insforge.auth.signOut();
+        setUser(null);
         throw new Error('Administrator account is inactive.');
       }
 
       setUser(profile);
       return profile;
     } catch (err: any) {
-      const msg = err?.message || 'Administrator authentication failed.';
+      const msg = err?.message || 'Administrator access is required.';
       throw new Error(msg);
     }
   };

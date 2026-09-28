@@ -16,6 +16,7 @@ import { mealApi, MealProvider } from '../../services/mealApi';
 import { laundryApi, LaundryProvider } from '../../services/laundryApi';
 import { serviceApi, ExtraServiceItem } from '../../services/serviceApi';
 import PlaceholderImage from '../../components/common/PlaceholderImage';
+import { AnimatedCityFooter } from '../../components/home/AnimatedCityFooter';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -402,6 +403,9 @@ export const HomePage: React.FC = () => {
 
         </div>
       </section>
+
+      {/* 4. ANIMATED CITY / CAMPUS FOOTER SCENE (HOMEPAGE ONLY) */}
+      <AnimatedCityFooter />
 
     </div>
   );

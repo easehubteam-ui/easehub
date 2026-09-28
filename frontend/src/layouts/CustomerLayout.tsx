@@ -222,17 +222,6 @@ export const CustomerLayout: React.FC = () => {
                     <span>Saved Wishlist</span>
                   </Link>
 
-                  {isAdmin && (
-                    <Link
-                      to="/admin/dashboard"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-extrabold text-[#715d00] bg-[#EECA3A]/20 hover:bg-[#EECA3A]/30 transition"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-                      <span>Admin Console</span>
-                    </Link>
-                  )}
-
                   <div className="pt-1 border-t border-[#E5E1D6]">
                     <button
                       onClick={handleLogout}

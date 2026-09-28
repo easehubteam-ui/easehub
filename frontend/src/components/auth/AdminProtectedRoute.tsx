@@ -22,7 +22,7 @@ export const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ c
   }
 
   if (user.role !== 'admin' && user.role !== 'superadmin') {
-    return <Navigate to="/admin/login" state={{ error: 'Access denied. Administrator privileges required.' }} replace />;
+    return <Navigate to="/admin/login" state={{ error: 'Administrator access is required.' }} replace />;
   }
 
   return <>{children}</>;

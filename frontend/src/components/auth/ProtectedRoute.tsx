@@ -21,6 +21,15 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Redirect admin/superadmin to admin console when attempting to access customer routes
+  if (user.role === 'admin' || user.role === 'superadmin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  if (user.role !== 'customer') {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 };
 

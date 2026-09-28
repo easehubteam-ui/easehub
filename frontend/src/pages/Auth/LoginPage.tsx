@@ -1,21 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-type RoleType = 'resident' | 'vendor' | 'admin';
 type MethodType = 'phone' | 'email';
 
 export const LoginPage: React.FC = () => {
   const location = useLocation();
-  const initialRole: RoleType = (location.state as any)?.role || 'resident';
   const initialError: string | null = (location.state as any)?.error || null;
 
-  const [role, setRole] = useState<RoleType>(initialRole);
   const [method, setMethod] = useState<MethodType>('email');
 
   // Form states
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpValues, setOtpValues] = useState(['4', '8', '2', '0']);
+  const [otpValues, setOtpValues] = useState(['', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
 
   const [email, setEmail] = useState('');
@@ -26,23 +23,8 @@ export const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login } = useAuth();
+  const { user, isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
-
-  const handleRoleChange = (newRole: RoleType) => {
-    setRole(newRole);
-    setErrorMsg(null);
-    if (newRole === 'admin') {
-      setEmail('admin@easehub.local');
-      setPassword('EaseHub@2026!Admin');
-    } else if (newRole === 'vendor') {
-      setEmail('vendor@easehub.local');
-      setPassword('EaseHub@2026!Vendor');
-    } else {
-      setEmail('user@easehub.local');
-      setPassword('EaseHub@2026!User');
-    }
-  };
 
   const getTargetUrl = () => {
     let target = location.state?.from?.pathname || location.state?.from || '/dashboard';
@@ -51,6 +33,17 @@ export const LoginPage: React.FC = () => {
     }
     return target;
   };
+
+  // Auto-redirect if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'admin' || user.role === 'superadmin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate(getTargetUrl(), { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSendOtp = () => {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
@@ -98,11 +91,7 @@ export const LoginPage: React.FC = () => {
       setIsSubmitting(true);
       const loggedUser = await login({ phone: cleanPhone, password: 'EaseHub@2026!User' });
       if (loggedUser) {
-        if (loggedUser.role === 'admin' || loggedUser.role === 'superadmin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate(getTargetUrl());
-        }
+        navigate(getTargetUrl(), { replace: true });
       } else {
         setErrorMsg('Authentication failed. Invalid mobile credentials.');
       }
@@ -125,11 +114,7 @@ export const LoginPage: React.FC = () => {
       setIsSubmitting(true);
       const loggedUser = await login({ email: email.trim(), password });
       if (loggedUser) {
-        if (loggedUser.role === 'admin' || loggedUser.role === 'superadmin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate(getTargetUrl());
-        }
+        navigate(getTargetUrl(), { replace: true });
       } else {
         setErrorMsg('Invalid email or password. Please try again.');
       }
@@ -153,16 +138,14 @@ export const LoginPage: React.FC = () => {
             {/* LEFT COLUMN: Interactive Authentication Form (7 cols) */}
             <div className="lg:col-span-7 p-6 sm:p-10 md:p-12 flex flex-col justify-between bg-white z-10">
               <div>
-                {/* Top Role Selector Pills */}
-                <div className="inline-flex p-1 rounded-full bg-[#EDEEEB] mb-6 border border-[#E5E1D6]">
-                  <div className="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#225944] text-white shadow-sm flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px]">school</span>
-                    <span>Student Resident</span>
-                  </div>
-                </div>
-
                 {/* Header Title & Subtitle */}
                 <div className="mb-6">
+                  <div className="inline-flex p-1 rounded-full bg-[#EDEEEB] mb-3 border border-[#E5E1D6]">
+                    <div className="px-3.5 py-1 rounded-full text-xs font-bold bg-[#225944] text-white shadow-xs flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px]">school</span>
+                      <span>Customer &amp; Resident Login</span>
+                    </div>
+                  </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-[#225944] tracking-tight mb-1">
                     Welcome back to Ease<span className="text-[#EECA3A]">Hub</span>
                   </h1>
@@ -173,9 +156,20 @@ export const LoginPage: React.FC = () => {
 
                 {/* Error Alert Box */}
                 {errorMsg && (
-                  <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2 animate-shake">
-                    <span className="material-symbols-outlined text-[18px] text-rose-600">error</span>
-                    <span>{errorMsg}</span>
+                  <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex flex-col gap-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px] text-rose-600 shrink-0">error</span>
+                      <span>{errorMsg}</span>
+                    </div>
+                    {errorMsg.includes('Admin Login') && (
+                      <Link
+                        to="/admin/login"
+                        className="mt-1 self-start inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#225944] text-white text-xs font-extrabold hover:bg-[#184232] transition shadow-xs"
+                      >
+                        <span>Admin Login</span>
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      </Link>
+                    )}
                   </div>
                 )}
 
@@ -183,7 +177,7 @@ export const LoginPage: React.FC = () => {
                 <div className="flex border-b border-[#E5E1D6] mb-6">
                   <button
                     type="button"
-                    onClick={() => setMethod('email')}
+                    onClick={() => { setMethod('email'); setErrorMsg(null); }}
                     className={`pb-3 px-4 text-xs font-extrabold transition-all border-b-2 ${
                       method === 'email'
                         ? 'border-[#225944] text-[#225944]'
@@ -194,7 +188,7 @@ export const LoginPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMethod('phone')}
+                    onClick={() => { setMethod('phone'); setErrorMsg(null); }}
                     className={`pb-3 px-4 text-xs font-extrabold transition-all border-b-2 ${
                       method === 'phone'
                         ? 'border-[#225944] text-[#225944]'
@@ -306,7 +300,7 @@ export const LoginPage: React.FC = () => {
                           maxLength={10}
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                          placeholder="98271 44820"
+                          placeholder="98271 00000"
                           className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs font-bold text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
                         />
                       </div>
@@ -354,15 +348,22 @@ export const LoginPage: React.FC = () => {
                   </form>
                 )}
 
-
               </div>
 
-              {/* Bottom Footer Signup Hint */}
-              <div className="pt-6 mt-6 border-t border-[#E5E1D6] text-center text-xs text-[#6B6B63]">
-                <span>Don't have an EaseHub account? </span>
-                <Link to="/register" className="font-bold text-[#225944] hover:underline">
-                  Create Account
-                </Link>
+              {/* Bottom Footer Signup Hint & Admin Portal Link */}
+              <div className="pt-6 mt-6 border-t border-[#E5E1D6] flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#6B6B63]">
+                <div>
+                  <span>Don't have an account? </span>
+                  <Link to="/register" className="font-bold text-[#225944] hover:underline">
+                    Create Account
+                  </Link>
+                </div>
+                <div>
+                  <Link to="/admin/login" className="font-bold text-[#225944] hover:underline flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">admin_panel_settings</span>
+                    <span>Admin Portal</span>
+                  </Link>
+                </div>
               </div>
             </div>
 
