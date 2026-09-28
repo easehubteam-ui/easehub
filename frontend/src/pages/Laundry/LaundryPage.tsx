@@ -5,6 +5,9 @@ import { laundryApi, LaundryProvider as ApiLaundryProvider } from '../../service
 import { savedApi } from '../../services/savedApi';
 import { useAuth } from '../../context/AuthContext';
 
+import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
+import { paymentConfig } from '../../config/paymentConfig';
+
 interface LaundryProvider {
   id: string;
   name: string;
@@ -30,6 +33,10 @@ export const LaundryPage: React.FC = () => {
   const [providersList, setProvidersList] = useState<LaundryProvider[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+
+  // Booking Modal State
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+  const [bookingModalItem, setBookingModalItem] = useState<BookingModalItem | null>(null);
 
   const loadLaundry = async () => {
     try {
@@ -465,9 +472,21 @@ export const LaundryPage: React.FC = () => {
 
                           <button
                             type="button"
-                            className="bg-[#225944] hover:bg-[#194434] text-white font-semibold text-xs px-5 py-2.5 rounded-lg flex items-center space-x-1.5 transition-colors"
+                            onClick={() => {
+                              setBookingModalItem({
+                                id: provider.id,
+                                name: provider.name,
+                                type: 'Laundry',
+                                price: provider.pricePerKg,
+                                priceUnit: '/ kg',
+                                location: provider.location,
+                                image: provider.image,
+                              });
+                              setIsBookingModalOpen(true);
+                            }}
+                            className="bg-[#225944] hover:bg-[#194434] text-white font-extrabold text-xs px-5 py-2.5 rounded-lg flex items-center space-x-1.5 transition-colors shadow-xs"
                           >
-                            <span>View Details</span>
+                            <span>Book &amp; Schedule Pickup</span>
                             <span>→</span>
                           </button>
                         </div>
@@ -576,6 +595,13 @@ export const LaundryPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Global Booking & Contact Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        item={bookingModalItem}
+      />
     </div>
   );
 };

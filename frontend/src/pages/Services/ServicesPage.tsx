@@ -5,6 +5,9 @@ import { useAuth } from '../../context/AuthContext';
 import { serviceApi, ExtraServiceItem } from '../../services/serviceApi';
 import { savedApi } from '../../services/savedApi';
 
+import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
+import { paymentConfig } from '../../config/paymentConfig';
+
 interface ServiceProvider {
   id: string;
   name: string;
@@ -29,6 +32,10 @@ export const ServicesPage: React.FC = () => {
   const [error, setError] = useState<string>('');
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Booking Modal State
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+  const [bookingModalItem, setBookingModalItem] = useState<BookingModalItem | null>(null);
 
   const loadServices = async () => {
     try {
@@ -93,11 +100,16 @@ export const ServicesPage: React.FC = () => {
   };
 
   const handleBooking = (provider: ServiceProvider) => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    } else {
-      alert(`Proceeding to book ${provider.name}. Instant confirmation sent!`);
-    }
+    setBookingModalItem({
+      id: provider.id,
+      name: provider.name,
+      type: 'Service',
+      price: provider.startingPrice,
+      priceUnit: '/ visit',
+      location: provider.location,
+      image: provider.image,
+    });
+    setIsBookingModalOpen(true);
   };
 
   const filteredProviders = providersList.filter((provider) => {
@@ -569,6 +581,13 @@ export const ServicesPage: React.FC = () => {
         </div>
 
       </main>
+
+      {/* Global Booking & Contact Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        item={bookingModalItem}
+      />
     </div>
   );
 };

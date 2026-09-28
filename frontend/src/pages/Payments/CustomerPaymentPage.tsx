@@ -1,263 +1,415 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, Link, useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { paymentApi } from '../../services/paymentApi';
+import { bookingApi } from '../../services/bookingApi';
+import { storageApi } from '../../services/storageApi';
+import { paymentConfig } from '../../config/paymentConfig';
+import { ShieldCheck, QrCode, Upload, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Phone, MessageSquare } from 'lucide-react';
 
-interface PaymentStep {
-  status: 'idle' | 'pending' | 'verified' | 'rejected';
+interface PaymentState {
+  status: 'idle' | 'submitting' | 'pending' | 'verified' | 'rejected';
   utr: string;
   rejectionReason?: string;
+  error?: string;
 }
 
 export const CustomerPaymentPage: React.FC = () => {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+
+  // Booking payload passed via route state or fetched from latest pending booking
+  const routeState = location.state || {};
+  const [bookingDetails, setBookingDetails] = useState<{
+    bookingId?: string;
+    amount: number;
+    serviceName: string;
+    providerName?: string;
+    address?: string;
+  }>({
+    bookingId: routeState.bookingId || '',
+    amount: routeState.amount || 0,
+    serviceName: routeState.serviceName || 'EaseHub Accommodation & Living Service',
+    providerName: routeState.providerName || 'EaseHub Verified Partner',
+    address: routeState.address || 'Bhilai, Chhattisgarh',
+  });
+
+  // Upload & Form States
   const [utrInput, setUtrInput] = useState('');
-  const [screenshotName, setScreenshotName] = useState<string | null>(null);
-  const [paymentState, setPaymentState] = useState<PaymentStep>({
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadedPath, setUploadedPath] = useState<string>('');
+
+  const [paymentState, setPaymentState] = useState<PaymentState>({
     status: 'idle',
     utr: '',
   });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fetch latest pending booking if amount is missing
+  useEffect(() => {
+    if (isAuthenticated && user && user.role === 'customer' && !bookingDetails.amount) {
+      bookingApi.getMyBookings().then((bList) => {
+        if (Array.isArray(bList) && bList.length > 0) {
+          const latest = bList[0];
+          setBookingDetails({
+            bookingId: latest.bookingNumber || latest.id || latest._id,
+            amount: latest.amount || 4500,
+            serviceName: latest.roomType || latest.serviceName || 'EaseHub Student Stay',
+            providerName: latest.serviceName || 'EaseHub Partner',
+            address: latest.address || 'Bhilai, CG',
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [isAuthenticated, user, bookingDetails.amount]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <div className="w-10 h-10 border-4 border-[#225944] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role === 'admin' || user.role === 'superadmin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Handle Screenshot Selection
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setScreenshotName(e.target.files[0].name);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setFilePreview(URL.createObjectURL(file));
+
+      // Upload immediately to private storage bucket 'payment-screenshots'
+      setUploadingImage(true);
+      try {
+        const res = await storageApi.uploadPaymentScreenshot(file, file.name);
+        setUploadedPath(res.url || res.path);
+      } catch (err: any) {
+        console.error('Failed to upload screenshot to private bucket:', err);
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    setUploadedPath('');
+  };
+
+  // Submit Payment Proof to PostgreSQL
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!utrInput || utrInput.length < 6) {
-      alert('Please enter a valid 12-digit UPI UTR / Transaction ID.');
+    const cleanUtr = utrInput.trim();
+    if (!cleanUtr || cleanUtr.length < 6) {
+      alert('Please enter a valid UPI UTR / Transaction ID (minimum 6 digits).');
       return;
     }
 
+    setPaymentState({ status: 'submitting', utr: cleanUtr });
+
     try {
       await paymentApi.submitProof({
-        amount: 6500,
-        utr: utrInput,
-        serviceName: 'PG Rent / EaseHub Escrow Booking',
-        screenshotUrl: screenshotName || '',
+        bookingId: bookingDetails.bookingId,
+        amount: bookingDetails.amount || 4500,
+        utr: cleanUtr,
+        screenshotUrl: uploadedPath || '',
+        serviceName: bookingDetails.serviceName,
       });
+
       setPaymentState({
         status: 'pending',
-        utr: utrInput,
+        utr: cleanUtr,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to submit payment proof:', err);
       setPaymentState({
         status: 'pending',
-        utr: utrInput,
+        utr: cleanUtr,
       });
     }
   };
 
-  const handleSimulateAdminApprove = () => {
-    setPaymentState((prev) => ({ ...prev, status: 'verified' }));
-  };
-
-  const handleSimulateAdminReject = () => {
-    setPaymentState((prev) => ({
-      ...prev,
-      status: 'rejected',
-      rejectionReason: 'UTR / Transaction ID does not match escrow receipt. Please verify and re-submit.',
-    }));
-  };
-
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      
       {/* Header */}
-      <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs space-y-2">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E1D6] shadow-xs space-y-2">
         <div className="flex items-center gap-2 text-xs font-bold text-[#225944]">
           <Link to="/dashboard" className="hover:underline">Dashboard</Link>
           <span>/</span>
-          <span>Payment Gateway &amp; Escrow</span>
+          <Link to="/bookings" className="hover:underline">Bookings</Link>
+          <span>/</span>
+          <span>Complete Payment</span>
         </div>
-        <h1 className="text-2xl font-extrabold text-[#171A18]">EaseHub Secure UPI Payment</h1>
-        <p className="text-xs text-[#6B6B63]">
-          Pay via any UPI app (GPay, PhonePe, Paytm, BHIM) and upload UTR receipt for instant escrow lock.
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#171A18] tracking-tight">
+          Complete Your Payment
+        </h1>
+        <p className="text-xs sm:text-sm text-[#6B6B63] font-medium">
+          Scan official EaseHub UPI QR code, complete payment via GPay / PhonePe / Paytm, and submit your UTR reference.
         </p>
       </div>
 
-      {/* Payment Status Banner */}
-      {paymentState.status === 'pending' && (
-        <div className="p-5 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-900 space-y-3 animate-in fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5 font-extrabold text-sm">
-              <span className="material-symbols-outlined text-amber-600 text-[22px] animate-spin">sync</span>
-              <span>Payment Verification Pending</span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
-              Under Review
+      {/* Booking Summary Card */}
+      <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6]">
+          <span className="text-xs font-extrabold text-[#225944] uppercase tracking-wider flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Booking Summary</span>
+          </span>
+          {bookingDetails.bookingId && (
+            <span className="font-mono text-xs font-bold text-[#225944] bg-[#225944]/10 px-3 py-1 rounded-full">
+              ID: {bookingDetails.bookingId}
             </span>
-          </div>
-          <p className="text-xs text-amber-800">
-            Your transaction ID <strong className="font-mono text-[#171A18]">{paymentState.utr}</strong> has been submitted. EaseHub admin is verifying the deposit.
-          </p>
-
-          {/* Dev Simulation Buttons */}
-          <div className="pt-2 border-t border-amber-500/20 flex items-center gap-3 text-xs">
-            <span className="font-bold text-[#6B6B63]">Simulate Admin Outcome:</span>
-            <button
-              onClick={handleSimulateAdminApprove}
-              className="px-3 py-1 rounded-xl bg-[#225944] text-white font-bold text-[11px]"
-            >
-              Approve Payment
-            </button>
-            <button
-              onClick={handleSimulateAdminReject}
-              className="px-3 py-1 rounded-xl bg-rose-600 text-white font-bold text-[11px]"
-            >
-              Reject Payment
-            </button>
-          </div>
-        </div>
-      )}
-
-      {paymentState.status === 'verified' && (
-        <div className="p-5 rounded-3xl bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-900 space-y-3 animate-in fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5 font-extrabold text-sm">
-              <span className="material-symbols-outlined text-emerald-600 text-[22px]">verified</span>
-              <span>Payment Verified &amp; Escrow Locked!</span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
-              Verified
-            </span>
-          </div>
-          <p className="text-xs text-emerald-800">
-            Payment for transaction <strong className="font-mono">{paymentState.utr}</strong> is verified. Funds are held in 100% Escrow Guard until completion.
-          </p>
-          <button
-            onClick={() => navigate('/bookings')}
-            className="px-4 py-2 rounded-xl bg-[#225944] text-white font-bold text-xs"
-          >
-            Go to My Bookings
-          </button>
-        </div>
-      )}
-
-      {paymentState.status === 'rejected' && (
-        <div className="p-5 rounded-3xl bg-rose-500/10 border-2 border-rose-500/30 text-rose-900 space-y-3 animate-in fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5 font-extrabold text-sm">
-              <span className="material-symbols-outlined text-rose-600 text-[22px]">cancel</span>
-              <span>Payment Rejected</span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
-              Rejected
-            </span>
-          </div>
-          <p className="text-xs text-rose-800">
-            <strong>Reason:</strong> {paymentState.rejectionReason}
-          </p>
-          <button
-            onClick={() => setPaymentState({ status: 'idle', utr: '' })}
-            className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs"
-          >
-            Re-submit Payment Details
-          </button>
-        </div>
-      )}
-
-      {/* Main Payment Section Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Left Column: QR Code & UPI Details (5 cols) */}
-        <div className="md:col-span-5 bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col items-center text-center space-y-4">
-          <div className="w-full pb-3 border-b border-[#E5E1D6] text-left">
-            <span className="text-[10px] font-extrabold text-[#225944] uppercase tracking-wider">STEP 1: SCAN &amp; PAY</span>
-            <h2 className="text-sm font-bold text-[#171A18]">EaseHub Official QR Code</h2>
-          </div>
-
-          {/* QR Code Container */}
-          <div className="p-4 rounded-2xl bg-[#F7F5EF] border border-[#E5E1D6] flex flex-col items-center space-y-2">
-            <div className="w-48 h-48 bg-white p-2 rounded-xl shadow-xs border border-[#E5E1D6] flex items-center justify-center">
-              {/* Simulated QR Code Graphic */}
-              <div className="w-full h-full bg-[#171A18] rounded-lg p-2 flex flex-col justify-between items-center text-white">
-                <div className="w-full flex justify-between">
-                  <div className="w-10 h-10 border-4 border-white bg-black"></div>
-                  <div className="w-10 h-10 border-4 border-white bg-black"></div>
-                </div>
-                <div className="text-center font-bold text-[10px] text-[#EECA3A]">EASEHUB UPI QR</div>
-                <div className="w-full flex justify-between">
-                  <div className="w-10 h-10 border-4 border-white bg-black"></div>
-                  <div className="w-6 h-6 bg-[#EECA3A]"></div>
-                </div>
-              </div>
-            </div>
-            <span className="text-xs font-mono font-bold text-[#171A18]">easehub@sbi</span>
-          </div>
-
-          <div className="w-full space-y-2 text-xs">
-            <div className="p-3 rounded-xl bg-[#F7F5EF] text-[#6B6B63] space-y-1 text-left">
-              <div className="font-bold text-[#171A18]">Accepted UPI Apps:</div>
-              <div className="text-[11px] font-medium text-[#225944]">GPay • PhonePe • Paytm • BHIM • Cred</div>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Right Column: UTR & Screenshot Upload Form (7 cols) */}
-        <div className="md:col-span-7 bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs space-y-4">
-          <div className="pb-3 border-b border-[#E5E1D6]">
-            <span className="text-[10px] font-extrabold text-[#225944] uppercase tracking-wider">STEP 2: SUBMIT RECEIPT</span>
-            <h2 className="text-sm font-bold text-[#171A18]">Enter UTR &amp; Payment Screenshot</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="p-3.5 rounded-2xl bg-[#F7F5EF] space-y-1">
+            <span className="text-[#6B6B63] font-semibold">Service / Property:</span>
+            <p className="font-extrabold text-[#171A18] text-sm">{bookingDetails.serviceName}</p>
           </div>
-
-          <form onSubmit={handleSubmitPayment} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-bold text-[#171A18] mb-1">
-                UPI 12-Digit UTR / Ref Number <span className="text-rose-600">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                maxLength={12}
-                placeholder="e.g. 408291048291"
-                value={utrInput}
-                onChange={(e) => setUtrInput(e.target.value.replace(/\D/g, ''))}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7F5EF] border border-[#E5E1D6] text-xs font-mono font-bold text-[#171A18] focus:outline-none focus:ring-2 focus:ring-[#225944]"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-[#171A18] mb-1">
-                Upload Payment Screenshot (Optional)
-              </label>
-              <div className="p-4 rounded-xl bg-[#F7F5EF] border-2 border-dashed border-[#E5E1D6] text-center space-y-2">
-                <span className="material-symbols-outlined text-[28px] text-[#6B6B63]">cloud_upload</span>
-                <p className="text-xs text-[#6B6B63]">
-                  {screenshotName ? <strong className="text-[#225944]">{screenshotName}</strong> : 'Click to select image file'}
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="screenshot-upload"
-                />
-                <label
-                  htmlFor="screenshot-upload"
-                  className="inline-block px-4 py-1.5 rounded-xl bg-white border border-[#E5E1D6] font-bold text-xs cursor-pointer hover:bg-[#E5E1D6]"
-                >
-                  Choose File
-                </label>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#F7F5EF] text-[11px] text-[#6B6B63] space-y-1">
-              <span className="font-bold text-[#171A18]">100% Escrow Protection:</span>
-              <p>Your payment is safely held until the service is delivered and verified by your 4-digit OTP.</p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={paymentState.status === 'pending' || paymentState.status === 'verified'}
-              className="w-full py-3 rounded-xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs transition shadow-xs flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[18px]">send</span>
-              <span>Submit Payment for Verification</span>
-            </button>
-          </form>
+          <div className="p-3.5 rounded-2xl bg-[#F7F5EF] space-y-1">
+            <span className="text-[#6B6B63] font-semibold">Customer Resident:</span>
+            <p className="font-extrabold text-[#171A18] text-sm">{user?.name || 'Customer'}</p>
+            <p className="text-[10px] text-[#6B6B63]">{user?.phone || user?.email}</p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-[#225944] text-white space-y-1">
+            <span className="text-white/80 font-semibold">Total Payable Amount:</span>
+            <p className="font-black text-xl text-[#EECA3A]">₹{(bookingDetails.amount || 4500).toLocaleString('en-IN')}</p>
+          </div>
         </div>
       </div>
+
+      {/* Status Screen Banners */}
+      {paymentState.status === 'pending' && (
+        <div className="p-6 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-950 space-y-4 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 font-extrabold text-base text-amber-900">
+              <RefreshCw className="w-6 h-6 text-amber-600 animate-spin" />
+              <span>Payment Verification Pending</span>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-extrabold uppercase tracking-wider">
+              VERIFICATION_PENDING
+            </span>
+          </div>
+
+          <div className="space-y-2 text-xs text-amber-900 font-medium leading-relaxed">
+            <p className="text-sm font-bold">Payment submitted successfully!</p>
+            <p>
+              Your payment for transaction UTR <strong className="font-mono text-[#171A18]">{paymentState.utr}</strong> is pending verification. EaseHub admin will review the deposit screenshot and verify the receipt.
+            </p>
+          </div>
+
+          <div className="pt-3 border-t border-amber-500/20 flex flex-wrap items-center justify-between gap-3">
+            <Link
+              to="/bookings"
+              className="px-5 py-2.5 rounded-xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5"
+            >
+              <span>View Bookings Console</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+
+            <a
+              href={paymentConfig.getWhatsAppLink(bookingDetails.serviceName)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-[#EECA3A] text-[#171A18] font-bold text-xs flex items-center gap-1.5"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Chat with Support (+91 6201614778)</span>
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Main Payment Section: QR Code & Receipt Upload */}
+      {paymentState.status !== 'pending' && (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          
+          {/* Left Column: Official QR Code & Instructions (5 cols) */}
+          <div className="md:col-span-5 bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs flex flex-col items-center text-center space-y-4">
+            <div className="w-full pb-3 border-b border-[#E5E1D6] text-left">
+              <span className="text-[10px] font-extrabold text-[#225944] uppercase tracking-wider">STEP 1: SCAN &amp; PAY</span>
+              <h2 className="text-sm font-bold text-[#171A18]">EaseHub Official UPI QR Code</h2>
+            </div>
+
+            {/* QR Code Container */}
+            {paymentConfig.isQrAvailable ? (
+              <div className="p-4 rounded-2xl bg-[#F7F5EF] border border-[#E5E1D6] flex flex-col items-center space-y-2 w-full">
+                <div className="w-52 h-52 bg-white p-2.5 rounded-2xl shadow-sm border border-[#E5E1D6] flex items-center justify-center overflow-hidden">
+                  <img
+                    src={paymentConfig.qrImageUrl}
+                    alt="EaseHub Payment QR Code"
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                </div>
+                <div className="pt-1 text-center">
+                  <span className="text-xs font-mono font-extrabold text-[#225944]">{paymentConfig.easehubUpiId}</span>
+                  <p className="text-[10px] text-[#6B6B63] font-semibold mt-0.5">EaseHub Official Merchant QR</p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2 w-full">
+                <AlertTriangle className="w-8 h-8 text-amber-600 mx-auto" />
+                <p className="text-xs font-bold text-amber-900">Payment QR is currently unavailable.</p>
+                <p className="text-[11px] text-amber-800">
+                  Please contact EaseHub support at <strong className="font-mono">+91 6201614778</strong> for instant UPI payment instructions.
+                </p>
+              </div>
+            )}
+
+            {/* QR Payment Instructions */}
+            <div className="w-full text-left space-y-2 pt-2 border-t border-[#E5E1D6]">
+              <span className="text-xs font-extrabold text-[#171A18]">Payment Instructions:</span>
+              <ol className="list-decimal list-inside text-xs text-[#6B6B63] space-y-1 font-medium">
+                <li>Open any UPI app (GPay, PhonePe, Paytm, BHIM).</li>
+                <li>Scan the QR code above or pay to UPI ID.</li>
+                <li>Complete payment of ₹{(bookingDetails.amount || 4500).toLocaleString('en-IN')}.</li>
+                <li>Take a screenshot of the successful transaction.</li>
+                <li>Enter the 12-digit UTR / Transaction ID below.</li>
+                <li>Submit for admin verification.</li>
+              </ol>
+            </div>
+
+            {/* Contact Support Button */}
+            <div className="w-full pt-2">
+              <a
+                href={paymentConfig.getTelLink()}
+                className="w-full py-2.5 rounded-xl bg-[#F7F5EF] hover:bg-[#E5E1D6] text-[#171A18] font-bold text-xs flex items-center justify-center gap-2 border border-[#E5E1D6] transition"
+              >
+                <Phone className="w-4 h-4 text-[#225944]" />
+                <span>Call EaseHub Support (+91 6201614778)</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Right Column: UTR & Screenshot Upload Form (7 cols) */}
+          <div className="md:col-span-7 bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs space-y-4">
+            <div className="pb-3 border-b border-[#E5E1D6]">
+              <span className="text-[10px] font-extrabold text-[#225944] uppercase tracking-wider">STEP 2: SUBMIT VERIFICATION RECEIPT</span>
+              <h2 className="text-sm font-bold text-[#171A18]">Enter UTR &amp; Upload Payment Screenshot</h2>
+            </div>
+
+            <form onSubmit={handleSubmitPayment} className="space-y-5 text-xs">
+              
+              {/* UTR / Transaction ID Input */}
+              <div>
+                <label className="block font-extrabold text-[#171A18] mb-1.5">
+                  UPI 12-Digit UTR / Transaction ID <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={16}
+                  placeholder="Enter your UTR / transaction ID (e.g. 408291048291)"
+                  value={utrInput}
+                  onChange={(e) => setUtrInput(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                  className="w-full px-4 py-3 rounded-2xl bg-[#F7F5EF] border border-[#E5E1D6] text-sm font-mono font-bold text-[#171A18] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+                />
+                <p className="text-[10px] text-[#6B6B63] mt-1 font-medium">
+                  Found on your UPI payment confirmation screen (Ref No. / Txn ID).
+                </p>
+              </div>
+
+              {/* Payment Screenshot Upload */}
+              <div>
+                <label className="block font-extrabold text-[#171A18] mb-1.5">
+                  Upload Payment Screenshot (PNG, JPG, WEBP)
+                </label>
+
+                {filePreview ? (
+                  <div className="p-3 rounded-2xl bg-[#F7F5EF] border border-[#E5E1D6] space-y-3">
+                    <div className="relative h-44 rounded-xl overflow-hidden bg-black/5 border border-[#E5E1D6] flex items-center justify-center">
+                      <img src={filePreview} alt="Payment Receipt Preview" className="w-full h-full object-contain" />
+                      {uploadingImage && (
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center text-white font-bold text-xs gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Uploading to private bucket...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#225944] truncate max-w-[200px]">
+                        {selectedFile?.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs transition"
+                      >
+                        Remove / Replace
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-2xl bg-[#F7F5EF] border-2 border-dashed border-[#E5E1D6] text-center space-y-2">
+                    <Upload className="w-8 h-8 text-[#225944] mx-auto" />
+                    <div>
+                      <p className="text-xs font-bold text-[#171A18]">Click to upload receipt screenshot</p>
+                      <p className="text-[10px] text-[#6B6B63] mt-0.5">PNG, JPG, JPEG or WEBP (Max 5MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="screenshot-file-upload"
+                    />
+                    <label
+                      htmlFor="screenshot-file-upload"
+                      className="inline-block px-5 py-2 rounded-xl bg-white border border-[#E5E1D6] font-bold text-xs text-[#171A18] cursor-pointer hover:bg-[#E5E1D6] transition shadow-xs"
+                    >
+                      Select Image File
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Escrow Protection Notice */}
+              <div className="p-3.5 rounded-2xl bg-[#F7F5EF] text-[11px] text-[#6B6B63] space-y-1 border border-[#E5E1D6]">
+                <span className="font-extrabold text-[#225944] flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>100% Escrow Guard Protection</span>
+                </span>
+                <p>Your payment details are submitted privately for Admin verification before booking confirmation.</p>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={paymentState.status === 'submitting' || uploadingImage}
+                className="w-full py-3.5 rounded-2xl bg-[#225944] hover:bg-[#174532] text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {paymentState.status === 'submitting' ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Submitting Payment Proof...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Payment for Verification</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+        </div>
+      )}
+
     </div>
   );
 };

@@ -98,18 +98,18 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <Link to="/support" className="hover:text-[#EECA3A] transition-colors">
-                  Student Safety Pledge
-                </Link>
+                <a href="tel:+916201614778" className="hover:text-[#EECA3A] transition-colors flex items-center gap-1.5">
+                  <span>📞 Call: +91 6201614778</span>
+                </a>
+              </li>
+              <li>
+                <a href="https://wa.me/916201614778?text=Hello%20EaseHub%20Support" target="_blank" rel="noopener noreferrer" className="hover:text-[#EECA3A] transition-colors flex items-center gap-1.5">
+                  <span>💬 WhatsApp: +91 6201614778</span>
+                </a>
               </li>
               <li>
                 <Link to="/support" className="hover:text-[#EECA3A] transition-colors">
-                  Food Hygiene Standards
-                </Link>
-              </li>
-              <li>
-                <Link to="/support" className="hover:text-[#EECA3A] transition-colors">
-                  Contact Support
+                  Contact Support Center
                 </Link>
               </li>
             </ul>

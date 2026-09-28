@@ -7,6 +7,9 @@ import { mealApi, MealProvider as ApiMealProvider } from '../../services/mealApi
 import { savedApi } from '../../services/savedApi';
 import { useAuth } from '../../context/AuthContext';
 
+import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
+import { paymentConfig } from '../../config/paymentConfig';
+
 interface MealProvider {
   id: string;
   name: string;
@@ -35,6 +38,10 @@ export const MealsPage: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<MealProvider | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+
+  // Booking Modal State
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+  const [bookingModalItem, setBookingModalItem] = useState<BookingModalItem | null>(null);
 
   const loadMeals = async () => {
     try {
@@ -463,13 +470,37 @@ export const MealsPage: React.FC = () => {
                         <div className="flex items-center space-x-2.5 mt-4 pt-3 border-t border-[#E5E1D6]/60">
                           <button
                             type="button"
+                            onClick={() => {
+                              setBookingModalItem({
+                                id: provider.id,
+                                name: provider.name,
+                                type: 'Meal',
+                                price: provider.pricePerMeal,
+                                priceUnit: '/ meal',
+                                location: provider.location,
+                                image: provider.image,
+                              });
+                              setIsBookingModalOpen(true);
+                            }}
                             className="flex-1 py-2 text-xs font-bold rounded-xl border border-[#225944] text-[#225944] bg-white hover:bg-[#225944] hover:text-white transition-colors"
                           >
                             Try Today
                           </button>
                           <button
                             type="button"
-                            className="flex-1 py-2 text-xs font-bold rounded-xl bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] transition-colors shadow-xs"
+                            onClick={() => {
+                              setBookingModalItem({
+                                id: provider.id,
+                                name: `${provider.name} (Monthly Tiffin)`,
+                                type: 'Meal',
+                                price: provider.pricePerMeal * 30,
+                                priceUnit: '/ month',
+                                location: provider.location,
+                                image: provider.image,
+                              });
+                              setIsBookingModalOpen(true);
+                            }}
+                            className="flex-1 py-2 text-xs font-extrabold rounded-xl bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] transition-colors shadow-xs"
                           >
                             1 Month Plan
                           </button>
@@ -641,6 +672,13 @@ export const MealsPage: React.FC = () => {
         </section>
 
       </main>
+
+      {/* Global Booking & Contact Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        item={bookingModalItem}
+      />
     </div>
   );
 };

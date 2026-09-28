@@ -6,6 +6,9 @@ import { pgApi, PGProperty } from '../../services/pgApi';
 import { savedApi } from '../../services/savedApi';
 import { useAuth } from '../../context/AuthContext';
 
+import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
+import { paymentConfig } from '../../config/paymentConfig';
+
 export interface PGLocationData {
   address: string;
   landmark?: string;
@@ -41,6 +44,10 @@ export const PGPage: React.FC = () => {
   const [listings, setListings] = useState<PGListing[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+
+  // Booking Modal States
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+  const [bookingModalItem, setBookingModalItem] = useState<BookingModalItem | null>(null);
 
   const loadPGs = async () => {
     try {
@@ -435,15 +442,35 @@ export const PGPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* View Details CTA */}
-                    <div className="mt-4 flex justify-end">
-                      <Link
-                        to={`/pg/${listing.id}`}
-                        className="bg-[#225944] hover:bg-[#184232] text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs"
+                    {/* View Details & Book Now CTA */}
+                    <div className="mt-4 flex items-center justify-end gap-2">
+                      <a
+                        href={paymentConfig.getWhatsAppLink(listing.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center gap-1 transition-all border border-emerald-200"
                       >
-                        <span>View Details</span>
+                        <span>WhatsApp</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingModalItem({
+                            id: listing.id,
+                            name: listing.name,
+                            type: 'PG',
+                            price: listing.price,
+                            location: listing.location,
+                            images: listing.images,
+                            amenities: listing.amenities,
+                          });
+                          setIsBookingModalOpen(true);
+                        }}
+                        className="bg-[#225944] hover:bg-[#184232] text-white font-extrabold px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs"
+                      >
+                        <span>Book Now</span>
                         <span>→</span>
-                      </Link>
+                      </button>
                     </div>
 
                   </div>
@@ -633,6 +660,13 @@ export const PGPage: React.FC = () => {
         </div>
 
       </main>
+
+      {/* Global Booking & Contact Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        item={bookingModalItem}
+      />
     </div>
   );
 };

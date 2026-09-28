@@ -214,15 +214,15 @@ export const SupportPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto shrink-0">
             <a
-              href="tel:+917884051120"
+              href="tel:+916201614778"
               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-white text-[#225944] font-bold text-sm hover:bg-[#F3F4F0] transition-all shadow-md"
             >
               <span className="material-symbols-outlined text-[20px]">call</span>
-              <span>+91 788 405 1120</span>
+              <span>+91 6201614778</span>
             </a>
 
             <a
-              href="https://wa.me/917884051120?text=Hi%20EaseHub%20Support,%20I%20have%20an%20urgent%20student%20stay%20inquiry"
+              href="https://wa.me/916201614778?text=Hi%20EaseHub%20Support,%20I%20have%20an%20urgent%20student%20stay%20inquiry"
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#EECA3A] text-[#171A18] hover:bg-[#E0BD2C] font-bold text-sm transition-all shadow-md"
