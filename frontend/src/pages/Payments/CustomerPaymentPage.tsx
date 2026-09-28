@@ -5,7 +5,7 @@ import { paymentApi } from '../../services/paymentApi';
 import { bookingApi } from '../../services/bookingApi';
 import { storageApi } from '../../services/storageApi';
 import { paymentConfig } from '../../config/paymentConfig';
-import { ShieldCheck, QrCode, Upload, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Phone, MessageSquare } from 'lucide-react';
+import { ShieldCheck, QrCode, Upload, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Phone, MessageSquare, Copy, Check, ExternalLink, Smartphone } from 'lucide-react';
 
 interface PaymentState {
   status: 'idle' | 'submitting' | 'pending' | 'verified' | 'rejected';
@@ -46,6 +46,18 @@ export const CustomerPaymentPage: React.FC = () => {
     status: 'idle',
     utr: '',
   });
+
+  const [copiedUpi, setCopiedUpi] = useState<string | null>(null);
+
+  const handleCopyUpi = (upiId: string) => {
+    try {
+      navigator.clipboard.writeText(upiId);
+      setCopiedUpi(upiId);
+      setTimeout(() => setCopiedUpi(null), 2500);
+    } catch (e) {
+      console.warn('Clipboard error:', e);
+    }
+  };
 
   // Fetch latest pending booking if amount is missing
   useEffect(() => {
@@ -245,40 +257,108 @@ export const CustomerPaymentPage: React.FC = () => {
             </div>
 
             {/* QR Code Container */}
-            {paymentConfig.isQrAvailable ? (
-              <div className="p-4 rounded-2xl bg-[#F7F5EF] border border-[#E5E1D6] flex flex-col items-center space-y-2 w-full">
-                <div className="w-52 h-52 bg-white p-2.5 rounded-2xl shadow-sm border border-[#E5E1D6] flex items-center justify-center overflow-hidden">
-                  <img
-                    src={paymentConfig.qrImageUrl}
-                    alt="EaseHub Payment QR Code"
-                    className="w-full h-full object-contain rounded-xl"
-                  />
-                </div>
-                <div className="pt-1 text-center">
-                  <span className="text-xs font-mono font-extrabold text-[#225944]">{paymentConfig.easehubUpiId}</span>
-                  <p className="text-[10px] text-[#6B6B63] font-semibold mt-0.5">EaseHub Official Merchant QR</p>
-                </div>
+            <div className="p-4 rounded-2xl bg-[#F7F5EF] border border-[#E5E1D6] flex flex-col items-center space-y-3 w-full">
+              <div className="w-56 h-56 bg-white p-2 rounded-2xl shadow-sm border border-[#E5E1D6] flex items-center justify-center overflow-hidden">
+                <img
+                  src={paymentConfig.qrImageUrl}
+                  alt="EaseHub PhonePe Official Payment QR Code"
+                  className="w-full h-full object-contain rounded-xl"
+                />
               </div>
-            ) : (
-              <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2 w-full">
-                <AlertTriangle className="w-8 h-8 text-amber-600 mx-auto" />
-                <p className="text-xs font-bold text-amber-900">Payment QR is currently unavailable.</p>
-                <p className="text-[11px] text-amber-800">
-                  Please contact EaseHub support at <strong className="font-mono">+91 6201614778</strong> for instant UPI payment instructions.
-                </p>
+              <span className="text-[11px] font-extrabold text-[#225944] bg-[#225944]/10 px-3 py-1 rounded-full uppercase">
+                Official PhonePe Merchant QR
+              </span>
+            </div>
+
+            {/* Official Dual UPI IDs Section */}
+            <div className="w-full text-left space-y-2 pt-2 border-t border-[#E5E1D6]">
+              <span className="text-xs font-extrabold text-[#171A18] block">Official EaseHub UPI IDs:</span>
+              
+              {/* Primary UPI ID */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F7F5EF] border border-[#E5E1D6]">
+                <div>
+                  <span className="text-[10px] font-bold text-[#6B6B63] block">Primary UPI ID</span>
+                  <span className="font-mono text-xs font-extrabold text-[#225944]">6201614778@ibl</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyUpi('6201614778@ibl')}
+                  className="px-2.5 py-1 rounded-lg bg-white border border-[#E5E1D6] text-xs font-bold text-[#171A18] hover:bg-gray-50 transition flex items-center gap-1"
+                >
+                  {copiedUpi === '6201614778@ibl' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-[#225944]" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
               </div>
-            )}
+
+              {/* Secondary UPI ID */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F7F5EF] border border-[#E5E1D6]">
+                <div>
+                  <span className="text-[10px] font-bold text-[#6B6B63] block">Secondary UPI ID</span>
+                  <span className="font-mono text-xs font-extrabold text-[#225944]">6201614778-2@ybl</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyUpi('6201614778-2@ybl')}
+                  className="px-2.5 py-1 rounded-lg bg-white border border-[#E5E1D6] text-xs font-bold text-[#171A18] hover:bg-gray-50 transition flex items-center gap-1"
+                >
+                  {copiedUpi === '6201614778-2@ybl' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-[#225944]" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Instant Mobile UPI App Redirection CTAs */}
+            <div className="w-full text-left space-y-2 pt-2 border-t border-[#E5E1D6]">
+              <span className="text-xs font-extrabold text-[#171A18] flex items-center gap-1.5">
+                <Smartphone className="w-4 h-4 text-[#225944]" />
+                <span>Pay directly via UPI App:</span>
+              </span>
+
+              {/* Main Universal UPI Intent Button */}
+              <a
+                href={paymentConfig.getUpiIntentUrl('6201614778@ibl', bookingDetails.amount || 4500, bookingDetails.serviceName)}
+                className="w-full py-3 rounded-2xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition"
+              >
+                <ExternalLink className="w-4 h-4 text-[#EECA3A]" />
+                <span>Open UPI App (GPay / PhonePe / Paytm)</span>
+              </a>
+
+              {/* Alternate UPI App Intent Button */}
+              <a
+                href={paymentConfig.getUpiIntentUrl('6201614778-2@ybl', bookingDetails.amount || 4500, bookingDetails.serviceName)}
+                className="w-full py-2.5 rounded-xl bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] font-bold text-xs flex items-center justify-center gap-2 transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-[#171A18]" />
+                <span>Pay via Secondary UPI (6201614778-2@ybl)</span>
+              </a>
+            </div>
 
             {/* QR Payment Instructions */}
             <div className="w-full text-left space-y-2 pt-2 border-t border-[#E5E1D6]">
-              <span className="text-xs font-extrabold text-[#171A18]">Payment Instructions:</span>
+              <span className="text-xs font-extrabold text-[#171A18]">Payment Steps:</span>
               <ol className="list-decimal list-inside text-xs text-[#6B6B63] space-y-1 font-medium">
-                <li>Open any UPI app (GPay, PhonePe, Paytm, BHIM).</li>
-                <li>Scan the QR code above or pay to UPI ID.</li>
-                <li>Complete payment of ₹{(bookingDetails.amount || 4500).toLocaleString('en-IN')}.</li>
-                <li>Take a screenshot of the successful transaction.</li>
-                <li>Enter the 12-digit UTR / Transaction ID below.</li>
-                <li>Submit for admin verification.</li>
+                <li>Tap <strong>Open UPI App</strong> above or scan the QR code.</li>
+                <li>Pay exact amount ₹{(bookingDetails.amount || 4500).toLocaleString('en-IN')}.</li>
+                <li>Copy 12-digit UTR transaction ID from payment receipt.</li>
+                <li>Upload screenshot &amp; submit for admin verification.</li>
               </ol>
             </div>
 
