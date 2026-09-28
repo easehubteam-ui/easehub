@@ -17,6 +17,7 @@ import ResetPasswordPage from '../pages/Auth/ResetPasswordPage';
 // Authenticated Customer App Pages
 import DashboardPage from '../pages/Dashboard/DashboardPage';
 import { PGPage } from '../pages/PG/PGPage';
+import { PGDetails } from '../pages/PG/PGDetails';
 import { MealsPage } from '../pages/Meals/MealsPage';
 import { LaundryPage } from '../pages/Laundry/LaundryPage';
 import { ServicesPage } from '../pages/Services/ServicesPage';
@@ -56,7 +57,7 @@ export const AppRoutes: React.FC = () => {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/pg" element={<PGPage />} />
-          <Route path="/pg/:id" element={<PGPage />} />
+          <Route path="/pg/:id" element={<PGDetails />} />
           <Route path="/meals" element={<MealsPage />} />
           <Route path="/meals/:id" element={<MealsPage />} />
           <Route path="/laundry" element={<LaundryPage />} />

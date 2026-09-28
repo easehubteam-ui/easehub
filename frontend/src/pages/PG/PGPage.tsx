@@ -408,9 +408,9 @@ export const PGPage: React.FC = () => {
                     <div>
                       {/* Title & Rating */}
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-lg font-bold text-[#171A18] group-hover:text-[#225944] transition-colors leading-snug">
+                        <Link to={`/pg/${listing.id}`} className="text-lg font-bold text-[#171A18] hover:text-[#225944] transition-colors leading-snug">
                           {listing.name}
-                        </h3>
+                        </Link>
                         <div className="flex items-center gap-1 text-xs font-bold text-[#171A18] shrink-0">
                           <span className="text-[#EECA3A]">★</span>
                           <span>{listing.rating}</span>
@@ -443,35 +443,16 @@ export const PGPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* View Details & Book Now CTA */}
-                    <div className="mt-4 flex items-center justify-end gap-2">
-                      <a
-                        href={paymentConfig.getWhatsAppLink(listing.name)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center gap-1 transition-all border border-emerald-200"
-                      >
-                        <span>WhatsApp</span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBookingModalItem({
-                            id: listing.id,
-                            name: listing.name,
-                            type: 'PG',
-                            price: listing.price,
-                            location: listing.location,
-                            images: listing.images,
-                            amenities: listing.amenities,
-                          });
-                          setIsBookingModalOpen(true);
-                        }}
+                    {/* Primary CTA: View Details → */}
+                    <div className="mt-4 flex items-center justify-end">
+                      <Link
+                        to={`/pg/${listing.id}`}
+                        onClick={(e) => e.stopPropagation()}
                         className="bg-[#225944] hover:bg-[#184232] text-white font-extrabold px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs"
                       >
-                        <span>Book Now</span>
+                        <span>View Details</span>
                         <span>→</span>
-                      </button>
+                      </Link>
                     </div>
 
                   </div>
