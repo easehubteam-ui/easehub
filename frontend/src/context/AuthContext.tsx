@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: any) => Promise<User | null>;
   loginAdmin: (credentials: any) => Promise<User | null>;
+  loginWithGoogle: () => Promise<void>;
   register: (data: any) => Promise<User | null>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<User | null>;
@@ -32,12 +33,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let profile = Array.isArray(profilesByAuth) && profilesByAuth.length > 0 ? profilesByAuth[0] : null;
 
-      // 2. If not found by auth_user_id, attempt email match (for system seed admin records)
+      // 2. If not found by auth_user_id, attempt email match (for existing customers or seed records)
       if (!profile && authUser.email) {
         const { data: profilesByEmail } = await insforge.database
           .from('users')
           .select('*')
-          .eq('email', authUser.email);
+          .eq('email', authUser.email.trim().toLowerCase());
 
         if (Array.isArray(profilesByEmail) && profilesByEmail.length > 0) {
           const existing = profilesByEmail[0];
@@ -55,15 +56,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // 3. If still no profile, create a default customer profile
+      // 3. If still no profile, create a default customer profile (Google / OAuth new user)
       if (!profile) {
+        const googleName = authUser.name || authUser.profile?.name || authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User';
+        const googleAvatar = authUser.profile?.avatar || authUser.user_metadata?.avatar_url || authUser.avatar_url || null;
+
         await insforge.database
           .from('users')
           .insert([{
             auth_user_id: authUser.id,
-            name: authUser.name || authUser.profile?.name || authUser.email?.split('@')[0] || 'User',
-            email: authUser.email,
+            name: googleName,
+            email: authUser.email ? authUser.email.trim().toLowerCase() : '',
             phone: authUser.phone || null,
+            avatar_url: googleAvatar,
             role: 'customer',
             is_active: true
           }]);
@@ -284,6 +289,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      const redirectUri = typeof window !== 'undefined' && window.location.origin.includes('localhost')
+        ? `${window.location.origin}/dashboard`
+        : 'https://easehub-chi.vercel.app/dashboard';
+
+      const { error } = await insforge.auth.signInWithOAuth('google', {
+        redirectTo: redirectUri
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Google sign-in failed. Please try again.');
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'Google sign-in failed. Please try again.';
+      throw new Error(msg);
+    }
+  };
 
   const logout = async () => {
     try {
@@ -304,6 +327,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         loginAdmin,
+        loginWithGoogle,
         register,
         logout,
         refreshUser,
