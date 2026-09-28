@@ -1,7 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { NotFound } from '../../pages/NotFound/NotFound';
 
 interface Props {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 interface State {
@@ -20,29 +21,18 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Unhandled React Error:', error, errorInfo);
+    console.error('EaseHub Uncaught Application Error:', error, errorInfo);
   }
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#F7F5EF] text-[#171A18] flex items-center justify-center p-6 font-sans">
-          <div className="max-w-md w-full bg-white border border-[#E5E1D6] rounded-3xl p-8 text-center shadow-xl space-y-4">
-            <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
-              <span className="material-symbols-outlined text-3xl">warning</span>
-            </div>
-            <h2 className="text-xl font-extrabold text-[#171A18]">Something went wrong</h2>
-            <p className="text-xs text-[#6B6B63]">
-              {this.state.error?.message || 'An unexpected error occurred while rendering this page.'}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full py-3 px-4 rounded-2xl bg-[#225944] hover:bg-[#184232] text-white font-bold text-sm shadow-md transition-all"
-            >
-              Reload Page
-            </button>
-          </div>
-        </div>
+        <NotFound
+          title="Something went wrong"
+          message="We couldn't load this page right now. Please try again or return to the home page."
+          isError={true}
+          onRetry={() => this.setState({ hasError: false, error: null })}
+        />
       );
     }
 
