@@ -57,9 +57,7 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-3 z-50 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto my-2 pointer-events-auto transition-all duration-300">
       <div
         className={`w-full rounded-full px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 transition-all duration-300 ${
-          scrolled
-            ? 'bg-white/80 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_0_rgba(0,0,0,0.12)]'
-            : 'bg-white/50 backdrop-blur-md border border-white/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)]'
+          scrolled ? 'glass-navbar-scrolled' : 'glass-navbar'
         }`}
       >
         {/* Left: Brand Logo & Tagline */}
