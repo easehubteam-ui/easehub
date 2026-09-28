@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { bookingApi } from '../../services/bookingApi';
 import { useAuth } from '../../context/AuthContext';
+import { SkeletonCard } from '../../components/common/SkeletonCard';
 
 interface CustomerBooking {
   id: string;
@@ -154,9 +155,10 @@ export const BookingsPage: React.FC = () => {
 
       {/* Bookings Content */}
       {loading ? (
-        <div className="bg-white rounded-3xl p-12 border border-[#E5E1D6] text-center shadow-xs">
-          <div className="w-10 h-10 border-4 border-[#225944] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-bold text-[#171A18]">Fetching your bookings from database...</p>
+        <div className="space-y-4">
+          {[1, 2, 3].map((n) => (
+            <SkeletonCard key={n} layout="horizontal" />
+          ))}
         </div>
       ) : filteredBookings.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 border border-[#E5E1D6] text-center shadow-xs space-y-4">

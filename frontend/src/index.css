@@ -36,3 +36,57 @@ body {
   background: var(--ease-yellow);
   border-radius: 3px;
 }
+
+/* Smooth Skeleton Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    #E5E1D6 0%,
+    #F7F5EF 50%,
+    #E5E1D6 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer {
+    animation: none !important;
+    background: #E5E1D6 !important;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Subtle Micro-Interaction Classes */
+.btn-interaction {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.2s;
+}
+.btn-interaction:hover {
+  transform: translateY(-1px);
+}
+.btn-interaction:active {
+  transform: scale(0.98);
+}
+
+.card-interaction {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
+}
+.card-interaction:hover {
+  transform: translateY(-2px);
+}
+

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SkeletonTableRow } from '../common/SkeletonTableRow';
 
 export interface Column<T> {
   key: string;
@@ -17,6 +18,7 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
   pageSize?: number;
   emptyMessage?: string;
+  isLoading?: boolean;
 }
 
 export function DataTable<T extends { id?: string | number; [key: string]: any }>({
@@ -29,6 +31,7 @@ export function DataTable<T extends { id?: string | number; [key: string]: any }
   onRowClick,
   pageSize = 10,
   emptyMessage = 'No records found',
+  isLoading = false,
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,7 +95,11 @@ export function DataTable<T extends { id?: string | number; [key: string]: any }
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E1D6] text-xs text-[#171A18]">
-            {paginatedData.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonTableRow key={i} columns={columns.length} />
+              ))
+            ) : paginatedData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-12 text-center text-[#6B6B63]">
                   <div className="flex flex-col items-center justify-center gap-2">

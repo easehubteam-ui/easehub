@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { bookingApi } from '../../services/bookingApi';
 import { pgApi } from '../../services/pgApi';
 import { mealApi } from '../../services/mealApi';
+import { Skeleton } from '../../components/common/Skeleton';
+import { SkeletonCard } from '../../components/common/SkeletonCard';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -162,7 +164,17 @@ export const DashboardPage: React.FC = () => {
           </Link>
         </div>
 
-        {activeBookings.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="bg-white rounded-3xl p-5 border border-[#E5E1D6] space-y-3">
+                <Skeleton className="h-5 w-24 rounded-md" />
+                <Skeleton className="h-6 w-3/4 rounded-lg" />
+                <Skeleton className="h-4 w-1/2 rounded-md" />
+              </div>
+            ))}
+          </div>
+        ) : activeBookings.length === 0 ? (
           <div className="bg-white rounded-3xl p-8 border border-[#E5E1D6] text-center shadow-xs">
             <div className="w-12 h-12 rounded-2xl bg-gray-100 text-[#6B6B63] flex items-center justify-center mx-auto mb-3">
               <span className="material-symbols-outlined text-[24px]">assignment_turned_in</span>

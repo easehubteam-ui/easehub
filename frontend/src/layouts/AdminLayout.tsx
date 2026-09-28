@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminHeader from '../components/admin/AdminHeader';
+import { PageTransition } from '../components/common/PageTransition';
 
 export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,7 +40,9 @@ export const AdminLayout: React.FC = () => {
         <AdminHeader onMenuToggle={() => setSidebarOpen(true)} title={getPageTitle()} />
 
         <main className="flex-1 p-4 sm:p-6 md:p-8 w-full max-w-[1536px]">
-          <Outlet />
+          <PageTransition key={location.pathname}>
+            <Outlet />
+          </PageTransition>
         </main>
 
         <footer className="py-4 px-6 border-t border-[#E5E1D6] bg-white text-center text-xs text-[#6B6B63]">

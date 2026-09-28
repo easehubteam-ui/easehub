@@ -5,6 +5,7 @@ import Footer from '../components/layout/Footer';
 import FloatingContact from '../components/common/FloatingContact';
 import { CustomerLayout } from './CustomerLayout';
 import { useAuth } from '../context/AuthContext';
+import { PageTransition } from '../components/common/PageTransition';
 
 export const PublicLayout: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -23,7 +24,9 @@ export const PublicLayout: React.FC = () => {
 
       {/* Main Page Content */}
       <main className="flex-1">
-        <Outlet />
+        <PageTransition key={location.pathname}>
+          <Outlet />
+        </PageTransition>
       </main>
 
       {/* Floating Animated WhatsApp Contact Button (Bottom-Right) */}

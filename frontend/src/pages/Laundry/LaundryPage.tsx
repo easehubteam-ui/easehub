@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
 import { paymentConfig } from '../../config/paymentConfig';
 import PlaceholderImage from '../../components/common/PlaceholderImage';
+import { SkeletonCard } from '../../components/common/SkeletonCard';
 
 interface LaundryProvider {
   id: string;
@@ -338,9 +339,10 @@ export const LaundryPage: React.FC = () => {
             {/* LEFT COLUMN: PROVIDER LISTINGS (8 Cols) */}
             <div className="lg:col-span-8 space-y-5">
               {loading ? (
-                <div className="bg-white rounded-2xl border border-[#E5E3DC] p-12 text-center shadow-xs">
-                  <div className="w-10 h-10 border-4 border-[#225944] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-sm font-bold text-[#171A18]">Loading Laundry Partners...</p>
+                <div className="space-y-5">
+                  {[1, 2, 3, 4].map((n) => (
+                    <SkeletonCard key={n} layout="horizontal" />
+                  ))}
                 </div>
               ) : error ? (
                 <div className="bg-red-50 rounded-2xl border border-red-200 p-8 text-center text-red-700 shadow-xs font-semibold text-sm space-y-3">

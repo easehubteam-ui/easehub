@@ -272,6 +272,7 @@ export const Payments: React.FC = () => {
         subtitle="Audit customer UTR transaction reference numbers and private payment screenshots before approving escrow deposit"
         columns={columns}
         data={filteredPayments}
+        isLoading={loading}
         searchPlaceholder="Search UTR, payment ID, customer name..."
       />
 

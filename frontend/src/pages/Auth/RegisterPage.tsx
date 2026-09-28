@@ -195,10 +195,20 @@ export const RegisterPage: React.FC = () => {
 
                   <button
                     type="submit"
-                    className="w-full h-12 rounded-full bg-[#225944] hover:bg-[#184232] text-white text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 mt-2"
+                    disabled={isSubmitting}
+                    className="w-full h-12 rounded-full bg-[#225944] hover:bg-[#184232] text-white text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span>Complete Registration</span>
-                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Creating Account...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Complete Registration</span>
+                        <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                      </>
+                    )}
                   </button>
                 </form>
 

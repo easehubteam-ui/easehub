@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import FloatingContact from '../components/common/FloatingContact';
 import { savedApi } from '../services/savedApi';
+import { PageTransition } from '../components/common/PageTransition';
 
 export const CustomerLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -250,7 +251,9 @@ export const CustomerLayout: React.FC = () => {
 
       {/* Main App Content Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        <Outlet />
+        <PageTransition key={location.pathname}>
+          <Outlet />
+        </PageTransition>
       </main>
 
       {/* Floating Animated WhatsApp Contact Button */}
