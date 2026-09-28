@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 
 import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
 import { paymentConfig } from '../../config/paymentConfig';
+import PlaceholderImage from '../../components/common/PlaceholderImage';
 
 export interface PGLocationData {
   address: string;
@@ -351,10 +352,7 @@ export const PGPage: React.FC = () => {
                         className="w-full h-full object-cover transition-all duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full bg-[#E5E1D6]/40 flex flex-col items-center justify-center p-4 text-[#225944]">
-                        <span className="material-symbols-outlined text-4xl mb-1">domain</span>
-                        <span className="text-xs font-bold text-center">PG Accommodation</span>
-                      </div>
+                      <PlaceholderImage type="pg" title={listing.name} />
                     )}
 
                     {/* Featured Badge */}

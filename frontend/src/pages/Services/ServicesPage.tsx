@@ -7,6 +7,7 @@ import { savedApi } from '../../services/savedApi';
 
 import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
 import { paymentConfig } from '../../config/paymentConfig';
+import PlaceholderImage from '../../components/common/PlaceholderImage';
 
 interface ServiceProvider {
   id: string;
@@ -386,10 +387,7 @@ export const ServicesPage: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-[#225944]">
-                          <span className="material-symbols-outlined text-4xl mb-1">handyman</span>
-                          <span className="text-xs font-bold text-center">Home & Repair Service</span>
-                        </div>
+                        <PlaceholderImage type="services" title={provider.name} />
                       )}
                       <span className={`absolute top-3 left-3 text-white text-[11px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${provider.badge.color}`}>
                         {provider.badge.text}

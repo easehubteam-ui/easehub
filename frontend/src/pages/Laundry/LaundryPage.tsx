@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 
 import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
 import { paymentConfig } from '../../config/paymentConfig';
+import PlaceholderImage from '../../components/common/PlaceholderImage';
 
 interface LaundryProvider {
   id: string;
@@ -382,10 +383,7 @@ export const LaundryPage: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-[#225944]">
-                            <span className="material-symbols-outlined text-4xl mb-1">local_laundry_service</span>
-                            <span className="text-xs font-bold text-center">Laundry Partner</span>
-                          </div>
+                          <PlaceholderImage type="laundry" title={provider.name} />
                         )}
                         <span className={`absolute top-2.5 left-2.5 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${provider.badge.color}`}>
                           {provider.badge.text}

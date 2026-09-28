@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 
 import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
 import { paymentConfig } from '../../config/paymentConfig';
+import PlaceholderImage from '../../components/common/PlaceholderImage';
 
 interface MealProvider {
   id: string;
@@ -379,10 +380,7 @@ export const MealsPage: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-[#225944]/10 flex flex-col items-center justify-center p-4 text-[#225944]">
-                            <span className="material-symbols-outlined text-4xl mb-1">restaurant</span>
-                            <span className="text-xs font-bold text-center">Mess & Tiffin Service</span>
-                          </div>
+                          <PlaceholderImage type="meals" title={provider.name} />
                         )}
                         <span className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-xs ${provider.badge.color}`}>
                           {provider.badge.text}
