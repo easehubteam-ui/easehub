@@ -1,0 +1,4 @@
+
+!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof globalThis?globalThis:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="26562bd3-5a62-5227-85c9-2e391f400621")}catch(e){}}();
+(function(){try{var e=typeof window<`u`?window:typeof global<`u`?global:typeof globalThis<`u`?globalThis:typeof self<`u`?self:{};e.SENTRY_RELEASE={id:`v2026-09-29-267ed87`}}catch{}})();import{Tn as e,vn as t}from"./utils-CKfaVPae.js";var n=new Map,r=t=>{if(typeof Intl>`u`)return;let r=t.toUpperCase(),i=n.get(r);return i===void 0&&(i=new Intl.NumberFormat(e(),{style:`currency`,currency:r,minimumFractionDigits:0,compactDisplay:`short`,currencyDisplay:`narrowSymbol`}),n.set(r,i)),i},i={format:e=>`$${t(e,2)}`},a=(e,t)=>(r(t)??i).format(e);export{a as t};
+//# debugId=26562bd3-5a62-5227-85c9-2e391f400621

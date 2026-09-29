@@ -1,0 +1,4 @@
+
+!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof globalThis?globalThis:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="a8445528-6b9c-56dc-9858-8db919d6e2b8")}catch(e){}}();
+(function(){try{var e=typeof window<`u`?window:typeof global<`u`?global:typeof globalThis<`u`?globalThis:typeof self<`u`?self:{};e.SENTRY_RELEASE={id:`v2026-09-29-267ed87`}}catch{}})();import{n as e,t}from"./jsx-runtime-BaGNsZcS.js";import{qn as n}from"./trace-DokCbvQG.js";import{h as r}from"./hooks-B8ii2fEP.js";e();var i=t();function a({to:e,children:t,state:a,replace:o}){let s=r();return n(()=>{s(e,{state:a,replace:o})}),(0,i.jsx)(i.Fragment,{children:t??null})}export{a as t};
+//# debugId=a8445528-6b9c-56dc-9858-8db919d6e2b8

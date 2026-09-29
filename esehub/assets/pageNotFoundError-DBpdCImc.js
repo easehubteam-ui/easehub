@@ -1,0 +1,4 @@
+
+!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof globalThis?globalThis:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="3af0539c-beec-53a2-8aeb-a28b6c4a542c")}catch(e){}}();
+(function(){try{var e=typeof window<`u`?window:typeof global<`u`?global:typeof globalThis<`u`?globalThis:typeof self<`u`?self:{};e.SENTRY_RELEASE={id:`v2026-09-29-267ed87`}}catch{}})();import{n as e,t}from"./jsx-runtime-BaGNsZcS.js";import{t as n}from"./fullPageError-BSM1yo74.js";e();var r=t();function i(){return(0,r.jsx)(n,{variant:`white`,title:`Page not found.`,description:`The page you are trying to access does not exist.`,emoji:`🧐`,"data-sentry-element":`FullPageError`,"data-sentry-component":`PageNotFoundError`,"data-sentry-source-file":`pageNotFoundError.tsx`})}export{i as t};
+//# debugId=3af0539c-beec-53a2-8aeb-a28b6c4a542c

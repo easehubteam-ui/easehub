@@ -1,0 +1,4 @@
+
+!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof globalThis?globalThis:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="0e86e061-bfc6-5145-9dc2-6d14453b8598")}catch(e){}}();
+(function(){try{var e=typeof window<`u`?window:typeof global<`u`?global:typeof globalThis<`u`?globalThis:typeof self<`u`?self:{};e.SENTRY_RELEASE={id:`v2026-09-29-267ed87`}}catch{}})();var e=`_quote_l6ulg_1`,t=`_gridWrapper_l6ulg_16`,n=`_mainContent_l6ulg_21`,r=`_small_l6ulg_51`,i=`_text_l6ulg_90`,a=`_nobr_l6ulg_136`,o=`_sticker_l6ulg_140`,s=`_dataWrapper_l6ulg_162`,c=`_avatar_l6ulg_176`,l=`_image_l6ulg_185`,u=`_textStack_l6ulg_189`,d=`_name_l6ulg_194`,f=`_position_l6ulg_195`;export{n as a,f as c,o as d,i as f,l as i,e as l,s as n,d as o,u as p,t as r,a as s,c as t,r as u};
+//# debugId=0e86e061-bfc6-5145-9dc2-6d14453b8598

@@ -1,0 +1,3 @@
+(function(){try{var e=typeof window<`u`?window:typeof global<`u`?global:typeof globalThis<`u`?globalThis:typeof self<`u`?self:{};e.SENTRY_RELEASE={id:`v2026-09-29-267ed87`}}catch{}})();import{n as e,t}from"./errorBoundary-EC_Xq_x9.js";export{t as ErrorBoundary,e as default};
+!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof globalThis?globalThis:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="25b5d6ce-8e0f-5645-8675-2ac1a2726ea9")}catch(e){}}();
+//# debugId=25b5d6ce-8e0f-5645-8675-2ac1a2726ea9
