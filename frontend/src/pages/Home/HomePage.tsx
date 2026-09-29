@@ -1,19 +1,457 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Search,
+  ArrowRight,
+  Building2,
+  Utensils,
+  Shirt,
+  Wrench,
+  Star,
+  MapPin,
+  CheckCircle2,
+  Sparkles,
+} from 'lucide-react';
+import { pgApi, PGProperty } from '../../services/pgApi';
+import { mealApi, MealProvider } from '../../services/mealApi';
+import { laundryApi, LaundryProvider } from '../../services/laundryApi';
+import { serviceApi, ExtraServiceItem } from '../../services/serviceApi';
+import PlaceholderImage from '../../components/common/PlaceholderImage';
+import { AnimatedCityFooter } from '../../components/home/AnimatedCityFooter';
 
 export const HomePage: React.FC = () => {
+  const navigate = useNavigate();
+
+  // Search Input State
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Database Data States
+  const [pgListings, setPgListings] = useState<PGProperty[]>([]);
+  const [mealProviders, setMealProviders] = useState<MealProvider[]>([]);
+  const [laundryProviders, setLaundryProviders] = useState<LaundryProvider[]>([]);
+  const [extraServices, setExtraServices] = useState<ExtraServiceItem[]>([]);
+  const [loadingDb, setLoadingDb] = useState(true);
+
+  // Load Database Records
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingDb(true);
+
+    Promise.all([
+      pgApi.getAll().catch(() => [] as PGProperty[]),
+      mealApi.getAll().catch(() => [] as MealProvider[]),
+      laundryApi.getAll().catch(() => [] as LaundryProvider[]),
+      serviceApi.getAll().catch(() => [] as ExtraServiceItem[]),
+    ]).then(([pgs, meals, laundries, services]) => {
+      if (!isMounted) return;
+      setPgListings(Array.isArray(pgs) ? pgs.slice(0, 4) : []);
+      setMealProviders(Array.isArray(meals) ? meals.slice(0, 4) : []);
+      setLaundryProviders(Array.isArray(laundries) ? laundries.slice(0, 4) : []);
+      setExtraServices(Array.isArray(services) ? services.slice(0, 4) : []);
+      setLoadingDb(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      navigate('/pg');
+      return;
+    }
+
+    if (q.includes('meal') || q.includes('tiffin') || q.includes('food') || q.includes('mess')) {
+      navigate('/meals');
+    } else if (q.includes('laundry') || q.includes('wash') || q.includes('cloth')) {
+      navigate('/laundry');
+    } else if (q.includes('repair') || q.includes('clean') || q.includes('electric') || q.includes('plumb') || q.includes('service')) {
+      navigate('/services');
+    } else {
+      navigate('/pg');
+    }
+  };
+
   return (
-    <div className="w-full min-h-screen bg-white overflow-hidden">
-      <iframe
-        src="/esehub/index.html"
-        title="EaseHub Home"
-        className="w-full border-none block"
-        style={{
-          width: '100%',
-          height: 'calc(100vh - 70px)',
-          minHeight: '850px',
-          border: 'none',
-        }}
-      />
+    <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen selection:bg-[#EECA3A] selection:text-[#171A18]">
+      
+      {/* ---------------------------------------------------- */}
+      {/* 1. HERO SECTION */}
+      {/* ---------------------------------------------------- */}
+      <section className="relative bg-gradient-to-b from-white via-[#F7F5EF]/80 to-[#F7F5EF] border-b border-[#E5E1D6] py-12 md:py-20 overflow-hidden">
+        
+        {/* Background Motion Glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#225944]/5 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-[#EECA3A]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            {/* Left Column: Headline & Hero Search */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Badge Tag */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#225944]/10 text-[#225944] text-xs font-black uppercase tracking-wider shadow-2xs">
+                <Sparkles className="w-4 h-4 text-[#EECA3A]" />
+                <span>Life Around Campus, Made Easier</span>
+              </div>
+
+              {/* Main Animated Title */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#171A18] tracking-tight leading-tight">
+                Everything you need for <br />
+                a <span className="text-[#225944]">better campus life.</span>
+              </h1>
+
+              <p className="text-base sm:text-lg text-[#6B6B63] max-w-xl font-medium leading-relaxed">
+                Find verified student PGs, hygienic meal subscriptions, doorstep laundry pickups, and daily home repairs across Chhattisgarh campuses.
+              </p>
+
+              {/* Search Bar Console */}
+              <form
+                onSubmit={handleSearchSubmit}
+                className="bg-white p-2.5 rounded-2xl border border-[#E5E1D6] shadow-md flex items-center gap-2 max-w-xl"
+              >
+                <div className="flex items-center gap-2.5 flex-1 px-3">
+                  <Search className="w-5 h-5 text-[#225944] shrink-0" />
+                  <input
+                    id="hero-search-input"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search PGs, meals, laundry or campus services..."
+                    className="w-full bg-transparent border-0 text-sm font-semibold text-[#171A18] placeholder-[#6B6B63] focus:outline-none p-1"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs sm:text-sm px-6 py-3 rounded-xl transition-all shadow-xs flex items-center gap-2 shrink-0"
+                >
+                  <span>Search</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+
+              {/* Verified Trust Markers */}
+              <div className="flex flex-wrap items-center gap-4 text-xs text-[#6B6B63] font-bold pt-2">
+                <span className="flex items-center gap-1.5 text-[#225944]">
+                  <CheckCircle2 className="w-4 h-4 text-[#225944]" />
+                  <span>100% Verified PGs</span>
+                </span>
+                <span className="flex items-center gap-1.5 text-[#225944]">
+                  <CheckCircle2 className="w-4 h-4 text-[#225944]" />
+                  <span>Zero Brokerage Fee</span>
+                </span>
+                <span className="flex items-center gap-1.5 text-[#225944]">
+                  <CheckCircle2 className="w-4 h-4 text-[#225944]" />
+                  <span>Doorstep Service Delivery</span>
+                </span>
+              </div>
+
+            </div>
+
+            {/* Right Column: Hero Graphic Banner */}
+            <div className="lg:col-span-5">
+              <div className="relative rounded-3xl overflow-hidden border border-[#E5E1D6] shadow-lg bg-gradient-to-br from-[#225944] via-[#1b4837] to-[#123327] p-8 text-white flex flex-col justify-between min-h-[340px]">
+                
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-[#EECA3A] text-[#171A18] font-black text-2xl flex items-center justify-center mb-4 shadow-sm">
+                    E
+                  </div>
+                  <h3 className="text-2xl font-extrabold text-white tracking-tight leading-snug">
+                    Student Housing &amp; Care Marketplace
+                  </h3>
+                  <p className="text-xs text-emerald-100/90 font-medium mt-2 leading-relaxed">
+                    Connecting BIT Durg, IIT Bhilai, Rungta &amp; CSVTU students with reliable living spaces and daily essentials.
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 flex items-center justify-between mt-6">
+                  <div>
+                    <span className="text-[10px] uppercase font-black tracking-wider text-[#EECA3A] block">
+                      ALL-IN-ONE SOLUTION
+                    </span>
+                    <span className="text-xs font-extrabold text-white">
+                      Housing • Food • Laundry • Repairs
+                    </span>
+                  </div>
+                  <Link
+                    to="/pg"
+                    className="bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] font-bold text-xs px-3.5 py-2 rounded-xl transition-all shrink-0"
+                  >
+                    Browse Now
+                  </Link>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------- */}
+      {/* 2. CATEGORY QUICK LINKS ROW */}
+      {/* ---------------------------------------------------- */}
+      <section className="py-10 bg-[#F7F5EF] border-b border-[#E5E1D6]">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            {/* Category 1: PGs & Hostels */}
+            <div
+              onClick={() => navigate('/pg')}
+              className="bg-white rounded-2xl p-5 border border-[#E5E1D6] shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer flex items-start gap-4 group"
+            >
+              <div className="p-3.5 rounded-xl bg-[#225944]/10 text-[#225944] shrink-0 group-hover:bg-[#225944] group-hover:text-white transition-colors">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  PG / Hostels
+                </h3>
+                <p className="text-xs text-[#6B6B63] mt-0.5 font-medium truncate">
+                  Single &amp; sharing rooms near campuses
+                </p>
+              </div>
+            </div>
+
+            {/* Category 2: Meals & Mess */}
+            <div
+              onClick={() => navigate('/meals')}
+              className="bg-white rounded-2xl p-5 border border-[#E5E1D6] shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer flex items-start gap-4 group"
+            >
+              <div className="p-3.5 rounded-xl bg-[#EECA3A]/20 text-[#171A18] shrink-0 group-hover:bg-[#EECA3A] transition-colors">
+                <Utensils className="w-6 h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Meals &amp; Mess
+                </h3>
+                <p className="text-xs text-[#6B6B63] mt-0.5 font-medium truncate">
+                  Hygienic daily tiffin &amp; mess plans
+                </p>
+              </div>
+            </div>
+
+            {/* Category 3: Laundry */}
+            <div
+              onClick={() => navigate('/laundry')}
+              className="bg-white rounded-2xl p-5 border border-[#E5E1D6] shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer flex items-start gap-4 group"
+            >
+              <div className="p-3.5 rounded-xl bg-[#225944]/10 text-[#225944] shrink-0 group-hover:bg-[#225944] group-hover:text-white transition-colors">
+                <Shirt className="w-6 h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Laundry
+                </h3>
+                <p className="text-xs text-[#6B6B63] mt-0.5 font-medium truncate">
+                  Doorstep wash, iron &amp; delivery
+                </p>
+              </div>
+            </div>
+
+            {/* Category 4: Extra Services */}
+            <div
+              onClick={() => navigate('/services')}
+              className="bg-white rounded-2xl p-5 border border-[#E5E1D6] shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer flex items-start gap-4 group"
+            >
+              <div className="p-3.5 rounded-xl bg-gray-100 text-[#171A18] shrink-0 group-hover:bg-[#225944] group-hover:text-white transition-colors">
+                <Wrench className="w-6 h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Extra Services
+                </h3>
+                <p className="text-xs text-[#6B6B63] mt-0.5 font-medium truncate">
+                  Electrician, plumbing &amp; repairs
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------- */}
+      {/* 3. REAL DATABASE CATALOG SECTION */}
+      {/* ---------------------------------------------------- */}
+      <section className="py-12 bg-white">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#E5E1D6]">
+            <div>
+              <span className="text-xs font-bold text-[#225944] uppercase tracking-wider">
+                EXPLORE LISTINGS
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#171A18] mt-1">
+                Verified Campus Catalog
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-[#6B6B63]">
+              Real database properties &amp; service partners
+            </p>
+          </div>
+
+          {loadingDb ? (
+            <div className="py-12 text-center space-y-3">
+              <div className="w-8 h-8 border-3 border-[#225944] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs font-semibold text-[#6B6B63]">Loading listings from database...</p>
+            </div>
+          ) : (
+            <div className="space-y-10">
+              
+              {/* PG Properties */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-[#171A18] flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-[#225944]" />
+                    <span>Featured PGs &amp; Hostels</span>
+                  </h3>
+                  <Link to="/pg" className="text-xs font-bold text-[#225944] hover:underline flex items-center gap-1">
+                    <span>View All PGs</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {pgListings.length === 0 ? (
+                  <div className="bg-[#F7F5EF] rounded-2xl p-8 text-center border border-[#E5E1D6] text-xs font-semibold text-[#6B6B63]">
+                    No PG listings available yet. Properties added via Admin Panel will display here.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {pgListings.map((pg) => {
+                      const imageSrc = pg.images && pg.images.length > 0 ? pg.images[0] : null;
+                      const pgId = pg._id || pg.code || pg.id;
+
+                      return (
+                        <article
+                          key={pgId}
+                          onClick={() => navigate(`/pg/${pgId}`)}
+                          className="bg-white rounded-2xl border border-[#E5E1D6] overflow-hidden shadow-2xs hover:shadow-md transition duration-200 cursor-pointer flex flex-col justify-between group"
+                        >
+                          <div>
+                            <div className="h-44 w-full relative bg-[#F7F5EF]">
+                              {imageSrc ? (
+                                <img
+                                  src={imageSrc}
+                                  alt={pg.name}
+                                  className="w-full h-full object-cover group-hover:scale-101 transition-transform duration-200"
+                                />
+                              ) : (
+                                <PlaceholderImage type="pg" title={pg.name} />
+                              )}
+                              {pg.gender && (
+                                <span className="absolute top-2.5 left-2.5 bg-[#225944] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs">
+                                  {pg.gender} PG
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="p-4 space-y-1.5">
+                              <h4 className="font-bold text-sm text-[#171A18] group-hover:text-[#225944] transition-colors truncate">
+                                {pg.name}
+                              </h4>
+                              <p className="text-xs text-[#6B6B63] flex items-center gap-1 truncate">
+                                <MapPin className="w-3 h-3 text-[#225944] shrink-0" />
+                                <span>{pg.corridor || pg.location?.address || 'Bhilai, Chhattisgarh'}</span>
+                              </p>
+                              {pg.rating && (
+                                <div className="flex items-center gap-1 text-xs font-bold text-[#171A18] pt-1">
+                                  <Star className="w-3.5 h-3.5 fill-[#EECA3A] text-[#EECA3A]" />
+                                  <span>{pg.rating}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="px-4 py-3 bg-[#F7F5EF] border-t border-[#E5E1D6] flex items-center justify-between text-xs font-bold">
+                            <span className="text-[#171A18]">₹{(pg.monthlyRent || 0).toLocaleString('en-IN')}<span className="text-[10px] text-[#6B6B63] font-normal"> / mo</span></span>
+                            <span className="text-[#225944] group-hover:underline">View Details →</span>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Meal Partners */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-[#171A18] flex items-center gap-2">
+                    <Utensils className="w-4 h-4 text-[#EECA3A]" />
+                    <span>Mess &amp; Tiffin Partners</span>
+                  </h3>
+                  <Link to="/meals" className="text-xs font-bold text-[#225944] hover:underline flex items-center gap-1">
+                    <span>View All Mess Partners</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {mealProviders.length === 0 ? (
+                  <div className="bg-[#F7F5EF] rounded-2xl p-8 text-center border border-[#E5E1D6] text-xs font-semibold text-[#6B6B63]">
+                    No meal providers available yet. Partners added via Admin Panel will display here.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {mealProviders.map((meal) => (
+                      <article
+                        key={meal.id || meal._id}
+                        onClick={() => navigate('/meals')}
+                        className="bg-white rounded-2xl border border-[#E5E1D6] overflow-hidden shadow-2xs hover:shadow-md transition duration-200 cursor-pointer flex flex-col justify-between group"
+                      >
+                        <div>
+                          <div className="h-44 w-full relative bg-[#F7F5EF]">
+                            {meal.image ? (
+                              <img
+                                src={meal.image}
+                                alt={meal.name}
+                                className="w-full h-full object-cover group-hover:scale-101 transition-transform duration-200"
+                              />
+                            ) : (
+                              <PlaceholderImage type="meals" title={meal.name} />
+                            )}
+                            <span className="absolute top-2.5 left-2.5 bg-[#225944] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs">
+                              {meal.isVeg ? 'Pure Veg' : 'Veg & Non-Veg'}
+                            </span>
+                          </div>
+
+                          <div className="p-4 space-y-1.5">
+                            <h4 className="font-bold text-sm text-[#171A18] group-hover:text-[#225944] transition-colors truncate">
+                              {meal.name}
+                            </h4>
+                            <p className="text-xs text-[#6B6B63] flex items-center gap-1 truncate">
+                              <MapPin className="w-3 h-3 text-[#225944] shrink-0" />
+                              <span>{meal.corridor || meal.location?.address || 'Bhilai'}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="px-4 py-3 bg-[#F7F5EF] border-t border-[#E5E1D6] flex items-center justify-between text-xs font-bold">
+                          <span className="text-[#171A18]">₹{meal.dailyPrice || 120}<span className="text-[10px] text-[#6B6B63] font-normal"> / meal</span></span>
+                          <span className="text-[#225944] group-hover:underline">View Menu →</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------- */}
+      {/* 4. ANIMATED CITY SKYLINE FOOTER */}
+      {/* ---------------------------------------------------- */}
+      <AnimatedCityFooter />
+
     </div>
   );
 };
