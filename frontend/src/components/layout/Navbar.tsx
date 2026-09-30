@@ -104,19 +104,21 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-3 sm:top-5 z-50 w-full px-4 sm:px-8 max-w-[1420px] mx-auto pointer-events-auto flex justify-end h-[70px] min-h-[70px]">
       {/* SYNCHRONIZED MORPHING NAVBAR CONTAINER (TRANSPARENT BACKGROUND WHEN SCROLLED) */}
       <div
-        className={`flex items-center justify-between h-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`flex items-center justify-between h-full transition-all duration-300 ease-expo-out ${
           scrolled
             ? 'w-auto bg-transparent border-transparent shadow-none p-0 gap-2.5'
             : 'w-full bg-white rounded-[24px] sm:rounded-[28px] border border-[#E5E1D6]/80 px-5 sm:px-8 lg:px-9 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.06)]'
         }`}
+        style={{ transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)' }}
       >
         {/* LEFT: Branding (Fades out when scrolled) */}
         <div
-          className={`flex items-center shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`flex items-center shrink-0 transition-all duration-300 ${
             scrolled
               ? 'opacity-0 max-w-0 scale-95 overflow-hidden pointer-events-none mr-0'
               : 'opacity-100 max-w-[280px] scale-100 mr-4'
           }`}
+          style={{ transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)' }}
         >
           <Link to="/" className="flex items-center gap-3 shrink-0 group">
             <div className="w-10 h-10 rounded-xl bg-[#225944] text-[#EECA3A] flex items-center justify-center font-black text-xl shadow-xs border border-[#184232] group-hover:scale-105 transition-transform duration-200">
@@ -135,11 +137,12 @@ export const Navbar: React.FC = () => {
 
         {/* CENTER: Navigation Links (Fades out when scrolled) */}
         <div
-          className={`hidden xl:flex items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`hidden xl:flex items-center transition-all duration-300 ${
             scrolled
               ? 'opacity-0 max-w-0 scale-95 overflow-hidden pointer-events-none'
               : 'opacity-100 max-w-[800px] scale-100'
           }`}
+          style={{ transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)' }}
         >
           <nav className="flex items-center gap-6 lg:gap-8 text-sm font-bold text-[#171A18] whitespace-nowrap">
             {navLinks.map((link) => {
