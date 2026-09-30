@@ -1,115 +1,162 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, type Variants, type TargetAndTransition } from 'framer-motion';
 
-type LottieAnimation = {
-  addEventListener: (name: 'DOMLoaded', listener: () => void) => void;
-  destroy: () => void;
-  goToAndStop: (frame: number, isFrame?: boolean) => void;
+/* ─── Character-level entry animation ──────────────────────────────── */
+const charVariants: Variants = {
+  hidden: { opacity: 0, y: 40, rotate: -8, scale: 0.6 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    rotate: 0,
+    scale: 1,
+    transition: {
+      delay: 0.04 * i,
+      type: 'spring',
+      stiffness: 280,
+      damping: 18,
+    },
+  }),
 };
 
-type LottieRendererModule = {
-  t: () => {
-    loadAnimation: (options: {
-      container: HTMLElement;
-      renderer: 'svg';
-      loop: boolean;
-      autoplay: boolean;
-      animationData: Record<string, unknown>;
-      rendererSettings: { preserveAspectRatio: string; progressiveLoad: boolean };
-    }) => LottieAnimation;
-  };
-};
+/* Continuous idle float per letter */
+const floatAnim = (i: number): TargetAndTransition => ({
+  y: [0, -6 + (i % 3) * 3, 0],
+  rotate: [0, i % 2 === 0 ? 1.8 : -1.8, 0],
+  transition: {
+    duration: 2.4 + (i % 4) * 0.4,
+    repeat: Infinity,
+    ease: 'easeInOut',
+    delay: i * 0.07,
+  },
+});
 
-type LottieDataModule = { default: Record<string, unknown> };
+/* ─── Word component ────────────────────────────────────────────────── */
+interface WordProps {
+  text: string;
+  className?: string;
+  startIndex: number;
+  reduceMotion: boolean;
+  color?: string;
+}
 
+const AnimatedWord: React.FC<WordProps> = ({ text, className = '', startIndex, reduceMotion, color }) => (
+  <span className={`inline-flex items-end ${className}`}>
+    {text.split('').map((char, i) => {
+      const globalIdx = startIndex + i;
+      return (
+        <motion.span
+          key={i}
+          custom={globalIdx}
+          variants={charVariants}
+          animate={reduceMotion ? undefined : floatAnim(globalIdx)}
+          className="inline-block origin-bottom"
+          style={{ color, willChange: 'transform' }}
+        >
+          {char === ' ' ? '\u00A0' : char}
+        </motion.span>
+      );
+    })}
+  </span>
+);
+
+/* ─── Main component ────────────────────────────────────────────────── */
 export const TemplateMotionHero: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [inView, setInView] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const reduceMotion = prefersReducedMotion ?? false;
 
   useEffect(() => {
-    let disposed = false;
-    let animation: LottieAnimation | undefined;
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setInView(true); },
+      { threshold: 0.25 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
-    const loadAnimation = async () => {
-      try {
-        const [rendererModule, dataModule] = await Promise.all([
-          import('../../assets/template-motion/lottie-CCFb-LWK.js') as Promise<LottieRendererModule>,
-          import('../../assets/template-motion/hero-animation-2026-desktop@1x-BzopWxEo.js') as Promise<LottieDataModule>,
-        ]);
+  /* Lines — EaseHub's own copy */
+  const lines: Array<Array<{ text: string; color: string }>> = [
+    [
+      { text: 'Campus', color: '#171A18' },
+      { text: '\u00A0life,', color: '#171A18' },
+    ],
+    [
+      { text: 'sorted', color: '#225944' },
+      { text: '\u00A0in', color: '#171A18' },
+    ],
+    [
+      { text: 'one', color: '#171A18' },
+      { text: '\u00A0hub.', color: '#EECA3A' },
+    ],
+  ];
 
-        if (disposed || !containerRef.current) return;
-
-        animation = rendererModule.t().loadAnimation({
-          container: containerRef.current,
-          renderer: 'svg',
-          loop: !reduceMotion,
-          autoplay: !reduceMotion,
-          animationData: dataModule.default,
-          rendererSettings: {
-            preserveAspectRatio: 'xMidYMid meet',
-            progressiveLoad: true,
-          },
-        });
-        animation.addEventListener('DOMLoaded', () => {
-          if (!disposed) setReady(true);
-        });
-
-        if (reduceMotion) {
-          animation.goToAndStop(40, true);
-          setReady(true);
-        }
-      } catch (error) {
-        if (!disposed) setFailed(true);
-        console.error('Unable to load the local EaseHub hero animation.', error);
-      }
-    };
-
-    void loadAnimation();
-
-    return () => {
-      disposed = true;
-      animation?.destroy();
-    };
-  }, [reduceMotion]);
+  let charIdx = 0;
 
   return (
-    <div className="relative mx-auto w-full max-w-[1120px]">
+    <div
+      ref={containerRef}
+      className="relative mx-auto w-full max-w-[1120px] select-none"
+      aria-label="Campus life, sorted in one hub."
+      role="img"
+    >
+      {/* Glowing backdrop */}
       <motion.div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 h-1/2 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EECA3A]/20 blur-3xl"
-        animate={reduceMotion ? undefined : { scale: [0.94, 1.06, 0.94], opacity: [0.45, 0.75, 0.45] }}
+        className="pointer-events-none absolute left-1/2 top-1/2 h-2/3 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EECA3A]/20 blur-3xl"
+        animate={
+          reduceMotion
+            ? undefined
+            : ({ scale: [0.92, 1.08, 0.92], opacity: [0.4, 0.75, 0.4] } as TargetAndTransition)
+        }
         transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
       />
-      <div
-        ref={containerRef}
-        aria-label="EaseHub campus life in motion"
-        role="img"
-        className={`relative z-10 aspect-[1728/684] w-full overflow-hidden transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`}
-      />
-      {!ready && !failed && (
-        <div className="absolute inset-0 grid place-items-center" aria-hidden="true">
-          <div className="relative h-28 w-28 rounded-full border border-[#E5E1D6] bg-white/80 shadow-[0_24px_80px_rgba(34,89,68,0.12)] sm:h-36 sm:w-36">
-            <motion.div
-              className="absolute inset-4 rounded-full border-[9px] border-[#225944]/15 border-t-[#225944]"
-              animate={reduceMotion ? undefined : { rotate: 360 }}
-              transition={{ duration: 2.4, ease: 'linear', repeat: Infinity }}
-            />
-            <motion.div
-              className="absolute -right-2 top-5 h-5 w-5 rounded-full bg-[#EECA3A] shadow-md"
-              animate={reduceMotion ? undefined : { y: [0, 10, 0] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            />
+
+      {/* Hero Text Block */}
+      <motion.div
+        initial={reduceMotion ? false : 'hidden'}
+        animate={inView ? 'visible' : 'hidden'}
+        className="relative z-10 flex flex-col items-center justify-center text-center"
+        style={{
+          fontFamily: '"Syne", "Space Grotesk", ui-sans-serif, system-ui, sans-serif',
+          lineHeight: 0.88,
+        }}
+      >
+        {lines.map((words, lineIdx) => (
+          <div key={lineIdx} className="flex flex-wrap items-end justify-center">
+            {words.map(({ text, color }) => {
+              const start = charIdx;
+              charIdx += text.length;
+              return (
+                <AnimatedWord
+                  key={`${lineIdx}-${text}`}
+                  text={text}
+                  startIndex={start}
+                  reduceMotion={reduceMotion}
+                  color={color}
+                  className="text-[clamp(4rem,13vw,11rem)] font-black tracking-[-0.04em]"
+                />
+              );
+            })}
           </div>
-        </div>
-      )}
-      {failed && (
-        <div className="absolute inset-0 grid place-items-center text-sm font-semibold text-[#6B6B63]" role="status">
-          Campus animation is unavailable right now.
-        </div>
-      )}
+        ))}
+
+        {/* Floating emoji character */}
+        <motion.span
+          className="absolute -top-6 left-[38%] text-4xl sm:text-5xl"
+          aria-hidden="true"
+          animate={
+            reduceMotion
+              ? undefined
+              : ({ y: [0, -14, 0], rotate: [-5, 5, -5] } as TargetAndTransition)
+          }
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          🎒
+        </motion.span>
+      </motion.div>
     </div>
   );
 };

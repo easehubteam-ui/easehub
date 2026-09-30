@@ -5,9 +5,7 @@ import {
   ArrowDown,
   ArrowRight,
   Building2,
-  CheckCircle2,
   MapPin,
-  Search,
   ShieldCheck,
   Shirt,
   Sparkles,
@@ -86,7 +84,6 @@ const reveal = {
 export const TemplateHomePage: React.FC = () => {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion() ?? false;
-  const [searchQuery, setSearchQuery] = useState('');
   const [pgListings, setPgListings] = useState<PGProperty[]>([]);
   const [mealProviders, setMealProviders] = useState<MealProvider[]>([]);
   const [laundryProviders, setLaundryProviders] = useState<LaundryProvider[]>([]);
@@ -115,21 +112,6 @@ export const TemplateHomePage: React.FC = () => {
     };
   }, []);
 
-  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const query = searchQuery.trim().toLowerCase();
-
-    if (query.includes('meal') || query.includes('tiffin') || query.includes('food') || query.includes('mess')) {
-      navigate('/meals');
-    } else if (query.includes('laundry') || query.includes('wash') || query.includes('cloth')) {
-      navigate('/laundry');
-    } else if (query.includes('repair') || query.includes('clean') || query.includes('electric') || query.includes('plumb') || query.includes('service')) {
-      navigate('/services');
-    } else {
-      navigate('/pg');
-    }
-  };
-
   const featuredItems: FeaturedItem[] = [
     ...pgListings.map((pg) => ({
       id: `pg-${pg.id || pg._id}`,
@@ -155,7 +137,7 @@ export const TemplateHomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#F7F5EF] font-sans text-[#171A18] antialiased selection:bg-[#EECA3A] selection:text-[#171A18]">
-      <section className="relative isolate overflow-hidden bg-[#F7F5EF] pb-7 pt-10 sm:pt-14 md:pt-16">
+      <section className="relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F7F5EF]">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <motion.div
             className="absolute -left-40 top-20 h-80 w-80 rounded-full bg-[#4F7A65]/10 blur-3xl"
@@ -169,86 +151,28 @@ export const TemplateHomePage: React.FC = () => {
           />
         </div>
 
-        <div className="relative mx-auto w-full max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.55 }}
-            className="mx-auto inline-flex items-center gap-2 rounded-full border border-[#E5E1D6] bg-white px-4 py-2 text-xs font-bold text-[#225944] shadow-sm sm:text-sm"
-          >
-            <Sparkles className="h-4 w-4 text-[#EECA3A]" />
-            <span>Campus essentials, all in one place</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </motion.div>
-
-          <motion.h1
-            initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.08 }}
-            className="mx-auto mt-7 max-w-5xl text-4xl font-extrabold leading-[0.98] tracking-[-0.055em] text-[#171A18] sm:text-6xl md:text-7xl lg:text-[5.5rem]"
-          >
-            Campus life.
-            <br />
-            <span className="text-[#225944]">Made easier.</span>
-          </motion.h1>
-
-          <motion.p
-            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.6, delay: reduceMotion ? 0 : 0.18 }}
-            className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#6B6B63] sm:text-lg"
-          >
-            Find a place to stay, good food, laundry and trusted local help—all close to your campus.
-          </motion.p>
-
-          <motion.form
-            onSubmit={handleSearchSubmit}
-            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.6, delay: reduceMotion ? 0 : 0.24 }}
-            className="mx-auto mt-7 flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-[#E5E1D6] bg-white p-2 shadow-[0_16px_50px_rgba(23,26,24,0.08)] focus-within:border-[#4F7A65]"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
-              <Search className="h-5 w-5 shrink-0 text-[#225944]" />
-              <input
-                id="hero-search-input"
-                type="text"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search stays, meals, laundry or services..."
-                aria-label="Search campus services"
-                className="w-full border-0 bg-transparent py-2 text-sm font-semibold text-[#171A18] placeholder-[#6B6B63] focus:outline-none focus:ring-0 sm:text-base"
-              />
-            </div>
-            <button type="submit" className="flex shrink-0 items-center gap-2 rounded-xl bg-[#225944] px-5 py-3 text-sm font-extrabold text-white shadow-sm transition-colors hover:bg-[#184232] sm:px-6">
-              <span>Explore</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </motion.form>
-
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-[#6B6B63] sm:text-sm">
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-[#4F7A65]" />Local options</span>
-            <span className="hidden h-1 w-1 rounded-full bg-[#EECA3A] sm:block" />
-            <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-[#4F7A65]" />One easy hub</span>
-            <span className="hidden h-1 w-1 rounded-full bg-[#EECA3A] sm:block" />
-            <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#4F7A65]" />Bhilai · Raipur · Durg</span>
-          </div>
-
+        {/* Full-cover animated hero text */}
+        <div className="relative w-full flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={reduceMotion ? false : { opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.3 }}
-            className="mx-auto mt-4 sm:mt-6"
+            transition={{ duration: reduceMotion ? 0 : 0.8 }}
+            className="w-full"
           >
             <TemplateMotionHero />
           </motion.div>
-
-          <a href="#campus-services" className="mx-auto mt-2 inline-flex items-center gap-2 text-xs font-bold text-[#6B6B63] transition-colors hover:text-[#225944]">
-            Discover your campus essentials
-            <ArrowDown className="h-3.5 w-3.5" />
-          </a>
         </div>
+
+        {/* Scroll cue pinned to bottom */}
+        <a
+          href="#campus-services"
+          className="relative z-10 mb-8 inline-flex items-center gap-2 text-xs font-bold text-[#6B6B63] transition-colors hover:text-[#225944]"
+        >
+          Discover your campus essentials
+          <ArrowDown className="h-3.5 w-3.5" />
+        </a>
       </section>
+
 
       <section id="campus-services" className="border-y border-[#E5E1D6] bg-white py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
