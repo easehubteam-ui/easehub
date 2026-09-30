@@ -8,7 +8,7 @@ import ProtectedRoute from '../components/auth/ProtectedRoute';
 import AdminProtectedRoute from '../components/auth/AdminProtectedRoute';
 
 // Public Guest Pages
-import HomePage from '../pages/Home/HomePage';
+import HomePage from '../pages/Home/TemplateHomePage';
 import LoginPage from '../pages/Auth/LoginPage';
 import RegisterPage from '../pages/Auth/RegisterPage';
 import ForgotPasswordPage from '../pages/Auth/ForgotPasswordPage';
