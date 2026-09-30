@@ -136,7 +136,7 @@ export const TemplateMotionHero: React.FC = () => {
                   startIndex={start}
                   reduceMotion={reduceMotion}
                   color={color}
-                  className="text-[clamp(4rem,13vw,11rem)] font-black tracking-[-0.04em]"
+                  className="text-[clamp(2.8rem,11vw,10rem)] font-black tracking-[-0.04em]"
                 />
               );
             })}
