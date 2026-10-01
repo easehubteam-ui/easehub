@@ -174,54 +174,68 @@ export const TemplateHomePage: React.FC = () => {
       </section>
 
 
-      <section id="campus-services" className="border-y border-[#E5E1D6] bg-white py-12 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={reveal}
-            initial={reduceMotion ? false : 'hidden'}
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.25 }}
-            transition={{ duration: reduceMotion ? 0 : 0.55 }}
-            className="mx-auto mb-8 max-w-2xl text-center"
-          >
-            <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#4F7A65]">The EaseHub essentials</span>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#171A18] sm:text-4xl">Settle in. We’ll help with the rest.</h2>
-            <p className="mt-3 text-sm leading-relaxed text-[#6B6B63] sm:text-base">Everything you need to make a new campus feel like home.</p>
-          </motion.div>
+      {/* ── INFINITE MARQUEE SECTION ─────────────────────────────────── */}
+      <section id="campus-services" className="overflow-hidden bg-white border-y border-[#E5E1D6] py-14 sm:py-20">
+        {/* Heading */}
+        <motion.div
+          variants={reveal}
+          initial={reduceMotion ? false : 'hidden'}
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: reduceMotion ? 0 : 0.55 }}
+          className="mx-auto mb-10 max-w-2xl px-4 text-center"
+        >
+          <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#4F7A65]">The EaseHub essentials</span>
+          <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#171A18] sm:text-4xl">Settle in. We'll help with the rest.</h2>
+          <p className="mt-3 text-sm leading-relaxed text-[#6B6B63] sm:text-base">Everything you need to make a new campus feel like home.</p>
+        </motion.div>
 
-          <motion.div
-            initial={reduceMotion ? false : 'hidden'}
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            variants={{ hidden: {}, visible: { transition: { staggerChildren: reduceMotion ? 0 : 0.1 } } }}
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            {categories.map(({ title, description, href, icon: Icon, accent, iconColor }, index) => (
-              <motion.div
-                key={href}
-                variants={reveal}
-                transition={{ duration: reduceMotion ? 0 : 0.5 }}
-                whileHover={reduceMotion ? undefined : { y: -7 }}
-                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+        {/* Infinite marquee track */}
+        <div
+          className="relative flex w-full"
+          style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}
+        >
+          <style>{`
+            @keyframes marquee-ltr {
+              0%   { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .marquee-track {
+              display: flex;
+              width: max-content;
+              animation: marquee-ltr 28s linear infinite;
+            }
+            .marquee-track:hover { animation-play-state: paused; }
+          `}</style>
+
+          <div className="marquee-track gap-5 px-2.5">
+            {/* Render cards TWICE so it loops seamlessly */}
+            {[...categories, ...categories].map(({ title, description, href, icon: Icon, accent, iconColor }, index) => (
+              <Link
+                key={`${href}-${index}`}
+                to={href}
+                className="group flex w-[280px] shrink-0 flex-col rounded-2xl border border-[#E5E1D6] bg-white p-6 shadow-[0_8px_30px_rgba(23,26,24,0.04)] transition-all duration-300 hover:shadow-[0_18px_45px_rgba(34,89,68,0.12)] hover:-translate-y-1"
+                style={{ marginRight: '20px' }}
               >
-                <Link to={href} className="group flex h-full min-h-48 flex-col rounded-2xl border border-[#E5E1D6] bg-white p-5 shadow-[0_8px_30px_rgba(23,26,24,0.04)] transition-shadow hover:shadow-[0_18px_45px_rgba(34,89,68,0.12)] sm:p-6">
-                  <span className={`grid h-12 w-12 place-items-center rounded-xl ${accent} ${iconColor} transition-transform group-hover:scale-110`}>
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <span className="mt-5 flex items-center justify-between gap-2 text-lg font-extrabold text-[#171A18]">
-                    {title}
-                    <ArrowRight className="h-4 w-4 shrink-0 text-[#4F7A65] transition-transform group-hover:translate-x-1" />
-                  </span>
-                  <span className="mt-1 text-sm leading-relaxed text-[#6B6B63]">{description}</span>
-                  <span className="mt-auto pt-4 text-[11px] font-bold uppercase tracking-wider text-[#4F7A65]">
-                    {loading ? 'Explore nearby' : serviceCounts[index] > 0 ? `${serviceCounts[index]} featured options` : 'Explore options'}
-                  </span>
-                </Link>
-              </motion.div>
+                <span className={`grid h-12 w-12 place-items-center rounded-xl ${accent} ${iconColor} transition-transform duration-200 group-hover:scale-110`}>
+                  <Icon className="h-6 w-6" />
+                </span>
+                <span className="mt-5 flex items-center justify-between gap-2 text-lg font-extrabold text-[#171A18]">
+                  {title}
+                  <ArrowRight className="h-4 w-4 shrink-0 text-[#4F7A65] transition-transform duration-200 group-hover:translate-x-1" />
+                </span>
+                <span className="mt-1 text-sm leading-relaxed text-[#6B6B63]">{description}</span>
+                <span className="mt-auto pt-4 text-[11px] font-bold uppercase tracking-wider text-[#4F7A65]">
+                  {loading ? 'Explore nearby' : serviceCounts[categories.indexOf(categories.find(c => c.href === href)!)] > 0
+                    ? `${serviceCounts[categories.indexOf(categories.find(c => c.href === href)!)]} featured options`
+                    : 'Explore options'}
+                </span>
+              </Link>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
+
 
       <section className="relative overflow-hidden bg-[#F7F5EF] py-14 sm:py-20">
         <div className="pointer-events-none absolute -right-20 top-10 h-72 w-72 rounded-full bg-[#EECA3A]/15 blur-3xl" />
