@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion';
 import {
-  ArrowDown,
   ArrowRight,
   Building2,
+  CheckCircle2,
   MapPin,
   ShieldCheck,
   Shirt,
@@ -18,9 +18,9 @@ import { pgApi, type PGProperty } from '../../services/pgApi';
 import { mealApi, type MealProvider } from '../../services/mealApi';
 import { laundryApi, type LaundryProvider } from '../../services/laundryApi';
 import { serviceApi, type ExtraServiceItem } from '../../services/serviceApi';
-import PlaceholderImage from '../../components/common/PlaceholderImage';
 import { AnimatedCityFooter } from '../../components/home/AnimatedCityFooter';
 import { TemplateMotionHero } from '../../components/home/TemplateMotionHero';
+import { ReviewVideoCarousel } from '../../components/home/ReviewVideoCarousel';
 
 type Category = {
   title: string;
@@ -76,10 +76,164 @@ const categories: Category[] = [
   },
 ];
 
+type CarouselCard = {
+  title: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  bg: string;
+  textColor: string;
+  subColor: string;
+  iconBg: string;
+  tag: string;
+};
+
+const carouselCards: CarouselCard[] = [
+  {
+    title: 'PGs & Hostels',
+    description: 'Vetted stays near your campus. Affordable, safe, and close to college.',
+    href: '/pg',
+    icon: Building2,
+    bg: 'bg-[#225944]',
+    textColor: 'text-white',
+    subColor: 'text-white/70',
+    iconBg: 'bg-white/15',
+    tag: 'Stay',
+  },
+  {
+    title: 'Meals & Mess',
+    description: 'Daily tiffin, mess plans and home-cooked food around your college.',
+    href: '/meals',
+    icon: Utensils,
+    bg: 'bg-[#EECA3A]',
+    textColor: 'text-[#171A18]',
+    subColor: 'text-[#171A18]/65',
+    iconBg: 'bg-[#171A18]/10',
+    tag: 'Food',
+  },
+  {
+    title: 'Laundry',
+    description: 'Pickup & drop laundry service. Clean clothes delivered to your door.',
+    href: '/laundry',
+    icon: Shirt,
+    bg: 'bg-white',
+    textColor: 'text-[#171A18]',
+    subColor: 'text-[#6B6B63]',
+    iconBg: 'bg-[#225944]/10',
+    tag: 'Wash',
+  },
+  {
+    title: 'Everyday Help',
+    description: 'Electrician, plumber, cleaning and local repairs on demand.',
+    href: '/services',
+    icon: Wrench,
+    bg: 'bg-[#171A18]',
+    textColor: 'text-white',
+    subColor: 'text-white/60',
+    iconBg: 'bg-white/10',
+    tag: 'Services',
+  },
+  {
+    title: 'Zero Brokerage',
+    description: 'Direct listings with no hidden fees. Deal straight with the owner.',
+    href: '/pg',
+    icon: ShieldCheck,
+    bg: 'bg-[#F7F5EF]',
+    textColor: 'text-[#171A18]',
+    subColor: 'text-[#6B6B63]',
+    iconBg: 'bg-[#225944]/12',
+    tag: 'Trust',
+  },
+  {
+    title: 'Campus-Near',
+    description: 'All options within walking or cycling distance from your college.',
+    href: '/pg',
+    icon: MapPin,
+    bg: 'bg-[#4F7A65]',
+    textColor: 'text-white',
+    subColor: 'text-white/70',
+    iconBg: 'bg-white/15',
+    tag: 'Location',
+  },
+  {
+    title: 'Quick Booking',
+    description: 'Browse, compare, and book a stay or service in a few minutes.',
+    href: '/pg',
+    icon: Sparkles,
+    bg: 'bg-[#FFF3C4]',
+    textColor: 'text-[#171A18]',
+    subColor: 'text-[#6B6B63]',
+    iconBg: 'bg-[#EECA3A]/40',
+    tag: 'Fast',
+  },
+];
+
 const reveal = {
   hidden: { opacity: 0, y: 28 },
   visible: { opacity: 1, y: 0 },
 };
+
+/* ── Scroll-fill text (Jitter-style, word by word) ─────────── */
+const FILL_TEXT =
+  'EaseHub gives every campus student one place to find a stay, sort their meals, get laundry done, and fix everyday problems — so settling in feels simple, not stressful.';
+
+function ScrollFillWord({
+  word,
+  progress,
+  start,
+  end,
+}: {
+  word: string;
+  progress: MotionValue<number>;
+  start: number;
+  end: number;
+}) {
+  const color = useTransform(progress, [start, end], ['#D0D0D0', '#171A18']);
+  return (
+    <motion.span style={{ color }} className="inline-block mr-[0.26em]">
+      {word}
+    </motion.span>
+  );
+}
+
+function ScrollFillText({ reduceMotion }: { reduceMotion: boolean }) {
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start 0.95', 'start 0.1'],
+  });
+
+  const words = FILL_TEXT.split(' ');
+
+  if (reduceMotion) {
+    return (
+      <section ref={ref}>
+        <p className="max-w-5xl text-4xl font-extrabold leading-tight tracking-tight text-[#171A18] sm:text-5xl lg:text-6xl" style={{ lineHeight: 1.15 }}>
+          {FILL_TEXT}
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section ref={ref}>
+      <p
+        className="max-w-5xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl"
+        style={{ lineHeight: 1.15 }}
+      >
+        {words.map((word, i) => (
+          <ScrollFillWord
+            key={i}
+            word={word}
+            progress={scrollYProgress}
+            start={i / words.length}
+            end={Math.min((i + 2) / words.length, 1)}
+          />
+        ))}
+      </p>
+    </section>
+  );
+}
 
 export const TemplateHomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -136,7 +290,7 @@ export const TemplateHomePage: React.FC = () => {
   const serviceCounts = [pgListings.length, mealProviders.length, laundryProviders.length, extraServices.length];
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#F7F5EF] font-sans text-[#171A18] antialiased selection:bg-[#EECA3A] selection:text-[#171A18]">
+    <div className="min-h-screen overflow-x-clip bg-[#F7F5EF] font-sans text-[#171A18] antialiased selection:bg-[#EECA3A] selection:text-[#171A18]">
       <section className="relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F7F5EF]">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <motion.div
@@ -163,210 +317,365 @@ export const TemplateHomePage: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Scroll cue pinned to bottom */}
-        <a
-          href="#campus-services"
-          className="relative z-10 mb-8 inline-flex items-center gap-2 text-xs font-bold text-[#6B6B63] transition-colors hover:text-[#225944]"
-        >
-          Discover your campus essentials
-          <ArrowDown className="h-3.5 w-3.5" />
-        </a>
       </section>
 
-
-      {/* ── INFINITE MARQUEE SECTION ─────────────────────────────────── */}
-      <section id="campus-services" className="overflow-hidden bg-white border-y border-[#E5E1D6] py-14 sm:py-20">
-        {/* Heading */}
-        <motion.div
-          variants={reveal}
-          initial={reduceMotion ? false : 'hidden'}
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: reduceMotion ? 0 : 0.55 }}
-          className="mx-auto mb-10 max-w-2xl px-4 text-center"
-        >
-          <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#4F7A65]">The EaseHub essentials</span>
-          <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#171A18] sm:text-4xl">Settle in. We'll help with the rest.</h2>
-          <p className="mt-3 text-sm leading-relaxed text-[#6B6B63] sm:text-base">Everything you need to make a new campus feel like home.</p>
-        </motion.div>
-
-        {/* Infinite marquee track */}
-        <div
-          className="relative flex w-full"
-          style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}
-        >
+      {/* ── AUTO-SCROLL CAROUSEL ─────────────────────────────────────── */}
+      <section
+        id="campus-services"
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F7F5EF]"
+      >
+        {/* ── Carousel ── */}
+        <div className="relative z-10 w-full overflow-hidden">
           <style>{`
-            @keyframes marquee-ltr {
+            @keyframes carousel-bounce {
               0%   { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
+              100% { transform: translateX(calc(-133.33vw - 8px)); }
             }
-            .marquee-track {
+            .carousel-reel {
               display: flex;
               width: max-content;
-              animation: marquee-ltr 28s linear infinite;
+              animation: carousel-bounce 22s ease-in-out infinite alternate;
             }
-            .marquee-track:hover { animation-play-state: paused; }
           `}</style>
 
-          <div className="marquee-track gap-5 px-2.5">
-            {/* Render cards TWICE so it loops seamlessly */}
-            {[...categories, ...categories].map(({ title, description, href, icon: Icon, accent, iconColor }, index) => (
+          <div className="carousel-reel" style={{ gap: '20px', padding: '32px 10px' }}>
+            {carouselCards.map(({ title, description, href, icon: Icon, bg, textColor, subColor, iconBg, tag }, i) => (
               <Link
-                key={`${href}-${index}`}
+                key={i}
                 to={href}
-                className="group flex w-[280px] shrink-0 flex-col rounded-2xl border border-[#E5E1D6] bg-white p-6 shadow-[0_8px_30px_rgba(23,26,24,0.04)] transition-all duration-300 hover:shadow-[0_18px_45px_rgba(34,89,68,0.12)] hover:-translate-y-1"
-                style={{ marginRight: '20px' }}
+                className={`group relative flex shrink-0 flex-col justify-between overflow-hidden rounded-3xl ${bg} p-8 shadow-[0_8px_40px_rgba(23,26,24,0.10)] transition-shadow duration-300 hover:shadow-[0_24px_64px_rgba(23,26,24,0.18)]`}
+                style={{ width: 'calc(100vw / 3 - 16px)', height: '65vh' }}
               >
-                <span className={`grid h-12 w-12 place-items-center rounded-xl ${accent} ${iconColor} transition-transform duration-200 group-hover:scale-110`}>
-                  <Icon className="h-6 w-6" />
-                </span>
-                <span className="mt-5 flex items-center justify-between gap-2 text-lg font-extrabold text-[#171A18]">
-                  {title}
-                  <ArrowRight className="h-4 w-4 shrink-0 text-[#4F7A65] transition-transform duration-200 group-hover:translate-x-1" />
-                </span>
-                <span className="mt-1 text-sm leading-relaxed text-[#6B6B63]">{description}</span>
-                <span className="mt-auto pt-4 text-[11px] font-bold uppercase tracking-wider text-[#4F7A65]">
-                  {loading ? 'Explore nearby' : serviceCounts[categories.indexOf(categories.find(c => c.href === href)!)] > 0
-                    ? `${serviceCounts[categories.indexOf(categories.find(c => c.href === href)!)]} featured options`
-                    : 'Explore options'}
-                </span>
+                {/* Top: tag + icon */}
+                <div className="flex items-start justify-between">
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${iconBg} ${textColor}`}>
+                    {tag}
+                  </span>
+                  <div className={`grid h-12 w-12 place-items-center rounded-2xl ${iconBg}`}>
+                    <Icon className={`h-6 w-6 ${textColor}`} />
+                  </div>
+                </div>
+
+                {/* Bottom: title + desc + arrow */}
+                <div>
+                  <h3 className={`text-2xl font-extrabold tracking-tight ${textColor}`}>{title}</h3>
+                  <p className={`mt-2 text-sm leading-relaxed ${subColor}`}>{description}</p>
+                  <span className={`mt-6 inline-flex items-center gap-2 text-sm font-extrabold ${textColor}`}>
+                    Explore
+                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1.5" />
+                  </span>
+                </div>
+
+                {/* Shine on hover */}
+                <div
+                  className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 55%)' }}
+                />
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-
-      <section className="relative overflow-hidden bg-[#F7F5EF] py-14 sm:py-20">
-        <div className="pointer-events-none absolute -right-20 top-10 h-72 w-72 rounded-full bg-[#EECA3A]/15 blur-3xl" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:items-center lg:px-8">
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.25 }}
-            transition={{ duration: reduceMotion ? 0 : 0.6 }}
-            className="lg:col-span-5"
-          >
-            <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#4F7A65]">A smoother start</span>
-            <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-[#171A18] sm:text-4xl">Less searching.<br /><span className="text-[#225944]">More settling in.</span></h2>
-            <p className="mt-4 max-w-lg text-sm leading-relaxed text-[#6B6B63] sm:text-base">Browse nearby options, compare what works for you, and find the everyday support that makes campus life easier.</p>
-            <Link to="/pg" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#225944] px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-[#184232]">
-              Find your place
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
-
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, x: 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: reduceMotion ? 0 : 0.65 }}
-            className="grid gap-4 sm:grid-cols-2 lg:col-span-7"
-          >
-            {[
-              { icon: ShieldCheck, title: 'A little more peace of mind', description: 'Clear details help you choose what fits your routine.', color: 'bg-[#225944]/10 text-[#225944]' },
-              { icon: MapPin, title: 'Close to your campus', description: 'Explore services around Bhilai, Raipur and Durg.', color: 'bg-[#EECA3A]/25 text-[#171A18]' },
-              { icon: Star, title: 'One easy starting point', description: 'Stay, meals and everyday help are all a few clicks away.', color: 'bg-[#4F7A65]/15 text-[#225944]' },
-              { icon: Sparkles, title: 'Make it your own', description: 'Choose the services that make your day work better.', color: 'bg-[#FFF9E6] text-[#6B6B63]' },
-            ].map(({ icon: Icon, title, description, color }, index) => (
-              <motion.div
-                key={title}
-                whileHover={reduceMotion ? undefined : { y: -5, rotate: index % 2 === 0 ? -0.4 : 0.4 }}
-                transition={{ duration: 0.2 }}
-                className="rounded-2xl border border-[#E5E1D6] bg-white p-5 shadow-sm sm:p-6"
-              >
-                <span className={`grid h-11 w-11 place-items-center rounded-xl ${color}`}><Icon className="h-5 w-5" /></span>
-                <h3 className="mt-4 text-base font-extrabold text-[#171A18]">{title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#6B6B63]">{description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
+      {/* ── SCROLL-FILL TEXT SECTION ─────────────────────────────────── */}
+      <section className="bg-[#F7F5EF] px-6 pt-20 pb-20 sm:px-12 sm:pt-28 sm:pb-28 lg:px-24">
+        <ScrollFillText reduceMotion={reduceMotion} />
       </section>
 
-      <section className="bg-white py-14 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 border-b border-[#E5E1D6] pb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#4F7A65]">Around your campus</span>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-[#171A18] sm:text-4xl">A few good places to start</h2>
-            </div>
-            <p className="max-w-md text-sm leading-relaxed text-[#6B6B63]">Explore current stay and meal options, or browse every service.</p>
+      {/* ── STACKING CARDS ON SCROLL (JITTER STYLE) ────────────────── */}
+      <section className="relative bg-[#F7F5EF] pt-16 pb-24 sm:pt-24 sm:pb-32">
+        {/* Section Heading — Exact Jitter Format */}
+        <div className="mx-auto max-w-4xl text-center mb-16 sm:mb-20 px-4">
+          {/* Giant Ultra-Bold Headline */}
+          <h2 className="text-5xl sm:text-7xl lg:text-[80px] font-black tracking-[-0.035em] text-[#171A18] leading-[1.04]">
+            Less searching.<br />
+            More settling in.
+          </h2>
+
+          {/* 2 Short Punchy Subtitle Lines */}
+          <div className="mt-5 text-base sm:text-lg text-[#55554E] leading-relaxed">
+            <p>No brokers, no stress, no waiting.</p>
+            <p className="mt-1">Start settling in instantly.</p>
           </div>
 
-          {loading ? (
-            <div className="grid gap-5 pt-7 sm:grid-cols-2 lg:grid-cols-4">
-              {categories.map((category) => <div key={category.href} className="h-72 animate-pulse rounded-2xl bg-[#F7F5EF]" />)}
-            </div>
-          ) : featuredItems.length > 0 ? (
-            <motion.div
-              initial={reduceMotion ? false : 'hidden'}
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.12 }}
-              variants={{ hidden: {}, visible: { transition: { staggerChildren: reduceMotion ? 0 : 0.08 } } }}
-              className="grid gap-5 pt-7 sm:grid-cols-2 lg:grid-cols-4"
+          {/* Jitter Dark Pill Button */}
+          <div className="mt-7 flex justify-center">
+            <Link
+              to="/pg"
+              className="inline-flex items-center justify-center rounded-full bg-[#171A18] px-8 py-3.5 text-sm sm:text-base font-bold text-white shadow-xs transition-all duration-200 hover:bg-[#2B2F2D] hover:scale-[1.02] active:scale-[0.98]"
             >
-              {featuredItems.map(({ id, title, subtitle, tag, href, icon: Icon, kind }) => (
-                <motion.article
-                  key={id}
-                  variants={reveal}
-                  transition={{ duration: reduceMotion ? 0 : 0.45 }}
-                  whileHover={reduceMotion ? undefined : { y: -5 }}
-                  className="overflow-hidden rounded-2xl border border-[#E5E1D6] bg-white shadow-sm transition-shadow hover:shadow-lg"
-                >
-                  <Link to={href} className="block">
-                    <div className="relative grid h-40 place-items-center overflow-hidden bg-[#F7F5EF]">
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#225944]/10 via-transparent to-[#EECA3A]/15" />
-                      {kind === 'pg' ? <PlaceholderImage type="pg" title={title} /> : kind === 'meal' ? <PlaceholderImage type="meals" title={title} /> : <Icon className="h-12 w-12 text-[#4F7A65]" />}
-                      <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#225944]">{tag}</span>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="truncate text-base font-extrabold text-[#171A18]">{title}</h3>
-                          <p className="mt-1 flex items-center gap-1 truncate text-xs text-[#6B6B63]"><MapPin className="h-3 w-3 shrink-0 text-[#4F7A65]" />{subtitle}</p>
-                        </div>
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#F7F5EF] text-[#225944]"><Icon className="h-4 w-4" /></span>
-                      </div>
-                      <span className="mt-4 inline-flex items-center gap-1 text-xs font-extrabold text-[#225944]">Explore <ArrowRight className="h-3.5 w-3.5" /></span>
-                    </div>
+              Get started for free
+            </Link>
+          </div>
+        </div>
+
+        {/* Stacking Cards Deck (Larger Portrait Cards with Dedicated Calibrated Lock Pauses) */}
+        <div className="relative mx-auto max-w-[520px] sm:max-w-[540px] px-4 pb-12">
+          {/* CARD 1 */}
+          <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 10 }}>
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-[32px] sm:rounded-[36px] border border-[#E5E1D6] bg-white p-7 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.08)] flex flex-col justify-between">
+              <div>
+                <span className="inline-block rounded-full bg-[#171A18] px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white mb-3">
+                  Verified & Safe Stays
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#171A18]">
+                  A little more peace of mind
+                </h3>
+                <p className="mt-1.5 text-xs sm:text-sm text-[#6B6B63] leading-relaxed">
+                  Clear details, verified owners, and transparent pricing help you choose what fits your routine without surprises.
+                </p>
+              </div>
+
+              {/* Visual Showcase: Room Listing Card */}
+              <div className="my-4 w-full rounded-2xl border border-[#E5E1D6] bg-[#F7F5EF] p-5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#225944]/10 px-2.5 py-1 text-[11px] font-extrabold text-[#225944]">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> 100% Verified Property
+                  </span>
+                  <span className="text-xs font-bold text-[#171A18]">★ 4.9 (120+ reviews)</span>
+                </div>
+                <h4 className="mt-2.5 text-base sm:text-lg font-black text-[#171A18]">Shree Krishna Residency</h4>
+                <p className="text-xs text-[#6B6B63]">Nehru Nagar, Bhilai • 400m from BIT Gate</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-[#171A18]">
+                  <span className="rounded-lg bg-white px-2.5 py-1 border border-[#E5E1D6]">🛏️ Single / Double Room</span>
+                  <span className="rounded-lg bg-white px-2.5 py-1 border border-[#E5E1D6]">📶 Wi-Fi 100M</span>
+                  <span className="rounded-lg bg-white px-2.5 py-1 border border-[#E5E1D6]">🍽️ 3 Meals Daily</span>
+                </div>
+                <div className="mt-4 flex items-center justify-between border-t border-[#E5E1D6] pt-3">
+                  <div>
+                    <span className="text-[11px] text-[#6B6B63]">Starting from</span>
+                    <p className="text-lg font-black text-[#171A18]">₹6,500 <span className="text-xs font-normal text-[#6B6B63]">/mo</span></p>
+                  </div>
+                  <Link to="/pg" className="inline-flex items-center gap-1.5 rounded-xl bg-[#225944] px-4 py-2 text-xs font-extrabold text-white transition-colors hover:bg-[#184232]">
+                    Book Visit <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
-                </motion.article>
-              ))}
-            </motion.div>
-          ) : (
-            <div className="grid gap-4 pt-7 sm:grid-cols-2 lg:grid-cols-4">
-              {categories.map(({ title, description, href, icon: Icon, accent, iconColor }) => (
-                <Link key={href} to={href} className="rounded-2xl border border-[#E5E1D6] bg-[#F7F5EF] p-5 transition-transform hover:-translate-y-1">
-                  <span className={`grid h-11 w-11 place-items-center rounded-xl ${accent} ${iconColor}`}><Icon className="h-5 w-5" /></span>
-                  <h3 className="mt-4 font-extrabold text-[#171A18]">{title}</h3>
-                  <p className="mt-1 text-sm text-[#6B6B63]">{description}</p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-extrabold text-[#225944]">Browse <ArrowRight className="h-3.5 w-3.5" /></span>
-                </Link>
-              ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-[#6B6B63] pt-2 border-t border-[#E5E1D6]/60">
+                <span>01 / 04</span>
+                <span className="font-bold text-[#225944]">Scroll down for next card ↓</span>
+              </div>
             </div>
-          )}
-
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {categories.map(({ title, href }) => <Link key={href} to={href} className="rounded-full border border-[#E5E1D6] bg-[#F7F5EF] px-4 py-2 text-xs font-bold text-[#225944] transition-colors hover:border-[#225944] hover:bg-[#225944] hover:text-white">{title}</Link>)}
           </div>
+
+          {/* Screen Lock Pause after Card 1 */}
+          <div className="h-[30vh] pointer-events-none" />
+
+          {/* CARD 2 */}
+          <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 20 }}>
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-[32px] sm:rounded-[36px] border border-[#1d4b39] bg-[#225944] p-7 sm:p-8 shadow-[0_-12px_36px_rgba(0,0,0,0.18),0_25px_50px_rgba(0,0,0,0.2)] flex flex-col justify-between text-white">
+              <div>
+                <span className="inline-block rounded-full bg-white/20 backdrop-blur-md px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white mb-3">
+                  Hyperlocal Proximity
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  Close to your campus
+                </h3>
+                <p className="mt-1.5 text-xs sm:text-sm text-white/80 leading-relaxed">
+                  Stays, messes, and essentials mapped within walking or 5-minute cycling distance from college gates across Bhilai, Raipur & Durg.
+                </p>
+              </div>
+
+              {/* Visual Showcase: Proximity Radar */}
+              <div className="my-4 w-full rounded-2xl border border-white/10 bg-black/25 backdrop-blur-md p-4 sm:p-5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#EECA3A]">📍 Campus Radius Active</span>
+                  <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold text-white">18 Spots Mapped</span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between rounded-xl bg-white/10 px-3.5 py-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">🚶</span>
+                      <div>
+                        <p className="text-xs font-bold text-white">Main College Gate</p>
+                        <p className="text-[10px] text-white/70">Walk time</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-[#EECA3A]">4 min (280m)</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-white/10 px-3.5 py-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">🍛</span>
+                      <div>
+                        <p className="text-xs font-bold text-white">Maa Annapurna Mess</p>
+                        <p className="text-[10px] text-white/70">Homestyle food</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-[#EECA3A]">2 min (140m)</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-white/10 px-3.5 py-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">🧺</span>
+                      <div>
+                        <p className="text-xs font-bold text-white">Doorstep Express Wash</p>
+                        <p className="text-[10px] text-white/70">Free pickup/drop</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-[#EECA3A]">3 min (220m)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-white/60 pt-2 border-t border-white/10">
+                <span>02 / 04</span>
+                <span className="font-bold text-[#EECA3A]">Keep scrolling ↓</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Screen Lock Pause after Card 2 */}
+          <div className="h-[30vh] pointer-events-none" />
+
+          {/* CARD 3 */}
+          <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 30 }}>
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-[32px] sm:rounded-[36px] border border-[#EECA3A]/60 bg-[#EECA3A] p-7 sm:p-8 shadow-[0_-12px_36px_rgba(0,0,0,0.18),0_25px_50px_rgba(0,0,0,0.2)] flex flex-col justify-between text-[#171A18]">
+              <div>
+                <span className="inline-block rounded-full bg-[#171A18] px-3.5 py-1 text-xs font-black uppercase tracking-wider text-[#EECA3A] mb-3">
+                  All-in-One Hub
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#171A18]">
+                  One easy starting point
+                </h3>
+                <p className="mt-1.5 text-xs sm:text-sm text-[#171A18]/80 leading-relaxed">
+                  Hostels, daily meal subscriptions, and laundry pickups organized in one smooth platform — focus on studies, not chores.
+                </p>
+              </div>
+
+              {/* Visual Showcase: Integrated Student Hub */}
+              <div className="my-4 w-full rounded-2xl border border-[#171A18]/10 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between border-b border-[#E5E1D6] pb-2.5">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#225944]">Student Life Hub</span>
+                  <span className="rounded-full bg-[#225944]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#225944]">All Active ✅</span>
+                </div>
+                <div className="mt-2.5 space-y-2">
+                  <div className="flex items-center justify-between rounded-xl bg-[#F7F5EF] p-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#225944] text-white text-xs">🏠</span>
+                      <div>
+                        <p className="text-xs font-bold text-[#171A18]">Room 204 Stay</p>
+                        <p className="text-[10px] text-[#6B6B63]">Rent: Paid for month</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-[#225944]">Active</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-[#F7F5EF] p-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#EECA3A] text-[#171A18] text-xs">🍲</span>
+                      <div>
+                        <p className="text-xs font-bold text-[#171A18]">Daily 2-Meal Plan</p>
+                        <p className="text-[10px] text-[#6B6B63]">Arriving at 8:15 PM</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-[#225944]">On Time</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-[#F7F5EF] p-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#171A18] text-white text-xs">👕</span>
+                      <div>
+                        <p className="text-xs font-bold text-[#171A18]">Laundry Wash</p>
+                        <p className="text-[10px] text-[#6B6B63]">7 clothes scheduled</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-[#225944]">Ready</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-[#171A18]/70 pt-2 border-t border-[#171A18]/10">
+                <span>03 / 04</span>
+                <span className="font-bold text-[#171A18]">Almost there ↓</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Screen Lock Pause after Card 3 */}
+          <div className="h-[30vh] pointer-events-none" />
+
+          {/* CARD 4 */}
+          <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 40 }}>
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-[32px] sm:rounded-[36px] border border-white/10 bg-[#171A18] p-7 sm:p-8 shadow-[0_-12px_36px_rgba(0,0,0,0.25),0_25px_60px_rgba(0,0,0,0.35)] flex flex-col justify-between text-white">
+              <div>
+                <span className="inline-block rounded-full bg-[#225944] px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white mb-3">
+                  Flexible & Custom
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  Make it your own
+                </h3>
+                <p className="mt-1.5 text-xs sm:text-sm text-white/70 leading-relaxed">
+                  Choose only the services that make your day work better. Pause mess plans during semester breaks, schedule laundry, and customize freely.
+                </p>
+              </div>
+
+              {/* Visual Showcase: Smart Controls & Pause */}
+              <div className="my-4 w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-xs">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                  <span className="text-xs font-bold text-[#EECA3A]">⚡ Smart Student Controls</span>
+                  <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">Customized</span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between rounded-xl bg-white/5 p-2.5">
+                    <div>
+                      <p className="text-xs font-bold text-white">Vacation Pause</p>
+                      <p className="text-[10px] text-white/60">Pauses mess billing for 14 days</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black text-black">Active</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-white/5 p-2.5">
+                    <div>
+                      <p className="text-xs font-bold text-white">Exam Night Tea Boost</p>
+                      <p className="text-[10px] text-white/60">Snack delivery during finals</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black text-black">Active</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-[#225944]/40 border border-[#225944] p-2.5">
+                    <p className="text-xs font-bold text-[#EECA3A]">💰 Smart Savings</p>
+                    <span className="text-xs font-black text-white">₹1,450 Saved</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-white/60 pt-2 border-t border-white/10">
+                <span>04 / 04</span>
+                <Link to="/pg" className="font-extrabold text-[#EECA3A] hover:underline inline-flex items-center gap-1.5">
+                  Start Exploring EaseHub <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Screen Lock Pause after Card 4 */}
+          <div className="h-[38vh] pointer-events-none" />
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#225944] py-14 text-white sm:py-20">
-        <motion.div aria-hidden="true" className="absolute -right-20 -top-24 h-80 w-80 rounded-full bg-[#EECA3A]/20 blur-3xl" animate={reduceMotion ? undefined : { scale: [1, 1.15, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
-        <div className="relative mx-auto flex max-w-5xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
-          <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-[#EECA3A]">Your campus chapter starts here</span>
-          <h2 className="mt-5 max-w-3xl text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">Find your rhythm.<br />Feel at home.</h2>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base">Start with the essentials and make the new place feel like yours.</p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link to="/pg" className="inline-flex items-center gap-2 rounded-xl bg-[#EECA3A] px-5 py-3 text-sm font-extrabold text-[#171A18] transition-transform hover:-translate-y-0.5">Explore stays <ArrowRight className="h-4 w-4" /></Link>
-            <Link to="/services" className="inline-flex items-center gap-2 rounded-xl border border-white/35 px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-white/10">Browse services</Link>
-          </div>
-        </div>
-      </section>
 
+      {/* ── 10-CARD STUDENT VIDEO REVIEWS CAROUSEL (EXACT JITTER STYLE) ── */}
+      <ReviewVideoCarousel />
+
+      {/* Campus Skyline Animated Panorama */}
       <AnimatedCityFooter />
+
+      {/* ── PRE-FOOTER CTA SECTION (EXACT JITTER STYLE) ───────────── */}
+      <section className="bg-[#F7F5EF] pt-16 pb-6 sm:pt-24 sm:pb-8 text-[#171A18]">
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-5xl sm:text-7xl lg:text-[80px] font-black tracking-[-0.035em] text-[#171A18] leading-[1.04]">
+            Try EaseHub today,
+          </h2>
+          <div className="mt-5 text-base sm:text-xl font-medium text-[#55554E] leading-relaxed">
+            <p>No brokers, no stress, no waiting.</p>
+            <p className="mt-1">Start settling in instantly.</p>
+          </div>
+          <div className="mt-8 flex justify-center">
+            <Link
+              to="/pg"
+              className="inline-flex items-center justify-center rounded-full bg-[#171A18] px-8 py-3.5 text-sm sm:text-base font-bold text-white shadow-xs transition-all duration-200 hover:bg-[#2B2F2D] hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Get started for free
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

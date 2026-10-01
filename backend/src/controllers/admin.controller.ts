@@ -5,6 +5,7 @@ import { LaundryService } from '../services/laundry.service.js';
 import { ExtraService } from '../services/service.service.js';
 import { BookingService } from '../services/booking.service.js';
 import { PaymentService } from '../services/payment.service.js';
+import { ReviewService } from '../services/review.service.js';
 import { User } from '../models/User.js';
 import mongoose from 'mongoose';
 import { sendResponse } from '../utils/apiResponse.js';
@@ -17,6 +18,7 @@ export const getAdminStats = asyncHandler(async (req: Request, res: Response) =>
   const services = await ExtraService.getAll();
   const bookings = await BookingService.getAllBookings();
   const paymentsStats = await PaymentService.getPaymentStats();
+  const allReviews = await ReviewService.getAdminReviews();
 
   const isMongoConnected = mongoose.connection.readyState === 1;
   const totalUsers = isMongoConnected ? await User.countDocuments() : 0;
@@ -33,6 +35,8 @@ export const getAdminStats = asyncHandler(async (req: Request, res: Response) =>
   const totalLaundryProviders = laundry.length;
   const totalExtraServices = services.length;
   const totalBookingsCount = bookings.length;
+  const totalReviewsCount = allReviews.length;
+  const pendingReviewsCount = allReviews.filter((r: any) => r.status === 'pending' || !r.is_published).length;
 
   return sendResponse({
     res,
@@ -52,6 +56,8 @@ export const getAdminStats = asyncHandler(async (req: Request, res: Response) =>
         totalLaundryProviders,
         totalExtraServices,
         totalBookingsCount,
+        totalReviewsCount,
+        pendingReviewsCount,
         escrowVolume: paymentsStats.totalEscrowVolume,
         pendingPaymentsCount: paymentsStats.pendingCount,
         pendingPaymentsAmount: paymentsStats.pendingAmount,
@@ -63,6 +69,7 @@ export const getAdminStats = asyncHandler(async (req: Request, res: Response) =>
         laundry: totalLaundryProviders,
         services: totalExtraServices,
         bookings: totalBookingsCount,
+        reviews: totalReviewsCount,
       },
     },
   });

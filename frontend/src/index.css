@@ -20,7 +20,7 @@ body {
   background-color: var(--ease-ivory);
   color: var(--ease-text);
   font-family: 'Plus Jakarta Sans', sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Custom scrollbar */
