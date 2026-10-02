@@ -78,93 +78,93 @@ const categories: Category[] = [
 
 type CarouselCard = {
   title: string;
-  description: string;
+  creator: string;
   href: string;
   icon: LucideIcon;
   bg: string;
-  textColor: string;
-  subColor: string;
-  iconBg: string;
-  tag: string;
+  previewBg: string;
+  previewType: 'pg' | 'meal' | 'laundry' | 'service' | 'trust' | 'location' | 'fast';
+  previewIcon: string;
+  badge: string;
 };
 
 const carouselCards: CarouselCard[] = [
   {
-    title: 'PGs & Hostels',
-    description: 'Vetted stays near your campus. Affordable, safe, and close to college.',
+    title: 'PGs & Hostels: Campus Living',
+    creator: 'EaseHub Stays',
     href: '/pg',
     icon: Building2,
-    bg: 'bg-[#225944]',
-    textColor: 'text-white',
-    subColor: 'text-white/70',
-    iconBg: 'bg-white/15',
-    tag: 'Stay',
+    bg: 'bg-[#F2EFE9]',
+    previewBg: 'bg-[#ECE8E0]',
+    previewType: 'pg',
+    previewIcon: '🏠',
+    badge: 'Verified 400m from Gate',
   },
   {
-    title: 'Meals & Mess',
-    description: 'Daily tiffin, mess plans and home-cooked food around your college.',
+    title: 'Daily Meals & Student Mess',
+    creator: 'EaseHub Dining',
     href: '/meals',
     icon: Utensils,
     bg: 'bg-[#EECA3A]',
-    textColor: 'text-[#171A18]',
-    subColor: 'text-[#171A18]/65',
-    iconBg: 'bg-[#171A18]/10',
-    tag: 'Food',
+    previewBg: 'bg-[#E3BD26]',
+    previewType: 'meal',
+    previewIcon: '🍲',
+    badge: 'Hostel Gate Delivery',
   },
   {
-    title: 'Laundry',
-    description: 'Pickup & drop laundry service. Clean clothes delivered to your door.',
+    title: 'Express Doorstep Laundry',
+    creator: 'EaseHub Care',
     href: '/laundry',
     icon: Shirt,
-    bg: 'bg-white',
-    textColor: 'text-[#171A18]',
-    subColor: 'text-[#6B6B63]',
-    iconBg: 'bg-[#225944]/10',
-    tag: 'Wash',
+    bg: 'bg-[#F0EDE6]',
+    previewBg: 'bg-[#E5E1D8]',
+    previewType: 'laundry',
+    previewIcon: '🧺',
+    badge: 'Clean & Ironed in 24h',
   },
   {
-    title: 'Everyday Help',
-    description: 'Electrician, plumber, cleaning and local repairs on demand.',
+    title: 'Everyday Repairs & Help',
+    creator: 'EaseHub Support',
     href: '/services',
     icon: Wrench,
     bg: 'bg-[#171A18]',
-    textColor: 'text-white',
-    subColor: 'text-white/60',
-    iconBg: 'bg-white/10',
-    tag: 'Services',
+    previewBg: 'bg-[#262B28]',
+    previewType: 'service',
+    previewIcon: '⚡',
+    badge: 'On-Demand Handyman',
   },
   {
-    title: 'Zero Brokerage',
-    description: 'Direct listings with no hidden fees. Deal straight with the owner.',
+    title: 'Zero Brokerage Guarantee',
+    creator: 'EaseHub Direct',
     href: '/pg',
     icon: ShieldCheck,
-    bg: 'bg-[#F7F5EF]',
-    textColor: 'text-[#171A18]',
-    subColor: 'text-[#6B6B63]',
-    iconBg: 'bg-[#225944]/12',
-    tag: 'Trust',
+    bg: 'bg-[#225944]',
+    previewBg: 'bg-[#1B4A38]',
+    previewType: 'trust',
+    previewIcon: '🛡️',
+    badge: '100% Direct Landlords',
   },
   {
-    title: 'Campus-Near',
-    description: 'All options within walking or cycling distance from your college.',
+    title: 'Campus-Near Corridor Map',
+    creator: 'EaseHub Campus',
     href: '/pg',
     icon: MapPin,
-    bg: 'bg-[#4F7A65]',
-    textColor: 'text-white',
-    subColor: 'text-white/70',
-    iconBg: 'bg-white/15',
-    tag: 'Location',
+    bg: 'bg-[#9D76F7]',
+    previewBg: 'bg-[#8A5EE6]',
+    previewType: 'location',
+    previewIcon: '📍',
+    badge: 'Walking Distance Only',
   },
   {
-    title: 'Quick Booking',
-    description: 'Browse, compare, and book a stay or service in a few minutes.',
+    title: '1-Click Instant Room Hold',
+    creator: 'EaseHub Fast',
     href: '/pg',
     icon: Sparkles,
-    bg: 'bg-[#FFF3C4]',
-    textColor: 'text-[#171A18]',
-    subColor: 'text-[#6B6B63]',
-    iconBg: 'bg-[#EECA3A]/40',
-    tag: 'Fast',
+    bg: 'bg-[#E0F2FE]',
+    previewBg: 'bg-[#BAE6FD]',
+    previewType: 'fast',
+    previewIcon: '✨',
+    badge: 'Zero Waiting Period',
   },
 ];
 
@@ -339,37 +339,59 @@ export const TemplateHomePage: React.FC = () => {
           `}</style>
 
           <div className="carousel-reel" style={{ gap: '20px', padding: '32px 10px' }}>
-            {carouselCards.map(({ title, description, href, icon: Icon, bg, textColor, subColor, iconBg, tag }, i) => (
+            {carouselCards.map((card, i) => (
               <Link
                 key={i}
-                to={href}
-                className={`group relative flex shrink-0 flex-col justify-between overflow-hidden rounded-3xl ${bg} p-8 shadow-[0_8px_40px_rgba(23,26,24,0.10)] transition-shadow duration-300 hover:shadow-[0_24px_64px_rgba(23,26,24,0.18)]`}
-                style={{ width: 'calc(100vw / 3 - 16px)', height: '65vh' }}
+                to={card.href}
+                className="group relative flex shrink-0 flex-col justify-between overflow-hidden rounded-[32px] sm:rounded-[40px] bg-[#EAE8E1]/90 hover:bg-[#EAE8E1] p-6 sm:p-8 shadow-[0_8px_40px_rgba(23,26,24,0.06)] transition-all duration-300 hover:shadow-[0_20px_50px_rgba(23,26,24,0.12)] hover:-translate-y-1"
+                style={{ width: 'calc(100vw / 3 - 16px)', minWidth: '320px', maxWidth: '480px', height: '64vh', minHeight: '520px' }}
               >
-                {/* Top: tag + icon */}
-                <div className="flex items-start justify-between">
-                  <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${iconBg} ${textColor}`}>
-                    {tag}
-                  </span>
-                  <div className={`grid h-12 w-12 place-items-center rounded-2xl ${iconBg}`}>
-                    <Icon className={`h-6 w-6 ${textColor}`} />
+                {/* 1. Center Visual Art / Media Frame (Like the shoe showcase in reference) */}
+                <div className="flex-1 w-full flex items-center justify-center p-3 sm:p-5">
+                  <div className={`relative w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-2xl sm:rounded-3xl ${card.previewBg} shadow-[0_10px_30px_rgba(0,0,0,0.07)] flex flex-col items-center justify-center p-6 border border-black/5 group-hover:scale-[1.03] transition-transform duration-300`}>
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/90 shadow-md flex items-center justify-center text-4xl sm:text-5xl backdrop-blur-xs">
+                      {card.previewIcon}
+                    </div>
+                    <span className="mt-4 px-3 py-1 rounded-full bg-black/10 backdrop-blur-xs text-[11px] font-bold text-[#171A18] tracking-tight">
+                      {card.badge}
+                    </span>
                   </div>
                 </div>
 
-                {/* Bottom: title + desc + arrow */}
-                <div>
-                  <h3 className={`text-2xl font-extrabold tracking-tight ${textColor}`}>{title}</h3>
-                  <p className={`mt-2 text-sm leading-relaxed ${subColor}`}>{description}</p>
-                  <span className={`mt-6 inline-flex items-center gap-2 text-sm font-extrabold ${textColor}`}>
-                    Explore
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1.5" />
-                  </span>
+                {/* 2. Bottom Meta Strip: Black Circle Logo + Video/Feature Title + Brand Author (Exact match to Jitter image) */}
+                <div className="flex items-center gap-3.5 pt-4">
+                  {/* EaseHub Circular Brand Logo Avatar */}
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#171A18] overflow-hidden shrink-0 shadow-sm border border-black/10 flex items-center justify-center">
+                    <img
+                      src="/logo.png"
+                      alt="EaseHub"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        (e.target as HTMLElement).style.display = 'none';
+                        const parent = (e.target as HTMLElement).parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<span class="text-xs font-black text-[#EECA3A]">EH</span>';
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Title & Creator Subtitle */}
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-lg font-bold text-[#171A18] tracking-tight truncate leading-snug group-hover:text-[#225944] transition-colors">
+                      {card.title}
+                    </h3>
+                    <p className="text-xs text-[#7A7A73] font-medium leading-none mt-0.5">
+                      {card.creator}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Shine on hover */}
+                {/* Subtle Hover Sheen */}
                 <div
-                  className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 55%)' }}
+                  className="pointer-events-none absolute inset-0 rounded-[32px] sm:rounded-[40px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%)' }}
                 />
               </Link>
             ))}

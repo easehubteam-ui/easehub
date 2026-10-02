@@ -34,6 +34,8 @@ export interface PGListing {
   featured?: boolean;
   mapEmbedUrl?: string;
   locationData?: PGLocationData;
+  gender?: string;
+  roomType?: string;
 }
 
 export const PGPage: React.FC = () => {
@@ -41,6 +43,9 @@ export const PGPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
 
   const [activeFilter, setActiveFilter] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchCategory, setSearchCategory] = useState<string>('PG / Hostel');
+  const [sortBy, setSortBy] = useState<string>('featured');
   const [activeImageIdx, setActiveImageIdx] = useState<Record<string, number>>({});
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [hoveredListingId, setHoveredListingId] = useState<string>('');
@@ -68,6 +73,8 @@ export const PGPage: React.FC = () => {
           images: p.images?.length > 0 ? p.images : [],
           amenities: p.amenities || [],
           featured: p.verified ?? true,
+          gender: p.gender || 'CO-ED',
+          roomType: p.roomMatrix || '',
           locationData: {
             address: p.location?.address || p.corridor || '',
             landmark: p.location?.landmark || p.distance || '',
@@ -136,6 +143,69 @@ export const PGPage: React.FC = () => {
     }
   };
 
+  // Live Filtering Logic across search bar text, category dropdown, pills, and sorting
+  const filteredListings = listings
+    .filter((item) => {
+      // 1. Text Search Filter (city, address, name, landmark, corridor)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesName = item.name.toLowerCase().includes(query);
+        const matchesLoc = item.location.toLowerCase().includes(query);
+        const matchesCity = item.locationData?.city.toLowerCase().includes(query);
+        const matchesAddress = item.locationData?.address.toLowerCase().includes(query);
+        const matchesLandmark = item.locationData?.landmark?.toLowerCase().includes(query);
+        if (!matchesName && !matchesLoc && !matchesCity && !matchesAddress && !matchesLandmark) {
+          return false;
+        }
+      }
+
+      // 2. Category Dropdown Filter
+      if (searchCategory === 'Boys PG') {
+        const isBoys = item.gender?.toUpperCase().includes('BOY') || item.name.toLowerCase().includes('boy');
+        if (!isBoys) return false;
+      } else if (searchCategory === 'Girls PG') {
+        const isGirls = item.gender?.toUpperCase().includes('GIRL') || item.name.toLowerCase().includes('girl');
+        if (!isGirls) return false;
+      } else if (searchCategory === 'Unisex PG') {
+        const isCoEd = item.gender?.toUpperCase().includes('CO-ED') || item.gender?.toUpperCase().includes('UNISEX');
+        if (!isCoEd) return false;
+      }
+
+      // 3. Quick Pill Filters
+      if (activeFilter === 'Boys') {
+        const isBoys = item.gender?.toUpperCase().includes('BOY') || item.name.toLowerCase().includes('boy');
+        if (!isBoys) return false;
+      } else if (activeFilter === 'Girls') {
+        const isGirls = item.gender?.toUpperCase().includes('GIRL') || item.name.toLowerCase().includes('girl');
+        if (!isGirls) return false;
+      } else if (activeFilter === 'Unisex') {
+        const isCoEd = item.gender?.toUpperCase().includes('CO-ED') || item.gender?.toUpperCase().includes('UNISEX');
+        if (!isCoEd) return false;
+      } else if (activeFilter === 'Single Room') {
+        const isSingle = item.roomType?.toLowerCase().includes('single') || item.amenities.some((a) => a.toLowerCase().includes('single'));
+        if (!isSingle) return false;
+      } else if (activeFilter === 'Double Sharing') {
+        const isDouble = item.roomType?.toLowerCase().includes('double') || item.amenities.some((a) => a.toLowerCase().includes('double') || a.toLowerCase().includes('sharing'));
+        if (!isDouble) return false;
+      } else if (activeFilter === 'Under ₹8,000') {
+        if (item.price > 8000) return false;
+      } else if (activeFilter === 'Food Included') {
+        const hasFood = item.amenities.some((a) => a.toLowerCase().includes('meal') || a.toLowerCase().includes('food') || a.toLowerCase().includes('mess'));
+        if (!hasFood) return false;
+      } else if (activeFilter === 'Wi-Fi') {
+        const hasWifi = item.amenities.some((a) => a.toLowerCase().includes('wifi') || a.toLowerCase().includes('wi-fi'));
+        if (!hasWifi) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'price-low') return a.price - b.price;
+      if (sortBy === 'price-high') return b.price - a.price;
+      if (sortBy === 'rating') return b.rating - a.rating;
+      return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+    });
+
   return (
     <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen flex flex-col selection:bg-[#EECA3A] selection:text-[#171A18]">
 
@@ -166,10 +236,20 @@ export const PGPage: React.FC = () => {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search city, area or landmark"
-                    defaultValue="Bhilai, Chhattisgarh"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search city, area or landmark (e.g. Bhilai, Rajnandgaon, BIT)"
                     className="w-full bg-transparent text-sm font-medium text-[#171A18] focus:outline-none placeholder-[#6B6B63]"
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-xs text-[#6B6B63] hover:text-[#171A18] px-1 font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 <div className="h-6 w-px bg-[#E5E1D6] hidden md:block" />
@@ -177,7 +257,8 @@ export const PGPage: React.FC = () => {
                 {/* Current Location */}
                 <button
                   type="button"
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-[#171A18] hover:text-[#225944] shrink-0"
+                  onClick={() => setSearchQuery('Bhilai, Chhattisgarh')}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-[#171A18] hover:text-[#225944] shrink-0 cursor-pointer"
                 >
                   <svg className="w-4 h-4 text-[#225944]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06z" />
@@ -192,18 +273,25 @@ export const PGPage: React.FC = () => {
                   <svg className="w-4 h-4 text-[#225944] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                   </svg>
-                  <select className="bg-transparent border-none text-xs font-bold text-[#171A18] focus:outline-none cursor-pointer w-full">
-                    <option value="PG / Hostel">PG / Hostel</option>
+                  <select
+                    value={searchCategory}
+                    onChange={(e) => setSearchCategory(e.target.value)}
+                    className="bg-transparent border-none text-xs font-bold text-[#171A18] focus:outline-none cursor-pointer w-full"
+                  >
+                    <option value="PG / Hostel">All PG / Hostel</option>
                     <option value="Boys PG">Boys PG</option>
                     <option value="Girls PG">Girls PG</option>
-                    <option value="Unisex PG">Unisex PG</option>
+                    <option value="Unisex PG">Co-Ed / Unisex PG</option>
                   </select>
                 </div>
 
                 {/* Search Button */}
                 <button
                   type="button"
-                  className="bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] font-bold px-6 py-3 rounded-xl text-sm transition-all shadow-xs flex items-center justify-center gap-2 shrink-0"
+                  onClick={() => {
+                    // Triggers focus or refresh; filteredListings updates automatically in real-time
+                  }}
+                  className="bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] font-bold px-6 py-3 rounded-xl text-sm transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -240,12 +328,21 @@ export const PGPage: React.FC = () => {
           
           <button
             type="button"
-            className="px-3.5 py-2 rounded-xl bg-white border border-[#E5E1D6] text-xs font-bold text-[#171A18] flex items-center gap-1.5 shrink-0 hover:bg-[#E5E1D6]/30 transition-colors shadow-2xs"
+            onClick={() => {
+              setActiveFilter('All');
+              setSearchQuery('');
+              setSearchCategory('PG / Hostel');
+            }}
+            className={`px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs cursor-pointer ${
+              activeFilter === 'All' && !searchQuery && searchCategory === 'PG / Hostel'
+                ? 'bg-[#225944] text-white border-[#225944]'
+                : 'bg-white border-[#E5E1D6] text-[#171A18] hover:bg-[#E5E1D6]/30'
+            }`}
           >
-            <svg className="w-4 h-4 text-[#225944]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
-            <span>All Filters</span>
+            <span>Reset All</span>
           </button>
 
           {[
@@ -257,15 +354,14 @@ export const PGPage: React.FC = () => {
             { label: 'Under ₹8,000', icon: '🏷️' },
             { label: 'Food Included', icon: '🍽️' },
             { label: 'Wi-Fi', icon: '📶' },
-            { label: 'More', icon: '▾' }
           ].map((item) => {
             const isActive = activeFilter === item.label;
             return (
               <button
                 key={item.label}
                 type="button"
-                onClick={() => setActiveFilter(item.label)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 ${
+                onClick={() => setActiveFilter(activeFilter === item.label ? 'All' : item.label)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
                   isActive
                     ? 'bg-[#225944] text-white shadow-xs'
                     : 'bg-white border border-[#E5E1D6] text-[#171A18] hover:border-[#225944]'
@@ -286,14 +382,24 @@ export const PGPage: React.FC = () => {
         {/* Results Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-extrabold text-[#171A18]">
-            {listings.length} PGs & Hostels near you
+            {filteredListings.length} PGs & Hostels found
+            {searchQuery && (
+              <span className="text-base font-normal text-[#6B6B63] ml-2">
+                for "{searchQuery}"
+              </span>
+            )}
           </h2>
 
           <div className="flex items-center gap-2 text-xs font-semibold text-[#6B6B63]">
             <span>Sort by:</span>
-            <select className="bg-white border border-[#E5E1D6] rounded-xl px-3 py-1.5 font-bold text-[#171A18] focus:outline-none cursor-pointer">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-white border border-[#E5E1D6] rounded-xl px-3 py-1.5 font-bold text-[#171A18] focus:outline-none cursor-pointer"
+            >
               <option value="featured">Featured</option>
               <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
               <option value="rating">Highest Rated</option>
             </select>
           </div>
@@ -320,20 +426,33 @@ export const PGPage: React.FC = () => {
                   Retry
                 </button>
               </div>
-            ) : listings.length === 0 ? (
+            ) : filteredListings.length === 0 ? (
               <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
                 <div className="w-16 h-16 bg-[#225944]/10 text-[#225944] rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-extrabold text-[#171A18]">No PGs available in this area yet.</h3>
+                <h3 className="text-xl font-extrabold text-[#171A18]">
+                  No PGs matched "{searchQuery || activeFilter}".
+                </h3>
                 <p className="text-sm text-[#6B6B63] mt-2 font-medium">
-                  Verified property listings will appear here once added from the Admin Panel.
+                  Try searching for another area (e.g. "Bhilai", "Durg", "Nehru Nagar") or clearing the filters.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveFilter('All');
+                    setSearchCategory('PG / Hostel');
+                  }}
+                  className="mt-4 px-4 py-2 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#184232] transition-colors cursor-pointer"
+                >
+                  Clear Filters & Show All
+                </button>
               </div>
             ) : (
-              listings.map((listing) => {
+              filteredListings.map((listing) => {
               const currentImgIdx = activeImageIdx[listing.id] || 0;
               const isSaved = savedIds.includes(listing.id);
               const isHovered = hoveredListingId === listing.id;
@@ -467,13 +586,13 @@ export const PGPage: React.FC = () => {
             
             {/* Live Interactive Map Box linked to Hover State */}
             {(() => {
-              const activePG = listings.find((l) => l.id === hoveredListingId) || listings[0];
+              const activePG = filteredListings.find((l) => l.id === hoveredListingId) || filteredListings[0];
               if (!activePG) {
                 return (
                   <div className="bg-white rounded-2xl border border-[#E5E1D6] p-8 text-center shadow-xs">
                     <span className="material-symbols-outlined text-4xl text-[#6B6B63] mb-2">map</span>
                     <p className="text-sm font-bold text-[#171A18]">Map preview unavailable</p>
-                    <p className="text-xs text-[#6B6B63] mt-1">Property location coordinates will display on map once added by Admin.</p>
+                    <p className="text-xs text-[#6B6B63] mt-1">No matching properties for this search filter.</p>
                   </div>
                 );
               }
