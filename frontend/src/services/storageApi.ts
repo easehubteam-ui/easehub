@@ -46,7 +46,7 @@ export const getPublicImageUrl = (bucket: string, storedValue: any): string | nu
     return rawPath;
   }
 
-  const projectUrl = (import.meta.env && import.meta.env.VITE_INSFORGE_PROJECT_URL) || 'https://rs8ysej4.us-east.insforge.app';
+  const projectUrl = (import.meta.env && import.meta.env.VITE_INSFORGE_PROJECT_URL) || 'https://289ybt8g.us-east.insforge.app';
   const cleanPath = rawPath.startsWith('/') ? rawPath.slice(1) : rawPath;
   const encodedSegments = cleanPath.split('/').map((s) => encodeURIComponent(s)).join('/');
   return `${projectUrl}/api/storage/buckets/${bucket}/objects/${encodedSegments}`;
