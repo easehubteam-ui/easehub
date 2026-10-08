@@ -85,6 +85,7 @@ type CarouselCard = {
   previewBg: string;
   previewType: 'pg' | 'meal' | 'laundry' | 'service' | 'trust' | 'location' | 'fast';
   previewIcon: string;
+  image: string;
   badge: string;
 };
 
@@ -98,6 +99,7 @@ const carouselCards: CarouselCard[] = [
     previewBg: 'bg-[#ECE8E0]',
     previewType: 'pg',
     previewIcon: '🏠',
+    image: '/carousel/pg-stays.jpg',
     badge: 'Verified 400m from Gate',
   },
   {
@@ -109,6 +111,7 @@ const carouselCards: CarouselCard[] = [
     previewBg: 'bg-[#E3BD26]',
     previewType: 'meal',
     previewIcon: '🍲',
+    image: '/carousel/daily-meals.jpg',
     badge: 'Hostel Gate Delivery',
   },
   {
@@ -120,6 +123,7 @@ const carouselCards: CarouselCard[] = [
     previewBg: 'bg-[#E5E1D8]',
     previewType: 'laundry',
     previewIcon: '🧺',
+    image: '/carousel/express-laundry.jpg',
     badge: 'Clean & Ironed in 24h',
   },
   {
@@ -131,6 +135,7 @@ const carouselCards: CarouselCard[] = [
     previewBg: 'bg-[#262B28]',
     previewType: 'service',
     previewIcon: '⚡',
+    image: '/carousel/repairs-help.jpg',
     badge: 'On-Demand Handyman',
   },
   {
@@ -142,6 +147,7 @@ const carouselCards: CarouselCard[] = [
     previewBg: 'bg-[#1B4A38]',
     previewType: 'trust',
     previewIcon: '🛡️',
+    image: '/carousel/zero-brokerage.jpg',
     badge: '100% Direct Landlords',
   },
   {
@@ -153,6 +159,7 @@ const carouselCards: CarouselCard[] = [
     previewBg: 'bg-[#8A5EE6]',
     previewType: 'location',
     previewIcon: '📍',
+    image: '/carousel/campus-map.jpg',
     badge: 'Walking Distance Only',
   },
   {
@@ -164,6 +171,7 @@ const carouselCards: CarouselCard[] = [
     previewBg: 'bg-[#BAE6FD]',
     previewType: 'fast',
     previewIcon: '✨',
+    image: '/carousel/instant-hold.jpg',
     badge: 'Zero Waiting Period',
   },
 ];
@@ -348,11 +356,15 @@ export const TemplateHomePage: React.FC = () => {
               >
                 {/* 1. Center Visual Art / Media Frame (Like the shoe showcase in reference) */}
                 <div className="flex-1 w-full flex items-center justify-center p-3 sm:p-5">
-                  <div className={`relative w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-2xl sm:rounded-3xl ${card.previewBg} shadow-[0_10px_30px_rgba(0,0,0,0.07)] flex flex-col items-center justify-center p-6 border border-black/5 group-hover:scale-[1.03] transition-transform duration-300`}>
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/90 shadow-md flex items-center justify-center text-4xl sm:text-5xl backdrop-blur-xs">
-                      {card.previewIcon}
-                    </div>
-                    <span className="mt-4 px-3 py-1 rounded-full bg-black/10 backdrop-blur-xs text-[11px] font-bold text-[#171A18] tracking-tight">
+                  <div className={`relative w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-2xl sm:rounded-3xl ${card.previewBg} shadow-[0_14px_34px_rgba(0,0,0,0.10)] overflow-hidden border border-black/8 group-hover:scale-[1.03] transition-transform duration-300`}>
+                    <img
+                      src={card.image}
+                      alt={card.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 via-black/15 to-transparent" />
+                    <span className="absolute bottom-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-sm text-[11px] font-bold text-[#171A18] tracking-tight border border-black/5">
                       {card.badge}
                     </span>
                   </div>
