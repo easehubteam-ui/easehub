@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { isAdminRole } from '../types';
 import FloatingContact from '../components/common/FloatingContact';
 import { savedApi } from '../services/savedApi';
 import { PageTransition } from '../components/common/PageTransition';
@@ -13,7 +14,7 @@ export const CustomerLayout: React.FC = () => {
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number>(0);
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isAdmin = isAdminRole(user?.role);
 
   useEffect(() => {
     let isMounted = true;
@@ -27,12 +28,12 @@ export const CustomerLayout: React.FC = () => {
       setSavedCount(0);
     }
     return () => { isMounted = false; };
-  }, [user, currentPath]);
+  }, [user?.id]);
 
   const handleLogout = async () => {
     setUserDropdownOpen(false);
     await logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   return (
@@ -133,6 +134,18 @@ export const CustomerLayout: React.FC = () => {
               <span className="material-symbols-outlined text-[18px]">calendar_month</span>
               <span>My Bookings</span>
             </Link>
+
+            <Link
+              to="/community"
+              className={`py-2 transition-all flex items-center gap-1.5 ${
+                currentPath === '/community'
+                  ? 'text-[#225944] border-b-2 border-[#225944]'
+                  : 'text-[#6B6B63] hover:text-[#171A18]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">forum</span>
+              <span>Community</span>
+            </Link>
           </nav>
 
           {/* Right Header Icons & Profile Avatar */}
@@ -220,6 +233,24 @@ export const CustomerLayout: React.FC = () => {
                   >
                     <span className="material-symbols-outlined text-[18px] text-rose-500">favorite</span>
                     <span>Saved Wishlist</span>
+                  </Link>
+
+                  <Link
+                    to="/community"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-[#225944]">forum</span>
+                    <span>Community Support</span>
+                  </Link>
+
+                  <Link
+                    to="/support/chat"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-[#225944]">support_agent</span>
+                    <span>Admin Support Chat</span>
                   </Link>
 
                   <div className="pt-1 border-t border-[#E5E1D6]">

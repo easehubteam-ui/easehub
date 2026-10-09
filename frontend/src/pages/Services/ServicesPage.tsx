@@ -197,28 +197,28 @@ export const ServicesPage: React.FC = () => {
             </div>
 
             {/* Right Hero Visual Banner */}
-            <div className="lg:col-span-5 relative h-full flex items-end justify-center pt-8 pr-6 min-h-[380px]">
+            <div className="lg:col-span-5 relative h-full flex items-center justify-center p-6 min-h-[380px]">
               
-              {/* Handwritten Sticky Notes */}
-              <div className="absolute top-10 left-6 sm:left-2 -rotate-6 z-20 select-none pointer-events-none">
-                <span className="font-handwriting text-2xl sm:text-3xl text-[#171A18] leading-none block font-bold">
-                  Skilled<br />People<br />Happier<br />Homes
+              {/* Clean Commercial Callout */}
+              <div className="absolute top-6 left-6 z-20 bg-white/90 border border-[#E5E1D6] rounded-xl px-3 py-1.5 shadow-2xs">
+                <span className="text-xs font-bold text-[#171A18] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#225944]" />
+                  Verified Experts
                 </span>
-                <div className="w-20 h-1 bg-[#EECA3A]/80 mt-1 rounded-full" />
               </div>
 
-              <div className="absolute top-12 right-6 rotate-6 z-20 select-none pointer-events-none text-right">
-                <span className="font-handwriting text-2xl sm:text-3xl text-[#171A18] leading-none block font-bold">
-                  Home<br />Services<br />Made Simple
+              <div className="absolute bottom-6 right-6 z-20 bg-white/90 border border-[#E5E1D6] rounded-xl px-3 py-1.5 shadow-2xs">
+                <span className="text-xs font-bold text-[#171A18] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#EECA3A]" />
+                  Doorstep Assistance
                 </span>
-                <div className="w-20 h-1 bg-[#EECA3A]/80 mt-1 ml-auto rounded-full" />
               </div>
 
               {/* Service Partner Visual */}
-              <div className="h-[340px] sm:h-[380px] w-64 rounded-2xl bg-gradient-to-br from-[#225944] to-[#184232] text-white p-6 flex flex-col justify-between z-10 shadow-xl border border-white/20">
-                <span className="material-symbols-outlined text-6xl text-[#EECA3A]">handyman</span>
+              <div className="h-[300px] sm:h-[340px] w-64 rounded-2xl bg-[#225944] text-white p-6 flex flex-col justify-between z-10 shadow-xs border border-[#E5E1D6]">
+                <span className="material-symbols-outlined text-5xl text-[#EECA3A]">handyman</span>
                 <div>
-                  <h4 className="text-xl font-black">Doorstep Repairs</h4>
+                  <h4 className="text-xl font-bold font-syne">Doorstep Repairs</h4>
                   <p className="text-xs text-white/80 mt-1">Verified Electricians, Plumbers & Technicians</p>
                 </div>
               </div>
@@ -501,9 +501,10 @@ export const ServicesPage: React.FC = () => {
                 <span>→</span>
               </button>
               
-              <div className="absolute top-4 right-4 text-center font-handwriting rotate-12 z-10 select-none">
-                <span className="text-xl font-bold text-[#225944] block leading-none">Same<br />Day<br />Service</span>
-                <div className="w-8 h-0.5 bg-[#EECA3A] mx-auto mt-1" />
+              <div className="absolute top-4 right-4 z-10 select-none">
+                <span className="inline-block bg-[#225944]/10 text-[#225944] text-[11px] font-bold px-2.5 py-1 rounded-lg border border-[#225944]/20">
+                  Same Day Service
+                </span>
               </div>
             </div>
 

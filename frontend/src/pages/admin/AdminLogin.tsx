@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { isAdminRole, getFirstAllowedAdminPath } from '../../types';
 
 export const AdminLogin: React.FC = () => {
   const location = useLocation();
@@ -14,13 +15,11 @@ export const AdminLogin: React.FC = () => {
   const { user, isAuthenticated, loginAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const from = (location.state as any)?.from?.pathname || '/admin/dashboard';
-
   // Auto-redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'admin' || user.role === 'superadmin') {
-        navigate('/admin/dashboard', { replace: true });
+      if (isAdminRole(user.role)) {
+        navigate(getFirstAllowedAdminPath(user), { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
@@ -37,8 +36,8 @@ export const AdminLogin: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      await loginAdmin({ email: email.trim(), password });
-      navigate(from, { replace: true });
+      const loggedInAdmin = await loginAdmin({ email: email.trim(), password });
+      navigate(getFirstAllowedAdminPath(loggedInAdmin), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Administrator access is required.');
     } finally {
@@ -60,7 +59,7 @@ export const AdminLogin: React.FC = () => {
         {error && (
           <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold p-4 rounded-2xl text-center space-y-2">
             <p>{error}</p>
-            {error.includes('Administrator access') && (
+            {(error.includes('Administrator access') || error.includes('Admin privileges required')) && (
               <Link
                 to="/login"
                 className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-[#225944] text-white text-xs font-bold hover:bg-[#184232] transition shadow-2xs mt-1"

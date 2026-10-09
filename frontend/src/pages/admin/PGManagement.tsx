@@ -99,13 +99,15 @@ export const PGManagement: React.FC = () => {
 
   const handleDeletePG = async (pg: PGProperty) => {
     if (window.confirm(`Are you sure you want to delete property "${pg.name}"?`)) {
+      // Immediately remove from UI
+      setProperties((prev) => prev.filter((x) => x.id !== pg.id));
+      if (selectedPG?.id === pg.id) setSelectedPG(null);
       try {
         await pgApi.delete(pg.id);
-        if (selectedPG?.id === pg.id) setSelectedPG(null);
-        await fetchProperties();
       } catch (err: any) {
         console.error('Failed to delete PG:', err);
-        alert(err.message || 'Failed to delete property.');
+        alert(err.message || 'Failed to delete property. Refreshing...');
+        await fetchProperties(); // restore on error
       }
     }
   };

@@ -304,6 +304,41 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Community & Admin Support Banner */}
+      <div className="bg-[#225944] text-white rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
+        <div className="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-[#EECA3A]/15 blur-2xl pointer-events-none"></div>
+        <div className="flex items-start sm:items-center gap-4 relative z-10">
+          <div className="w-12 h-12 rounded-2xl bg-[#EECA3A] text-[#171A18] flex items-center justify-center shrink-0 shadow-sm font-bold">
+            <span className="material-symbols-outlined text-[26px]">forum</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-extrabold text-white tracking-tight">Community Support &amp; Discussion</h2>
+              <span className="px-2 py-0.5 rounded-full bg-[#EECA3A] text-[#171A18] text-[10px] font-black uppercase">Live</span>
+            </div>
+            <p className="text-xs text-white/80 mt-1 max-w-xl leading-relaxed">
+              Connect with fellow student residents in Bhilai &amp; Durg. Ask about room vacancies, tiffin mess reviews, or chat directly with EaseHub Admin.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0 relative z-10">
+          <Link
+            to="/community"
+            className="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-white text-[#225944] hover:bg-[#F7F5EF] font-extrabold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+          >
+            <span>Open Community Chat</span>
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </Link>
+          <Link
+            to="/support/chat"
+            className="px-4 py-2.5 rounded-xl bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] font-extrabold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+          >
+            <span>Contact Admin</span>
+          </Link>
+        </div>
+      </div>
+
       {/* 5. Recent Activity Section */}
       <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs space-y-4">
         <h2 className="text-base font-extrabold text-[#171A18] pb-3 border-b border-[#E5E1D6]">

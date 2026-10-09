@@ -166,41 +166,42 @@ export const MealsPage: React.FC = () => {
               <div className="lg:col-span-6 relative flex items-center justify-end">
                 <div className="relative w-full max-w-lg">
                   
-                  {/* Handwritten Tags */}
-                  <div className="absolute -top-4 left-6 z-20 flex flex-col items-start select-none transform -rotate-6">
-                    <span className="font-handwriting text-3xl font-bold text-[#225944] leading-5">Fresh</span>
-                    <span className="font-handwriting text-2xl font-bold text-[#EECA3A] ml-3">Healthy</span>
-                    <span className="font-handwriting text-2xl font-bold text-[#171A18] ml-6">Affordable</span>
+                  {/* Quality Assurance Tag */}
+                  <div className="absolute -top-3 left-6 z-20 bg-white/95 border border-[#E5E1D6] rounded-xl px-3 py-1.5 shadow-2xs">
+                    <span className="text-xs font-bold text-[#225944] flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#225944]" />
+                      Fresh • Healthy • Affordable
+                    </span>
                   </div>
 
-                  {/* Main Thali Presentation Circle */}
-                  <div className="relative z-10 w-80 sm:w-96 h-80 sm:h-96 mx-auto rounded-full p-6 bg-gradient-to-br from-[#225944] via-[#1a4535] to-[#113125] shadow-2xl backdrop-blur-sm border-4 border-[#EECA3A]/50 flex flex-col items-center justify-center text-center text-white">
-                    <span className="material-symbols-outlined text-6xl text-[#EECA3A] mb-2 animate-bounce">skillet</span>
+                  {/* Main Thali Presentation Container */}
+                  <div className="relative z-10 w-80 sm:w-96 h-80 sm:h-96 mx-auto rounded-3xl p-6 bg-[#225944] shadow-md border border-[#1d4b39] flex flex-col items-center justify-center text-center text-white">
+                    <span className="material-symbols-outlined text-5xl text-[#EECA3A] mb-2">skillet</span>
                     <h3 className="text-2xl font-black">Homestyle Meals</h3>
                     <p className="text-xs text-white/80 mt-1 max-w-[200px]">Fresh, nutritious daily breakfast, lunch & dinner</p>
                   </div>
 
                   {/* Badge 1: Affordable Plans */}
-                  <div className="absolute right-0 top-6 z-20 bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl shadow-md border border-[#E5E1D6] flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full bg-[#FFF3C4] flex items-center justify-center text-[#171A18] font-bold text-sm">
+                  <div className="absolute right-0 top-6 z-20 bg-white px-3.5 py-2 rounded-xl shadow-xs border border-[#E5E1D6] flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#FFF3C4] flex items-center justify-center text-[#171A18] font-bold text-sm">
                       ₹
                     </div>
                     <div>
                       <p className="text-xs font-bold text-[#171A18]">Affordable</p>
-                      <p className="text-[11px] text-[#6B6B63] font-medium">Plans</p>
+                      <p className="text-[11px] text-[#6B6B63] font-medium">Daily Plans</p>
                     </div>
                   </div>
 
                   {/* Badge 2: Home-like Taste */}
-                  <div className="absolute right-4 bottom-8 z-20 bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl shadow-md border border-[#E5E1D6] flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-[#2F7D55]">
-                      <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="absolute right-4 bottom-8 z-20 bg-white px-3.5 py-2 rounded-xl shadow-xs border border-[#E5E1D6] flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-[#2F7D55]">
+                      <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                       </svg>
                     </div>
                     <div>
                       <p className="text-xs font-bold text-[#171A18]">Home-like</p>
-                      <p className="text-[11px] text-[#6B6B63] font-medium">Taste</p>
+                      <p className="text-[11px] text-[#6B6B63] font-medium">Clean Kitchens</p>
                     </div>
                   </div>
 
@@ -547,8 +548,9 @@ export const MealsPage: React.FC = () => {
                     <span className="material-symbols-outlined text-6xl">lunch_dining</span>
                   </div>
                   <div className="absolute right-4 top-3 select-none pointer-events-none">
-                    <span className="font-handwriting text-2xl text-[#EECA3A] rotate-6 block">Eat Good,</span>
-                    <span className="font-handwriting text-xl text-white ml-2 block">Feel Good</span>
+                    <span className="inline-block bg-white/10 px-2.5 py-1 rounded-lg border border-white/15 text-[11px] font-bold text-[#EECA3A]">
+                      Quality Assured
+                    </span>
                   </div>
                 </div>
 

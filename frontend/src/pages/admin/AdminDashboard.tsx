@@ -115,11 +115,19 @@ export const AdminDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => alert('Downloading EaseHub Business Audit CSV...')}
-            className="flex items-center gap-1.5 bg-[#225944] text-white px-4 py-2 rounded-full text-xs font-bold shadow-md hover:bg-[#184232] transition-colors"
+            className="flex items-center gap-1.5 bg-[#F3F4F0] text-[#171A18] border border-[#E5E1D6] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#E5E1D6] transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            <span>Export Business Audit</span>
+            <span>Export Audit</span>
           </button>
+
+          <Link
+            to="/admin/support"
+            className="flex items-center gap-1.5 bg-[#225944] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-[#184232] transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">chat</span>
+            <span>Live Support Chat</span>
+          </Link>
         </div>
       </div>
 

@@ -294,11 +294,6 @@ export const WishlistPage: React.FC = () => {
       {/* Main Container */}
       <main className="w-full pt-6 pb-20 bg-[#F8FAF6]">
         <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
-          
-          {/* Subtle Ambient Glow Background Graphic */}
-          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-[#EECA3A]/20 blur-3xl pointer-events-none"></div>
-          <div className="absolute top-1/2 -left-32 w-80 h-80 rounded-full bg-[#225944]/15 blur-3xl pointer-events-none"></div>
-
           {/* Header / Editorial Lead */}
           <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[#E5E1D6]">
             <div className="max-w-2xl flex flex-col gap-2">
@@ -572,11 +567,7 @@ export const WishlistPage: React.FC = () => {
           )}
 
           {/* Quick Comparison & Parent Sharing Matrix Banner */}
-          <section className="mt-16 p-8 md:p-10 rounded-3xl bg-[#225944] text-white relative overflow-hidden shadow-xl">
-            {/* Decorative Backdrop Circles */}
-            <div className="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-            <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-[#EECA3A]/20 blur-xl pointer-events-none"></div>
-
+          <section className="mt-16 p-8 md:p-10 rounded-3xl bg-[#225944] text-white relative overflow-hidden shadow-xs border border-[#1d4b39]">
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               {/* Content Left */}
               <div className="lg:col-span-7 flex flex-col gap-4">

@@ -99,13 +99,15 @@ export const MealsManagement: React.FC = () => {
 
   const handleDeleteMeal = async (p: MealProvider) => {
     if (window.confirm(`Are you sure you want to delete meal kitchen "${p.name}"?`)) {
+      // Immediately remove from UI
+      setProviders((prev) => prev.filter((x) => x.id !== p.id));
+      if (selectedProvider?.id === p.id) setSelectedProvider(null);
       try {
         await mealApi.delete(p.id);
-        if (selectedProvider?.id === p.id) setSelectedProvider(null);
-        await fetchProviders();
       } catch (err: any) {
         console.error('Failed to delete meal provider:', err);
-        alert(err.message || 'Failed to delete meal provider.');
+        alert(err.message || 'Failed to delete meal provider. Refreshing...');
+        await fetchProviders(); // restore on error
       }
     }
   };

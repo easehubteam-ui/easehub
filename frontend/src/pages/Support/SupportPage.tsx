@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface ArticleItem {
   id: string;
@@ -123,9 +124,6 @@ export const SupportPage: React.FC = () => {
       
       {/* Search & Support Hero */}
       <section className="relative w-full bg-[#F3F4F0] px-4 sm:px-6 lg:px-8 py-10 md:py-14 overflow-hidden border-b border-[#E1E3DF]">
-        <div className="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-[#EECA3A]/20 blur-3xl pointer-events-none"></div>
-        <div className="absolute left-1/4 -bottom-32 w-80 h-80 rounded-full bg-[#225944]/10 blur-3xl pointer-events-none"></div>
-        
         <div className="max-w-5xl mx-auto flex flex-col items-center text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white text-[#225944] border border-[#E1E3DF] text-xs font-bold uppercase tracking-wider mb-4 shadow-xs">
             <span className="material-symbols-outlined text-[18px] text-[#225944]">support_agent</span>
@@ -141,7 +139,7 @@ export const SupportPage: React.FC = () => {
           </p>
 
           {/* Search Input Container */}
-          <div className="w-full max-w-3xl bg-white rounded-full p-2 shadow-xl border border-[#E1E3DF] flex items-center gap-2">
+          <div className="w-full max-w-3xl bg-white rounded-full p-2 shadow-sm border border-[#E1E3DF] flex items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-[#F3F4F0] flex items-center justify-center shrink-0 text-[#225944]">
               <span className="material-symbols-outlined text-[24px]">search</span>
             </div>
@@ -232,6 +230,109 @@ export const SupportPage: React.FC = () => {
               <span className="ml-1 px-1.5 py-0.5 rounded bg-black/10 text-[10px] tracking-tight font-bold">&lt;5 mins</span>
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* Official Communication & Support Channels */}
+      <section className="w-full max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* 1. Community Support */}
+          <Link
+            to="/community"
+            className="group bg-white rounded-2xl p-6 border border-[#E1E3DF] hover:border-[#225944] shadow-xs hover:shadow-lg transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-[#225944]/10 text-[#225944] flex items-center justify-center mb-4 group-hover:bg-[#225944] group-hover:text-white transition-colors">
+                <span className="material-symbols-outlined text-[26px]">forum</span>
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-extrabold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Community Support
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  Active
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-[#225944] mb-1">
+                Chat with the EaseHub community
+              </p>
+              <p className="text-xs text-[#6B6B63] leading-relaxed">
+                Connect with fellow student residents across Bhilai &amp; Durg. Ask questions about hostels, food, and campus life.
+              </p>
+            </div>
+            <div className="pt-4 mt-4 border-t border-[#EDEEEB] flex items-center justify-between text-xs font-bold text-[#225944]">
+              <span>Enter Community Chat</span>
+              <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
+                arrow_forward
+              </span>
+            </div>
+          </Link>
+
+          {/* 2. Contact Admin Private Chat */}
+          <Link
+            to="/support/chat"
+            className="group bg-white rounded-2xl p-6 border border-[#E1E3DF] hover:border-[#225944] shadow-xs hover:shadow-lg transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-[#EECA3A]/30 text-[#171A18] flex items-center justify-center mb-4 group-hover:bg-[#EECA3A] transition-colors">
+                <span className="material-symbols-outlined text-[26px]">support_agent</span>
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-extrabold text-[#171A18] group-hover:text-[#225944] transition-colors">
+                  Contact Admin
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-[#EECA3A]/40 text-[#171A18] text-[10px] font-bold">
+                  1-on-1
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-[#225944] mb-1">
+                Private support chat with EaseHub
+              </p>
+              <p className="text-xs text-[#6B6B63] leading-relaxed">
+                Direct private help with EaseHub central coordinators for booking deposits, room transfers, and verified complaints.
+              </p>
+            </div>
+            <div className="pt-4 mt-4 border-t border-[#EDEEEB] flex items-center justify-between text-xs font-bold text-[#225944]">
+              <span>Start Admin Chat</span>
+              <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
+                arrow_forward
+              </span>
+            </div>
+          </Link>
+
+          {/* 3. WhatsApp Direct Helpline */}
+          <a
+            href="https://wa.me/916201614778?text=Hi%20EaseHub%20Support,%20I%20need%20help%20with%20my%20stay"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group bg-white rounded-2xl p-6 border border-[#E1E3DF] hover:border-[#225944] shadow-xs hover:shadow-lg transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <span className="material-symbols-outlined text-[26px]">chat</span>
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-extrabold text-[#171A18] group-hover:text-emerald-700 transition-colors">
+                  WhatsApp Support
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  +91 6201614778
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-emerald-800 mb-1">
+                Chat on WhatsApp
+              </p>
+              <p className="text-xs text-[#6B6B63] leading-relaxed">
+                Our main 24/7 instant channel for quick queries, landlord contacts, urgent room holds, and field assistance.
+              </p>
+            </div>
+            <div className="pt-4 mt-4 border-t border-[#EDEEEB] flex items-center justify-between text-xs font-bold text-emerald-800">
+              <span>Chat on WhatsApp</span>
+              <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
+                open_in_new
+              </span>
+            </div>
+          </a>
         </div>
       </section>
 
@@ -604,9 +705,7 @@ export const SupportPage: React.FC = () => {
 
       {/* Still Need Help? Raised CTA & Ticket Creation Banner */}
       <section className="w-full bg-[#F3F4F0] py-12 px-4 sm:px-6 lg:px-8 border-t border-b border-[#E1E3DF]">
-        <div className="max-w-5xl mx-auto bg-white rounded-2xl p-6 sm:p-10 shadow-md flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden border border-[#E1E3DF]">
-          <div className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-[#EECA3A]/10 blur-2xl pointer-events-none"></div>
-          
+        <div className="max-w-5xl mx-auto bg-white rounded-2xl p-6 sm:p-10 shadow-xs flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden border border-[#E1E3DF]">
           <div className="flex flex-col max-w-xl relative z-10">
             <div className="flex items-center gap-2 text-[#225944] mb-2">
               <span className="material-symbols-outlined text-[22px]">contact_support</span>

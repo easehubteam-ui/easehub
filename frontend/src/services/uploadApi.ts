@@ -1,8 +1,11 @@
-import { api } from './api';
+import { storageApi } from './storageApi';
 
 export const uploadApi = {
-  uploadImage: async (payload: { base64?: string; image?: string; filename?: string }) => {
-    const res = await api.post('/upload', payload);
-    return res.data?.data?.url || res.data?.url || '';
+  uploadImage: async (payload: { file?: File | Blob; base64?: string; image?: string; filename?: string }) => {
+    if (payload.file) {
+      const res = await storageApi.uploadPropertyImage(payload.file, payload.filename || 'upload.jpg');
+      return res.url || '';
+    }
+    return '';
   },
 };

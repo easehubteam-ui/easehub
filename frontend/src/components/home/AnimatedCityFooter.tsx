@@ -83,13 +83,6 @@ export const AnimatedCityFooter: React.FC = () => {
             />
           </div>
         </div>
-
-        {/* D. Animated Wind Sway on Foreground Foliage */}
-        <div className="absolute bottom-8 left-0 w-full h-14 pointer-events-none z-25 overflow-hidden flex justify-around opacity-40">
-          <div className="w-10 h-10 rounded-full bg-[#225944]/20 blur-[1px] animate-tree-sway-slow"></div>
-          <div className="w-14 h-14 rounded-full bg-[#225944]/25 blur-[1px] animate-tree-sway-fast"></div>
-          <div className="w-12 h-12 rounded-full bg-[#4F7A65]/20 blur-[1px] animate-tree-sway-slow"></div>
-        </div>
       </div>
 
       {/* Inlined CSS Keyframe Styles for Seamless Continuous Motion */}
@@ -178,30 +171,6 @@ export const AnimatedCityFooter: React.FC = () => {
         }
         .animate-bird-flap-delay {
           animation: birdFlap 0.6s ease-in-out infinite 0.2s;
-        }
-
-        /* Gentle Wind Sway on Trees */
-        @keyframes treeSwaySlow {
-          0%, 100% {
-            transform: rotate(0deg) scale(1);
-          }
-          50% {
-            transform: rotate(2.5deg) scale(1.02);
-          }
-        }
-        @keyframes treeSwayFast {
-          0%, 100% {
-            transform: rotate(0deg) scale(1);
-          }
-          50% {
-            transform: rotate(-3deg) scale(1.03);
-          }
-        }
-        .animate-tree-sway-slow {
-          animation: treeSwaySlow 6s ease-in-out infinite;
-        }
-        .animate-tree-sway-fast {
-          animation: treeSwayFast 4.5s ease-in-out infinite 1s;
         }
 
         /* Reduced Motion Accessibility Override */

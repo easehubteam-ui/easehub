@@ -15,6 +15,7 @@
     "seed:user": "cd backend && npm run seed:user"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "pg": "^8.23.1"
   }
 }

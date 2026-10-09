@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-
-type MethodType = 'phone' | 'email';
+import { isAdminRole, getFirstAllowedAdminPath } from '../../types';
 
 export const LoginPage: React.FC = () => {
   const location = useLocation();
   const initialError: string | null = (location.state as any)?.error || null;
-
-  const [method, setMethod] = useState<MethodType>('email');
-
-  // Form states
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpValues, setOtpValues] = useState(['', '', '', '']);
-  const [otpSent, setOtpSent] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,21 +14,10 @@ export const LoginPage: React.FC = () => {
 
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
   const { user, isAuthenticated, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-
-  const handleGoogleSubmit = async () => {
-    try {
-      setIsGoogleLoading(true);
-      setErrorMsg(null);
-      await loginWithGoogle();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Google sign-in failed. Please try again.');
-      setIsGoogleLoading(false);
-    }
-  };
 
   const getTargetUrl = () => {
     let target = location.state?.from?.pathname || location.state?.from || '/dashboard';
@@ -49,68 +30,22 @@ export const LoginPage: React.FC = () => {
   // Auto-redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'admin' || user.role === 'superadmin') {
-        navigate('/admin/dashboard', { replace: true });
+      if (isAdminRole(user.role)) {
+        navigate(getFirstAllowedAdminPath(user), { replace: true });
       } else {
         navigate(getTargetUrl(), { replace: true });
       }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user]);
 
-  const handleSendOtp = () => {
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-    setErrorMsg(null);
-    setOtpSent(true);
-  };
-
-  const handleOtpBoxChange = (index: number, value: string) => {
-    if (value.length > 1) value = value.slice(-1);
-    const newOtp = [...otpValues];
-    newOtp[index] = value;
-    setOtpValues(newOtp);
-
-    if (value && index < 3) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-
-    if (!otpSent) {
-      setOtpSent(true);
-      return;
-    }
-
-    const enteredOtp = otpValues.join('');
-    if (enteredOtp.length < 4) {
-      setErrorMsg('Please enter the complete 4-digit OTP code.');
-      return;
-    }
-
+  const handleGoogleSubmit = async () => {
     try {
-      setIsSubmitting(true);
-      const loggedUser = await login({ phone: cleanPhone, password: 'EaseHub@2026!User' });
-      if (loggedUser) {
-        navigate(getTargetUrl(), { replace: true });
-      } else {
-        setErrorMsg('Authentication failed. Invalid mobile credentials.');
-      }
+      setIsGoogleLoading(true);
+      setErrorMsg(null);
+      await loginWithGoogle();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Mobile OTP login failed. Please verify mobile number.');
-    } finally {
-      setIsSubmitting(false);
+      setErrorMsg(err.message || 'Google sign-in failed. Please try again.');
+      setIsGoogleLoading(false);
     }
   };
 
@@ -126,7 +61,11 @@ export const LoginPage: React.FC = () => {
       setIsSubmitting(true);
       const loggedUser = await login({ email: email.trim(), password });
       if (loggedUser) {
-        navigate(getTargetUrl(), { replace: true });
+        if (isAdminRole(loggedUser.role)) {
+          navigate(getFirstAllowedAdminPath(loggedUser), { replace: true });
+        } else {
+          navigate(getTargetUrl(), { replace: true });
+        }
       } else {
         setErrorMsg('Invalid email or password. Please try again.');
       }
@@ -140,7 +79,7 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-[calc(100vh-5rem)] w-full bg-[#F8FAF6] text-[#191C1A] font-sans antialiased flex flex-col justify-between selection:bg-[#EECA3A] selection:text-[#171A18]">
       <main className="flex-1 p-3 sm:p-4 md:p-6 flex items-center justify-center relative">
-        <div className="relative w-full max-w-[1150px] flex flex-col justify-center">
+        <div className="relative w-full max-w-[1100px] flex flex-col justify-center">
           {/* Ambient Backdrop Flares */}
           <div className="absolute -top-12 -left-16 w-72 h-72 rounded-full bg-[#225944]/15 blur-3xl pointer-events-none"></div>
           <div className="absolute top-1/2 -right-20 w-80 h-80 rounded-full bg-[#EECA3A]/20 blur-3xl pointer-events-none"></div>
@@ -173,192 +112,101 @@ export const LoginPage: React.FC = () => {
                       <span className="material-symbols-outlined text-[18px] text-rose-600 shrink-0">error</span>
                       <span>{errorMsg}</span>
                     </div>
-                    {errorMsg.includes('Admin Login') && (
+                    {errorMsg.includes('Admin') && (
                       <Link
                         to="/admin/login"
                         className="mt-1 self-start inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#225944] text-white text-xs font-extrabold hover:bg-[#184232] transition shadow-xs"
                       >
-                        <span>Admin Login</span>
+                        <span>Go to Admin Login</span>
                         <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                       </Link>
                     )}
                   </div>
                 )}
 
-                {/* Login Method Segmented Control (Phone / Email) */}
-                <div className="flex border-b border-[#E5E1D6] mb-6">
-                  <button
-                    type="button"
-                    onClick={() => { setMethod('email'); setErrorMsg(null); }}
-                    className={`pb-3 px-4 text-xs font-extrabold transition-all border-b-2 ${
-                      method === 'email'
-                        ? 'border-[#225944] text-[#225944]'
-                        : 'border-transparent text-[#6B6B63] hover:text-[#191C1A]'
-                    }`}
-                  >
-                    Email &amp; Password
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setMethod('phone'); setErrorMsg(null); }}
-                    className={`pb-3 px-4 text-xs font-extrabold transition-all border-b-2 ${
-                      method === 'phone'
-                        ? 'border-[#225944] text-[#225944]'
-                        : 'border-transparent text-[#6B6B63] hover:text-[#191C1A]'
-                    }`}
-                  >
-                    Mobile OTP Login
-                  </button>
-                </div>
-
-                {/* METHOD 1: EMAIL & PASSWORD FORM */}
-                {method === 'email' && (
-                  <form onSubmit={handleEmailSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-extrabold text-[#191C1A] mb-1">
-                        Email Address
-                      </label>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3.5 top-3 text-[#6B6B63] text-[18px]">
-                          mail
-                        </span>
-                        <input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="student@bitdurg.ac.in"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs font-bold text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
-                        />
-                      </div>
+                {/* EMAIL & PASSWORD AUTHENTICATION FORM */}
+                <form onSubmit={handleEmailSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-[#191C1A] mb-1">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-3.5 top-3 text-[#6B6B63] text-[18px]">
+                        mail
+                      </span>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="student@bitdurg.ac.in"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs font-bold text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+                      />
                     </div>
+                  </div>
 
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-extrabold text-[#191C1A]">Password</label>
-                        <Link to="/forgot-password" className="text-[11px] font-bold text-[#225944] hover:underline">
-                          Forgot password?
-                        </Link>
-                      </div>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3.5 top-3 text-[#6B6B63] text-[18px]">
-                          lock
-                        </span>
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••••••"
-                          className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs font-bold text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 top-3 text-[#6B6B63] hover:text-[#191C1A]"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            {showPassword ? 'visibility_off' : 'visibility'}
-                          </span>
-                        </button>
-                      </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-extrabold text-[#191C1A]">Password</label>
+                      <Link to="/forgot-password" className="text-[11px] font-bold text-[#225944] hover:underline">
+                        Forgot password?
+                      </Link>
                     </div>
-
-                    <div className="flex items-center justify-between pt-1">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B63] font-semibold">
-                        <input
-                          type="checkbox"
-                          checked={keepSignedIn}
-                          onChange={(e) => setKeepSignedIn(e.target.checked)}
-                          className="rounded text-[#225944] focus:ring-[#225944]"
-                        />
-                        <span>Remember me on this browser</span>
-                      </label>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full py-3 rounded-xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs transition shadow-md flex items-center justify-center gap-2"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                          <span>Signing in...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Sign In to EaseHub</span>
-                          <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                        </>
-                      )}
-                    </button>
-                  </form>
-                )}
-
-                {/* METHOD 2: MOBILE OTP FORM */}
-                {method === 'phone' && (
-                  <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-extrabold text-[#191C1A] mb-1">
-                        Mobile Number
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="flex items-center justify-center px-3 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs font-bold text-[#191C1A]">
-                          +91
-                        </div>
-                        <input
-                          type="tel"
-                          maxLength={10}
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                          placeholder="98271 00000"
-                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs font-bold text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
-                        />
-                      </div>
-                    </div>
-
-                    {!otpSent ? (
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-3.5 top-3 text-[#6B6B63] text-[18px]">
+                        lock
+                      </span>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs font-bold text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+                      />
                       <button
                         type="button"
-                        onClick={handleSendOtp}
-                        className="w-full py-3 rounded-xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs transition shadow-md flex items-center justify-center gap-2"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-3 text-[#6B6B63] hover:text-[#191C1A]"
                       >
-                        <span>Send 4-Digit OTP</span>
-                        <span className="material-symbols-outlined text-[16px]">sms</span>
+                        <span className="material-symbols-outlined text-[18px]">
+                          {showPassword ? 'visibility_off' : 'visibility'}
+                        </span>
                       </button>
-                    ) : (
-                      <div className="space-y-4 animate-in fade-in">
-                        <div>
-                          <label className="block text-xs font-extrabold text-[#191C1A] mb-2">
-                            Enter OTP sent to +91 {phoneNumber}
-                          </label>
-                          <div className="flex justify-between gap-2 max-w-[240px]">
-                            {otpValues.map((digit, idx) => (
-                              <input
-                                key={idx}
-                                id={`otp-${idx}`}
-                                type="text"
-                                maxLength={1}
-                                value={digit}
-                                onChange={(e) => handleOtpBoxChange(idx, e.target.value)}
-                                className="w-11 h-11 text-center font-extrabold text-lg rounded-xl bg-[#F3F4F0] border border-[#225944] focus:ring-2 focus:ring-[#225944]"
-                              />
-                            ))}
-                          </div>
-                        </div>
+                    </div>
+                  </div>
 
-                        <button
-                          type="submit"
-                          disabled={isSubmitting}
-                          className="w-full py-3 rounded-xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs transition shadow-md flex items-center justify-center gap-2"
-                        >
-                          {isSubmitting ? 'Verifying OTP...' : 'Verify & Continue'}
-                        </button>
-                      </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B63] font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={keepSignedIn}
+                        onChange={(e) => setKeepSignedIn(e.target.checked)}
+                        className="rounded text-[#225944] focus:ring-[#225944]"
+                      />
+                      <span>Remember me on this browser</span>
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3 rounded-xl bg-[#225944] hover:bg-[#184232] text-white font-extrabold text-xs transition shadow-md flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Signing in...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Sign In to EaseHub</span>
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      </>
                     )}
-                  </form>
-                )}
+                  </button>
+                </form>
+
                 {/* Google OAuth Section */}
                 <div className="relative my-6 text-center">
                   <div className="absolute inset-0 flex items-center">
@@ -404,7 +252,6 @@ export const LoginPage: React.FC = () => {
                     </>
                   )}
                 </button>
-
               </div>
 
               {/* Bottom Footer Signup Hint & Admin Portal Link */}

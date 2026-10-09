@@ -1,61 +1,91 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { AdminPermissionKey } from '../../types';
 
 interface AdminSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface SidebarNavItem {
+  label: string;
+  path: string;
+  icon: string;
+  permission?: AdminPermissionKey;
+  superAdminOnly?: boolean;
+}
+
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { logout, isSuperAdmin, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
-    navigate('/admin/login');
+    navigate('/admin/login', { replace: true });
   };
 
-  const navCategories = [
+  const navCategories: { group: string; items: SidebarNavItem[] }[] = [
     {
       group: 'Overview',
-      items: [{ label: 'Dashboard Overview', path: '/admin/dashboard', icon: 'dashboard' }],
+      items: [
+        {
+          label: 'Dashboard Overview',
+          path: '/admin/dashboard',
+          icon: 'dashboard',
+          permission: 'dashboard',
+        },
+      ],
     },
     {
       group: 'Operations',
       items: [
-        { label: 'Bookings', path: '/admin/bookings', icon: 'calendar_month' },
-        { label: 'Payments', path: '/admin/payments', icon: 'payments' },
-        { label: 'Users', path: '/admin/users', icon: 'group' },
-        { label: 'Vendors', path: '/admin/vendors', icon: 'storefront' },
+        { label: 'Bookings', path: '/admin/bookings', icon: 'calendar_month', permission: 'bookings' },
+        { label: 'Payments', path: '/admin/payments', icon: 'payments', permission: 'payments' },
+        { label: 'Users', path: '/admin/users', icon: 'group', permission: 'users' },
+        { label: 'Vendors', path: '/admin/vendors', icon: 'storefront', permission: 'vendors' },
       ],
     },
     {
       group: 'Services',
       items: [
-        { label: 'PG / Hostels', path: '/admin/pg', icon: 'night_shelter' },
-        { label: 'Meals & Mess', path: '/admin/meals', icon: 'restaurant' },
-        { label: 'Laundry', path: '/admin/laundry', icon: 'local_laundry_service' },
-        { label: 'Extra Services', path: '/admin/services', icon: 'handyman' },
+        { label: 'PG / Hostels', path: '/admin/pg', icon: 'night_shelter', permission: 'pg' },
+        { label: 'Meals & Mess', path: '/admin/meals', icon: 'restaurant', permission: 'meals' },
+        { label: 'Laundry', path: '/admin/laundry', icon: 'local_laundry_service', permission: 'laundry' },
+        { label: 'Extra Services', path: '/admin/services', icon: 'handyman', permission: 'services' },
       ],
     },
     {
       group: 'Customer',
       items: [
-        { label: 'Reviews', path: '/admin/reviews', icon: 'star' },
-        { label: 'Complaints', path: '/admin/complaints', icon: 'support_agent' },
-        { label: 'Notifications', path: '/admin/notifications', icon: 'notifications' },
+        { label: 'Community Chat', path: '/admin/community', icon: 'forum', permission: 'community' },
+        { label: 'Live Support & Chat', path: '/admin/support', icon: 'chat', permission: 'support' },
+        { label: 'Reviews', path: '/admin/reviews', icon: 'star', permission: 'reviews' },
+        { label: 'Complaints', path: '/admin/complaints', icon: 'support_agent', permission: 'complaints' },
+        { label: 'Notifications', path: '/admin/notifications', icon: 'notifications', permission: 'notifications' },
       ],
     },
     {
       group: 'Business & System',
       items: [
-        { label: 'Reports & Revenue', path: '/admin/reports', icon: 'bar_chart' },
-        { label: 'System Settings', path: '/admin/settings', icon: 'settings' },
-        { label: 'Activity Logs', path: '/admin/activity-logs', icon: 'receipt_long' },
+        { label: 'Sub Admin', path: '/admin/subadmins', icon: 'admin_panel_settings', superAdminOnly: true },
+        { label: 'Reports & Revenue', path: '/admin/reports', icon: 'bar_chart', permission: 'reports' },
+        { label: 'System Settings', path: '/admin/settings', icon: 'settings', permission: 'settings' },
+        { label: 'Activity Logs', path: '/admin/activity-logs', icon: 'receipt_long', permission: 'activity_logs' },
       ],
     },
   ];
+
+  const visibleCategories = navCategories
+    .map((cat) => ({
+      ...cat,
+      items: cat.items.filter((item) => {
+        if (item.superAdminOnly) return isSuperAdmin;
+        if (item.permission) return hasPermission(item.permission);
+        return true;
+      }),
+    }))
+    .filter((cat) => cat.items.length > 0);
 
   return (
     <>
@@ -84,7 +114,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-lg text-[#225944] tracking-tight">EaseHub</span>
                     <span className="px-1.5 py-0.5 rounded-full bg-[#EECA3A] text-[#171A18] text-[9px] font-extrabold uppercase">
-                      ADMIN
+                      {isSuperAdmin ? 'SUPER ADMIN' : 'SUB ADMIN'}
                     </span>
                   </div>
                   <span className="text-[11px] text-[#6B6B63] font-medium">Campus Living Suite</span>
@@ -99,7 +129,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
 
           {/* Nav Categories List */}
           <nav className="flex-1 overflow-y-auto pr-1 py-3 space-y-3 custom-scrollbar">
-            {navCategories.map((cat) => (
+            {visibleCategories.map((cat) => (
               <div key={cat.group} className="space-y-0.5">
                 {cat.group !== 'Overview' && (
                   <span className="px-3 py-1 text-[10px] font-extrabold uppercase text-[#6B6B63] tracking-wider block">

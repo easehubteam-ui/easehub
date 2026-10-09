@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { isAdminRole, getFirstAllowedAdminPath } from '../../types';
 import { bookingApi } from '../../services/bookingApi';
 import { savedApi } from '../../services/savedApi';
 
@@ -71,13 +72,13 @@ export const AccountPage: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role === 'admin' || user.role === 'superadmin') {
-    return <Navigate to="/admin/dashboard" replace />;
+  if (isAdminRole(user.role)) {
+    return <Navigate to={getFirstAllowedAdminPath(user)} replace />;
   }
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {

@@ -25,8 +25,32 @@ export interface BookingRecord {
 export const bookingApi = {
   getBookings: async () => {
     try {
-      const { data } = await insforge.database.from('bookings').select('*');
-      return Array.isArray(data) ? data : [];
+      // Try to join users table for customer info
+      const { data, error } = await insforge.database
+        .from('bookings')
+        .select(`
+          *,
+          users:user_id (
+            id,
+            name,
+            email,
+            phone,
+            city,
+            address
+          ),
+          services:service_id (
+            id,
+            name,
+            service_type,
+            category
+          )
+        `);
+      if (error || !Array.isArray(data)) {
+        // Fallback: plain select
+        const { data: plain } = await insforge.database.from('bookings').select('*');
+        return Array.isArray(plain) ? plain : [];
+      }
+      return data;
     } catch (err) {
       return [];
     }

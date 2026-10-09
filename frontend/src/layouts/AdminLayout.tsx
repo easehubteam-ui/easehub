@@ -21,6 +21,9 @@ export const AdminLayout: React.FC = () => {
     if (path === '/admin/laundry') return 'Laundry Service Management';
     if (path === '/admin/services') return 'Maintenance & Services';
     if (path === '/admin/reviews') return 'Ratings & Reviews Moderation';
+    if (path === '/admin/community') return 'Community Chat & Moderation';
+    if (path === '/admin/support') return 'Support Desk & Community Moderation';
+    if (path === '/admin/subadmins') return 'Sub Admin Management';
     if (path === '/admin/complaints') return 'Complaints & Support Tickets';
     if (path === '/admin/notifications') return 'Broadcast Notifications';
     if (path === '/admin/reports') return 'Reports & Analytics';

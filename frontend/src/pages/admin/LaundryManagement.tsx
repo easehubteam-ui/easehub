@@ -101,12 +101,14 @@ export const LaundryManagement: React.FC = () => {
 
   const handleDeleteLaundry = async (p: LaundryPartner) => {
     if (window.confirm(`Are you sure you want to delete laundry partner "${p.name}"?`)) {
+      // Immediately remove from UI
+      setPartners((prev) => prev.filter((x) => x.id !== p.id));
       try {
         await laundryApi.delete(p.id);
-        await fetchPartners();
       } catch (err: any) {
         console.error('Failed to delete laundry partner:', err);
-        alert(err.message || 'Failed to delete laundry partner.');
+        alert(err.message || 'Failed to delete laundry partner. Refreshing...');
+        await fetchPartners(); // restore on error
       }
     }
   };

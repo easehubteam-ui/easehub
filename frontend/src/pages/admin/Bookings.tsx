@@ -3,6 +3,7 @@ import { bookingApi } from '../../services/bookingApi';
 
 interface OrderBooking {
   id: string;
+  _rawId?: string;  // actual DB UUID for delete/update operations
   timeAgo: string;
   timestamp: string;
   customerName: string;
@@ -37,31 +38,51 @@ export const Bookings: React.FC = () => {
     try {
       const list = await bookingApi.getBookings();
       if (Array.isArray(list)) {
-        const mapped: OrderBooking[] = list.map((b: any) => ({
-          id: b.bookingNumber || b._id || b.id,
-          timeAgo: 'Recently',
-          timestamp: b.createdAt ? new Date(b.createdAt).toLocaleString('en-IN') : '—',
-          customerName: b.userName || b.user?.fullName || b.user?.name || '—',
-          customerPhone: b.userPhone || b.user?.phone || '—',
-          customerCampus: b.user?.city || '—',
-          parentPhone: '—',
-          category: (b.serviceType as any) || 'PG Stay',
-          categoryLabel: b.serviceType || 'Service',
-          serviceName: b.roomType || b.serviceName || '—',
-          providerName: b.vendor || b.serviceName || '—',
-          techOrDriver: b.vendor ? `Assigned: ${b.vendor}` : 'Pending Assignment',
-          providerPhone: '—',
-          distanceEta: '—',
-          address: b.address || '—',
-          roomNode: b.roomType || '—',
-          amount: b.amount || 0,
-          paymentStatus: b.paymentStatus === 'verified' ? 'Paid UPI' : 'Escrow Held',
-          status: (b.status || 'pending') as any,
-          studentNote: b.description || '—',
-          breakdown: [{ label: 'Total Amount:', amount: `₹${b.amount || 0}` }],
-          timeline: [{ title: `Status: ${b.status || 'pending'}`, time: b.createdAt ? new Date(b.createdAt).toLocaleTimeString() : '—', done: true }],
-          adminNotes: [],
-        }));
+        const mapped: OrderBooking[] = list.map((b: any) => {
+          // Support both joined object (b.users) and flat columns (b.user_name)
+          const joinedUser = b.users || b.user || null;
+          const joinedService = b.services || b.service || null;
+
+          const customerName =
+            joinedUser?.name || b.user_name || b.userName || b.customer_name || '—';
+          const customerPhone =
+            joinedUser?.phone || b.user_phone || b.userPhone || '—';
+          const customerCity =
+            joinedUser?.city || joinedUser?.address || b.city || '—';
+          const serviceName =
+            joinedService?.name || b.service_name || b.serviceName || b.notes || b.description || '—';
+          const serviceType =
+            joinedService?.service_type || joinedService?.category || b.booking_type || b.serviceType || 'Service';
+          const providerName =
+            b.vendor || b.provider_name || b.providerName || serviceName || '—';
+
+          return {
+            id: b.booking_number || b.bookingNumber || b._id || b.id,
+            _rawId: b.id || b._id,
+            timeAgo: 'Recently',
+            timestamp: b.created_at ? new Date(b.created_at).toLocaleString('en-IN') : '—',
+            customerName,
+            customerPhone,
+            customerCampus: customerCity,
+            parentPhone: '—',
+            category: serviceType as any,
+            categoryLabel: serviceType,
+            serviceName,
+            providerName,
+            techOrDriver: providerName !== '—' ? `Assigned: ${providerName}` : 'Pending Assignment',
+            providerPhone: '—',
+            distanceEta: '—',
+            address: b.address || joinedUser?.address || '—',
+            roomNode: b.room_type || b.roomType || '—',
+            amount: Number(b.amount) || 0,
+            paymentStatus: b.payment_status === 'verified' || b.paymentStatus === 'verified' ? 'Paid UPI' : 'Escrow Held',
+            status: ((b.status || 'pending') as string).toLowerCase() as any,
+            studentNote: b.notes || b.description || '—',
+            breakdown: [{ label: 'Total Amount:', amount: `₹${b.amount || 0}` }],
+            timeline: [{ title: `Status: ${(b.status || 'pending').toLowerCase()}`, time: b.created_at ? new Date(b.created_at).toLocaleTimeString() : '—', done: true }],
+            adminNotes: [],
+          };
+        });
         setOrders(mapped);
         if (mapped.length > 0) {
           setSelectedOrder(mapped[0]);
@@ -118,6 +139,21 @@ export const Bookings: React.FC = () => {
     document.body.removeChild(link);
 
     setToastMsg('Exported Central Bookings CSV successfully!');
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const handleDeleteOrder = async (order: OrderBooking) => {
+    if (!window.confirm(`Delete booking ${order.id}? This cannot be undone.`)) return;
+    // Immediately remove from UI
+    setOrders((prev) => prev.filter((o) => o.id !== order.id));
+    if (selectedOrder?.id === order.id) setSelectedOrder(null);
+    try {
+      const deleteId = order._rawId || order.id;
+      await bookingApi.deleteBooking(deleteId);
+      setToastMsg(`Booking ${order.id} deleted successfully.`);
+    } catch {
+      setToastMsg('Booking removed from view. DB delete may need retry.');
+    }
     setTimeout(() => setToastMsg(null), 3000);
   };
 
@@ -542,8 +578,19 @@ export const Bookings: React.FC = () => {
                                 className={`p-1.5 rounded-lg transition ${
                                   isSelected ? 'bg-[#02412e] text-white' : 'text-[#707973] hover:bg-[#e1e3df]'
                                 }`}
+                                title="View details"
                               >
                                 <span className="material-symbols-outlined text-[16px]">visibility</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteOrder(row);
+                                }}
+                                className="p-1.5 rounded-lg transition text-rose-500 hover:bg-rose-50"
+                                title="Delete booking"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
                               </button>
                             </div>
                           </td>

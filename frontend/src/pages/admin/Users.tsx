@@ -3,6 +3,7 @@ import { DataTable, Column } from '../../components/admin/DataTable';
 import { StatusBadge } from '../../components/admin/StatusBadge';
 import { userApi, UserRecord } from '../../services/userApi';
 import { useAuth } from '../../context/AuthContext';
+import { UserRole, isAdminRole, isSuperAdminRole } from '../../types';
 
 interface UserItem {
   id: string;
@@ -10,14 +11,14 @@ interface UserItem {
   name: string;
   email: string;
   phone: string;
-  role: 'customer' | 'vendor' | 'admin' | 'superadmin';
+  role: UserRole;
   isActive: boolean;
   college?: string;
   joinedAt: string;
 }
 
 export const Users: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isSuperAdmin } = useAuth();
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -89,14 +90,18 @@ export const Users: React.FC = () => {
       return;
     }
 
-    const res = await userApi.deleteUser(userToDelete.id);
+    // Immediately remove from UI
+    const deletedUser = userToDelete;
+    setUsers((prev) => prev.filter((u) => u.id !== deletedUser.id));
+    setUserToDelete(null);
+
+    const res = await userApi.deleteUser(deletedUser.id);
     if (res.success) {
-      triggerToast(res.message || `User ${userToDelete.name} deleted.`, 'success');
-      setUserToDelete(null);
-      loadUsers();
+      triggerToast(res.message || `User ${deletedUser.name} deleted.`, 'success');
     } else {
-      triggerToast(res.message || `Failed to delete ${userToDelete.name}.`, 'error');
-      setUserToDelete(null);
+      // Restore on failure
+      triggerToast(res.message || `Failed to delete ${deletedUser.name}. Refreshing list.`, 'error');
+      loadUsers();
     }
   };
 
@@ -136,6 +141,8 @@ export const Users: React.FC = () => {
       header: 'Actions',
       render: (item) => {
         const isSelf = currentUser && (currentUser.id === item.id || currentUser.email === item.email);
+        const isTargetAdmin = isAdminRole(item.role);
+        const canModifyRow = !isSelf && (isSuperAdmin || !isTargetAdmin) && !isSuperAdminRole(item.role);
 
         return (
           <div className="flex items-center gap-1.5">
@@ -150,7 +157,7 @@ export const Users: React.FC = () => {
               <span className="material-symbols-outlined text-[16px]">visibility</span>
             </button>
 
-            {!isSelf && (
+            {canModifyRow && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -167,7 +174,7 @@ export const Users: React.FC = () => {
               </button>
             )}
 
-            {!isSelf && (
+            {canModifyRow && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

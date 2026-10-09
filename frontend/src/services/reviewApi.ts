@@ -1,5 +1,4 @@
 import { insforge } from './insforge';
-import { api } from './api';
 
 export interface ReviewItem {
   id?: string;
@@ -16,6 +15,9 @@ export interface ReviewItem {
   comment?: string;
   reviewQuote?: string;
   videoUrl?: string;
+  video_url?: string;
+  thumbnailUrl?: string;
+  thumbnail_url?: string;
   videoDuration?: string;
   status?: 'approved' | 'pending' | 'rejected';
   is_published?: boolean;
@@ -26,65 +28,41 @@ export interface ReviewItem {
 }
 
 export const reviewApi = {
-  // Get all public/approved reviews
+  // Get all public/approved reviews directly from PostgreSQL
   getReviews: async (): Promise<ReviewItem[]> => {
-    // 1. Try Express backend API
     try {
-      const res = await api.get('/reviews');
-      if (res.data?.data?.reviews && Array.isArray(res.data.data.reviews)) {
-        return res.data.data.reviews;
-      }
-    } catch {}
+      const { data, error } = await insforge.database
+        .from('reviews')
+        .select('*')
+        .eq('is_published', true);
 
-    // 2. Try InsForge Direct
-    try {
-      const { data } = await insforge.database.from('reviews').select('*').eq('is_published', true);
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
+      if (error || !Array.isArray(data)) {
+        return [];
       }
-    } catch {}
-
-    return [];
+      return data;
+    } catch {
+      return [];
+    }
   },
 
   // Get all reviews for admin moderation
   getAdminReviews: async (): Promise<ReviewItem[]> => {
-    // 1. Try Express backend admin endpoint
     try {
-      const res = await api.get('/reviews/admin/all');
-      if (res.data?.data?.reviews && Array.isArray(res.data.data.reviews)) {
-        return res.data.data.reviews;
-      }
-    } catch {}
+      const { data, error } = await insforge.database
+        .from('reviews')
+        .select('*');
 
-    // 2. Try regular endpoint with all=true
-    try {
-      const res = await api.get('/reviews?all=true');
-      if (res.data?.data?.reviews && Array.isArray(res.data.data.reviews)) {
-        return res.data.data.reviews;
+      if (error || !Array.isArray(data)) {
+        return [];
       }
-    } catch {}
-
-    // 3. Try InsForge database
-    try {
-      const { data } = await insforge.database.from('reviews').select('*');
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
-      }
-    } catch {}
-
-    return [];
+      return data;
+    } catch {
+      return [];
+    }
   },
 
   // Update review status (approve / reject)
   updateStatus: async (id: string, status: 'approved' | 'pending' | 'rejected'): Promise<any> => {
-    // 1. Try Express backend
-    try {
-      const res = await api.patch(`/reviews/${id}/status`, { status });
-      if (res.data?.success) return res.data;
-    } catch {}
-
-    // 2. Try InsForge direct
     try {
       const { data, error } = await insforge.database
         .from('reviews')
@@ -98,13 +76,6 @@ export const reviewApi = {
 
   // Delete review
   deleteReview: async (id: string): Promise<any> => {
-    // 1. Try Express backend
-    try {
-      const res = await api.delete(`/reviews/${id}`);
-      if (res.data?.success) return res.data;
-    } catch {}
-
-    // 2. Try InsForge direct
     try {
       const { error } = await insforge.database.from('reviews').delete().eq('id', id);
       return { success: !error };
@@ -127,29 +98,43 @@ export const reviewApi = {
     badgeTitle?: string;
     videoDuration?: string;
   }) => {
-    // 1. Try Express API
-    try {
-      const res = await api.post('/reviews', payload);
-      if (res.data?.success) return res.data.data?.review;
-    } catch {}
-
-    // 2. Fallback to InsForge function or table
     try {
       const { data: userRes } = await insforge.auth.getCurrentUser();
-      const userId = userRes?.user?.id || 'usr_resident';
+      let userId = userRes?.user?.id;
 
-      const insertPayload = {
-        userId,
-        bookingId: payload.bookingId || '',
+      if (!userId) {
+        throw new Error('You must be logged in to post a review.');
+      }
+
+      // Check if user has a corresponding row in public.users
+      const { data: profiles } = await insforge.database
+        .from('users')
+        .select('id, name')
+        .eq('auth_user_id', userId);
+
+      const dbUserId = profiles && profiles[0]?.id ? profiles[0].id : userId;
+      const authorName = profiles && profiles[0]?.name ? profiles[0].name : payload.userName || 'Resident';
+
+      const insertRecord = {
+        user_id: dbUserId,
+        booking_id: payload.bookingId || null,
         rating: payload.rating,
         comment: payload.comment || '',
-        userName: payload.userName || 'Student Resident',
-        targetName: payload.targetName || 'EaseHub Partner',
+        user_name: authorName,
+        target_name: payload.targetName || 'EaseHub Verified Partner',
+        service_type: payload.serviceType || 'PG',
         is_published: true,
+        status: 'approved'
       };
 
-      const res = await insforge.functions.invoke('create-review', { body: insertPayload });
-      return res.data;
+      const { data, error } = await insforge.database
+        .from('reviews')
+        .insert([insertRecord]);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data;
     } catch (err: any) {
       return { error: err.message };
     }

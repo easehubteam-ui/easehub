@@ -304,14 +304,14 @@ export const PGPage: React.FC = () => {
 
             {/* Right Decorative Hero Banner */}
             <div className="lg:col-span-4 hidden lg:block relative">
-              <div className="relative h-64 rounded-3xl overflow-hidden shadow-md border border-[#E5E1D6] bg-gradient-to-br from-[#225944] via-[#1a4535] to-[#123327] p-6 text-white flex flex-col justify-between">
+              <div className="relative h-64 rounded-3xl overflow-hidden shadow-xs border border-[#E5E1D6] bg-[#225944] p-6 text-white flex flex-col justify-between">
                 <div>
                   <span className="material-symbols-outlined text-4xl text-[#EECA3A]">domain</span>
-                  <h3 className="text-xl font-black mt-2">Verified Student PGs</h3>
+                  <h3 className="text-xl font-black mt-2 font-syne">Verified Student PGs</h3>
                   <p className="text-xs text-white/80 mt-1">Single & sharing rooms near Bhilai campuses</p>
                 </div>
                 
-                <div className="bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 text-xs font-bold text-[#EECA3A]">
+                <div className="bg-white/10 px-3 py-2 rounded-xl border border-white/15 text-xs font-bold text-[#EECA3A] inline-block w-fit">
                   Zero Brokerage • 100% Direct Booking
                 </div>
               </div>

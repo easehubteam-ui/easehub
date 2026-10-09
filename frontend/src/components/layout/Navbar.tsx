@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { isAdminRole, getFirstAllowedAdminPath } from '../../types';
 import { savedApi } from '../../services/savedApi';
 import { Heart, Menu, X, ChevronDown } from 'lucide-react';
 
@@ -88,11 +89,15 @@ export const Navbar: React.FC = () => {
     setUserDropdownOpen(false);
     setMobileMenuOpen(false);
     await logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
+  const homePath = isAuthenticated && user
+    ? (isAdminRole(user.role) ? getFirstAllowedAdminPath(user) : '/dashboard')
+    : '/';
+
   const navLinks = [
-    { path: '/', label: 'Home' },
+    { path: homePath, label: 'Home' },
     { path: '/pg', label: 'PG / Hostels' },
     { path: '/meals', label: 'Meals & Mess' },
     { path: '/laundry', label: 'Laundry' },
@@ -107,7 +112,7 @@ export const Navbar: React.FC = () => {
         className={`flex items-center justify-between h-full transition-all duration-300 ease-expo-out ${
           scrolled
             ? 'w-auto bg-transparent border-transparent shadow-none p-0 gap-2.5'
-            : 'w-full bg-white rounded-[24px] sm:rounded-[28px] border border-[#E5E1D6]/80 px-5 sm:px-8 lg:px-9 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.06)]'
+            : 'w-full bg-white rounded-2xl sm:rounded-full border border-[#E5E1D6] px-5 sm:px-8 lg:px-9 py-2 shadow-xs'
         }`}
         style={{ transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)' }}
       >
@@ -120,7 +125,7 @@ export const Navbar: React.FC = () => {
           }`}
           style={{ transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)' }}
         >
-          <Link to="/" className="flex items-center gap-3 shrink-0 group">
+          <Link to={homePath} className="flex items-center gap-3 shrink-0 group">
             <div className="w-10 h-10 rounded-xl bg-[#225944] text-[#EECA3A] flex items-center justify-center font-black text-xl shadow-xs border border-[#184232] group-hover:scale-105 transition-transform duration-200">
               E
             </div>
@@ -222,7 +227,7 @@ export const Navbar: React.FC = () => {
                     <p className="text-[10px] text-[#6B6B63] truncate">{user?.email}</p>
                   </div>
                   <Link
-                    to={user.role === 'admin' || user.role === 'superadmin' ? '/admin/dashboard' : '/dashboard'}
+                    to={isAdminRole(user.role) ? getFirstAllowedAdminPath(user) : '/dashboard'}
                     onClick={() => setUserDropdownOpen(false)}
                     className="block px-3 py-2 rounded-xl text-[#171A18] hover:bg-[#F7F5EF] transition-colors"
                   >

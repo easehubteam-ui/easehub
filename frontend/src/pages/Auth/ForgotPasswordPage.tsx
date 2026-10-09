@@ -27,7 +27,7 @@ export const ForgotPasswordPage: React.FC = () => {
         setError(res.message || 'Failed to process request.');
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'An error occurred while requesting password reset.');
+      setError(err?.message || err?.response?.data?.message || 'An error occurred while requesting password reset.');
     } finally {
       setIsSubmitting(false);
     }

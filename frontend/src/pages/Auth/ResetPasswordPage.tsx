@@ -43,7 +43,7 @@ export const ResetPasswordPage: React.FC = () => {
         setError(res.message || 'Failed to reset password.');
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Invalid or expired password reset token.');
+      setError(err?.message || err?.response?.data?.message || 'Invalid or expired password reset token.');
     } finally {
       setIsSubmitting(false);
     }

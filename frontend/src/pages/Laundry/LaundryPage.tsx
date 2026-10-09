@@ -188,27 +188,25 @@ export const LaundryPage: React.FC = () => {
 
               {/* Right Hero Visual Banner */}
               <div className="lg:col-span-5 relative flex items-center justify-end">
-                <div className="relative w-full max-w-md h-52 sm:h-60 rounded-2xl overflow-hidden shadow-lg border border-white/60 bg-[#225944] text-white p-6 flex flex-col justify-between">
-                  
-                  {/* Playful Handwritten Tag */}
-                  <div className="self-start -rotate-6 bg-[#EECA3A] text-[#171A18] px-3.5 py-1.5 rounded-lg font-handwriting text-xl sm:text-2xl font-bold shadow-md">
+                <div className="relative w-full max-w-md h-52 sm:h-60 rounded-2xl overflow-hidden shadow-sm border border-[#1b4636] bg-[#225944] text-white p-6 flex flex-col justify-between">
+                  {/* Clean Commercial Tag */}
+                  <div className="self-start bg-[#EECA3A] text-[#171A18] px-3.5 py-1.5 rounded-lg text-sm sm:text-base font-bold shadow-xs">
                     Leave the Laundry to Us
                   </div>
 
                   {/* Delivery Note */}
-                  <div className="bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl text-xs font-bold text-[#225944] flex items-center space-x-1.5 shadow-sm self-start">
+                  <div className="bg-white px-3.5 py-2 rounded-xl text-xs font-bold text-[#225944] flex items-center space-x-1.5 shadow-2xs self-start border border-[#E5E1D6]">
                     <svg className="w-4 h-4 text-[#225944]" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
                     </svg>
-                    <span>Fresh Folded Delivered</span>
+                    <span>Fresh • Folded • Delivered in 24h</span>
                   </div>
 
-                  {/* Side Sticker Note */}
-                  <div className="absolute top-4 right-4 bg-[#F7F5EF] border border-[#EECA3A] px-3 py-2 rounded-xl text-right shadow-xs rotate-3">
-                    <span className="block font-handwriting text-base sm:text-lg font-bold text-[#171A18] leading-none">More Time</span>
-                    <span className="block font-handwriting text-sm text-[#6B6B63]">For What Matters :)</span>
+                  {/* Side Metric Note */}
+                  <div className="absolute top-4 right-4 bg-[#F7F5EF] border border-[#E5E1D6] px-3 py-2 rounded-xl text-right shadow-2xs">
+                    <span className="block text-xs font-bold text-[#171A18] leading-none">Doorstep Pickup</span>
+                    <span className="block text-[11px] text-[#6B6B63] mt-0.5">Free Hostel Drop</span>
                   </div>
-
                 </div>
               </div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 
 type BadgeType = 
-  | 'customer' | 'vendor' | 'admin' | 'superadmin'
+  | 'customer' | 'vendor' | 'admin' | 'subadmin' | 'superadmin'
   | 'pending' | 'active' | 'approved' | 'completed' | 'delivered' | 'paid'
   | 'rejected' | 'failed' | 'blocked' | 'cancelled' | 'open' | 'in_progress' | 'resolved';
 
@@ -17,7 +17,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, text }) => {
   const getStyle = () => {
     switch (normalized) {
       case 'superadmin':
+      case 'super_admin':
         return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'subadmin':
+      case 'sub_admin':
       case 'admin':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'vendor':
