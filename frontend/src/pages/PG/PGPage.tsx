@@ -382,7 +382,7 @@ export const PGPage: React.FC = () => {
         {/* Results Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-extrabold text-[#171A18]">
-            {filteredListings.length} PGs & Hostels found
+            {loading ? 'Loading PGs & Hostels...' : error ? 'PG listings unavailable' : `${filteredListings.length} PGs & Hostels found`}
             {searchQuery && (
               <span className="text-base font-normal text-[#6B6B63] ml-2">
                 for "{searchQuery}"
@@ -706,28 +706,15 @@ export const PGPage: React.FC = () => {
 
         </div>
 
-        {/* PAGINATION SECTION (Exact Match to Reference Screenshot) */}
+        {/* Results count reflects every fetched listing. All filtered results are rendered above. */}
         <div className="mt-10 pt-6 border-t border-[#E5E1D6] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs font-semibold text-[#6B6B63]">
-            Showing 1-3 of 342 properties
+            {loading
+              ? 'Loading properties...'
+              : error
+                ? 'Property count unavailable'
+                : `Showing ${filteredListings.length} of ${listings.length} properties`}
           </p>
-
-          <div className="flex items-center gap-2">
-            <button className="px-3.5 py-1.5 rounded-lg bg-[#225944] text-white font-extrabold text-xs shadow-xs">
-              1
-            </button>
-            <button className="px-3.5 py-1.5 rounded-lg bg-white border border-[#E5E1D6] text-[#171A18] font-bold text-xs hover:bg-gray-50 transition-colors">
-              2
-            </button>
-            <button className="px-3.5 py-1.5 rounded-lg bg-white border border-[#E5E1D6] text-[#171A18] font-bold text-xs hover:bg-gray-50 transition-colors">
-              3
-            </button>
-            <span className="text-xs text-[#6B6B63] px-1 font-bold">..</span>
-            <button className="px-4 py-1.5 rounded-lg bg-white border border-[#E5E1D6] text-[#171A18] font-bold text-xs hover:bg-gray-50 transition-colors flex items-center gap-1">
-              <span>Next</span>
-              <span>→</span>
-            </button>
-          </div>
         </div>
 
         {/* GREEN BANNER BOX: NEED MEALS OR LAUNDRY ALONGSIDE YOUR PG? (Exact Match to Screenshot) */}
