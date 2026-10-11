@@ -4,12 +4,10 @@ import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } f
 import {
   ArrowRight,
   Building2,
-  CheckCircle2,
   MapPin,
   ShieldCheck,
   Shirt,
   Sparkles,
-  Star,
   Utensils,
   Wrench,
   type LucideIcon,
@@ -295,7 +293,11 @@ export const TemplateHomePage: React.FC = () => {
     })),
   ].slice(0, 4);
 
-  const serviceCounts = [pgListings.length, mealProviders.length, laundryProviders.length, extraServices.length];
+  const featuredStay = pgListings[0];
+  const featuredMeal = mealProviders[0];
+  const featuredLaundry = laundryProviders[0];
+  const featuredService = extraServices[0];
+  const formatPrice = (price?: number) => price && price > 0 ? `₹${price.toLocaleString('en-IN')}` : null;
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#F7F5EF] font-sans text-[#171A18] antialiased selection:bg-[#EECA3A] selection:text-[#171A18]">
@@ -423,50 +425,45 @@ export const TemplateHomePage: React.FC = () => {
 
         {/* Stacking Cards Deck (Larger Portrait Cards with Dedicated Calibrated Lock Pauses) */}
         <div className="relative mx-auto max-w-[520px] sm:max-w-[540px] px-4 pb-12">
-          {/* CARD 1 */}
+          {/* CARD 1: STAYS */}
           <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 10 }}>
-            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#E5E1D6] bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between">
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#E5E1D6] bg-white p-5 sm:p-8 shadow-sm flex flex-col justify-between">
               <div>
-                <span className="inline-block rounded-md bg-[#171A18] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white mb-3">
-                  Verified & Safe Stays
+                <span className="inline-block rounded-md bg-[#225944]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#225944] mb-3">
+                  Stays
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#171A18]">
-                  A little more peace of mind
+                  Find your place near campus
                 </h3>
                 <p className="mt-1.5 text-xs sm:text-sm text-[#6B6B63] leading-relaxed">
-                  Clear details, verified owners, and transparent pricing help you choose what fits your routine without surprises.
+                  Compare rooms, amenities, and rent before you book a visit.
                 </p>
               </div>
 
-              {/* Visual Showcase: Room Listing Card */}
-              <div className="my-4 w-full rounded-xl border border-[#E5E1D6] bg-[#F7F5EF] p-4 sm:p-5 shadow-2xs">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[#225944]/10 px-2.5 py-1 text-[11px] font-bold text-[#225944]">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> 100% Verified Property
-                  </span>
-                  <span className="text-xs font-bold text-[#171A18]">★ 4.9 (120+ reviews)</span>
-                </div>
-                <h4 className="mt-2.5 text-base sm:text-lg font-black text-[#171A18]">Shree Krishna Residency</h4>
-                <p className="text-xs text-[#6B6B63]">Nehru Nagar, Bhilai • 400m from BIT Gate</p>
-                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-[#171A18]">
-                  <span className="rounded-md bg-white px-2.5 py-1 border border-[#E5E1D6]">🛏️ Single / Double Room</span>
-                  <span className="rounded-md bg-white px-2.5 py-1 border border-[#E5E1D6]">📶 Wi-Fi 100M</span>
-                  <span className="rounded-md bg-white px-2.5 py-1 border border-[#E5E1D6]">🍽️ 3 Meals Daily</span>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-[#E5E1D6] pt-3">
-                  <div>
-                    <span className="text-[11px] text-[#6B6B63]">Starting from</span>
-                    <p className="text-lg font-black text-[#171A18]">₹6,500 <span className="text-xs font-normal text-[#6B6B63]">/mo</span></p>
+              <div className="my-4 overflow-hidden rounded-2xl bg-[#F7F5EF]">
+                {featuredStay?.images?.[0] ? (
+                  <img src={featuredStay.images[0]} alt={featuredStay.name} className="h-40 sm:h-48 w-full object-cover" />
+                ) : (
+                  <div className="flex h-40 sm:h-48 items-center justify-center bg-[#E9EEE8] text-[#225944]">
+                    <Building2 className="h-12 w-12" strokeWidth={1.4} />
                   </div>
-                  <Link to="/pg" className="inline-flex items-center gap-1.5 rounded-lg bg-[#225944] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#184232]">
-                    Book Visit <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
+                )}
+                <div className="flex items-center justify-between gap-3 p-4">
+                  <div className="min-w-0">
+                    <h4 className="truncate text-base font-bold text-[#171A18]">{featuredStay?.name || 'Explore stays around campus'}</h4>
+                    <p className="mt-1 truncate text-xs text-[#6B6B63]">{featuredStay?.corridor || featuredStay?.location?.city || 'Browse rooms by location'}</p>
+                  </div>
+                  {formatPrice(featuredStay?.monthlyRent) && (
+                    <p className="shrink-0 text-sm font-extrabold text-[#225944]">
+                      {formatPrice(featuredStay?.monthlyRent)}<span className="font-medium text-[#6B6B63]"> / mo</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs text-[#6B6B63] pt-2 border-t border-[#E5E1D6]/60">
                 <span>01 / 04</span>
-                <span className="font-bold text-[#225944]">Scroll down for next card ↓</span>
+                <Link to="/pg" className="inline-flex items-center gap-1.5 font-bold text-[#225944] hover:underline">Browse stays <ArrowRight className="h-3.5 w-3.5" /></Link>
               </div>
             </div>
           </div>
@@ -474,64 +471,52 @@ export const TemplateHomePage: React.FC = () => {
           {/* Screen Lock Pause after Card 1 */}
           <div className="h-[30vh] pointer-events-none" />
 
-          {/* CARD 2 */}
+          {/* CARD 2: MEALS */}
           <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 20 }}>
-            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#1b4636] bg-[#225944] p-6 sm:p-8 shadow-sm flex flex-col justify-between text-white">
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#E5E1D6] bg-[#F4F0E7] p-5 sm:p-8 shadow-sm flex flex-col justify-between text-[#171A18]">
               <div>
-                <span className="inline-block rounded-md bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white mb-3 border border-white/15">
-                  Hyperlocal Proximity
+                <span className="inline-block rounded-md bg-[#EECA3A]/35 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#171A18] mb-3">
+                  Meals &amp; mess
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                  Close to your campus
+                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#171A18]">
+                  Good food, on your schedule
                 </h3>
-                <p className="mt-1.5 text-xs sm:text-sm text-white/80 leading-relaxed">
-                  Stays, messes, and essentials mapped within walking or 5-minute cycling distance from college gates across Bhilai, Raipur & Durg.
+                <p className="mt-1.5 text-xs sm:text-sm text-[#6B6B63] leading-relaxed">
+                  Find nearby kitchens, check their menus, and choose a plan that works for you.
                 </p>
               </div>
 
-              {/* Visual Showcase: Proximity Radar */}
-              <div className="my-4 w-full rounded-xl border border-white/10 bg-[#194333] p-4 sm:p-5 shadow-2xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#EECA3A]">📍 Campus Radius Active</span>
-                  <span className="rounded-md bg-white/15 px-2.5 py-0.5 text-[11px] font-bold text-white">18 Spots Mapped</span>
-                </div>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between rounded-lg bg-white/10 px-3.5 py-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-base">🚶</span>
-                      <div>
-                        <p className="text-xs font-bold text-white">Main College Gate</p>
-                        <p className="text-[10px] text-white/70">Walk time</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-extrabold text-[#EECA3A]">4 min (280m)</span>
+              <div className="my-4 overflow-hidden rounded-2xl bg-white">
+                {featuredMeal?.image ? (
+                  <img src={featuredMeal.image} alt={featuredMeal.name} className="h-36 sm:h-40 w-full object-cover" />
+                ) : (
+                  <div className="flex h-36 sm:h-40 items-center justify-center bg-[#F8EBC2] text-[#725D18]">
+                    <Utensils className="h-12 w-12" strokeWidth={1.4} />
                   </div>
-                  <div className="flex items-center justify-between rounded-lg bg-white/10 px-3.5 py-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-base">🍛</span>
-                      <div>
-                        <p className="text-xs font-bold text-white">Maa Annapurna Mess</p>
-                        <p className="text-[10px] text-white/70">Homestyle food</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-extrabold text-[#EECA3A]">2 min (140m)</span>
+                )}
+                <div className="p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h4 className="truncate text-base font-bold">{featuredMeal?.name || 'Explore meal plans'}</h4>
+                    {formatPrice(featuredMeal?.monthlyPrice) && <span className="shrink-0 text-sm font-bold text-[#225944]">{formatPrice(featuredMeal?.monthlyPrice)} / mo</span>}
                   </div>
-                  <div className="flex items-center justify-between rounded-lg bg-white/10 px-3.5 py-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-base">🧺</span>
-                      <div>
-                        <p className="text-xs font-bold text-white">Doorstep Express Wash</p>
-                        <p className="text-[10px] text-white/70">Free pickup/drop</p>
+                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#E5E1D6] pt-3 text-[11px]">
+                    {[
+                      ['Breakfast', featuredMeal?.breakfastMenu],
+                      ['Lunch', featuredMeal?.lunchMenu],
+                      ['Dinner', featuredMeal?.dinnerMenu],
+                    ].map(([meal, menu]) => (
+                      <div key={meal} className="min-w-0">
+                        <p className="font-bold text-[#225944]">{meal}</p>
+                        <p className="mt-1 truncate text-[#6B6B63]">{menu && menu !== '—' ? menu : 'Menu details'}</p>
                       </div>
-                    </div>
-                    <span className="text-xs font-extrabold text-[#EECA3A]">3 min (220m)</span>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-white/60 pt-2 border-t border-white/10">
+              <div className="flex items-center justify-between text-xs text-[#6B6B63] pt-2 border-t border-[#E5E1D6]">
                 <span>02 / 04</span>
-                <span className="font-bold text-[#EECA3A]">Keep scrolling ↓</span>
+                <Link to="/meals" className="inline-flex items-center gap-1.5 font-bold text-[#225944] hover:underline">See meal plans <ArrowRight className="h-3.5 w-3.5" /></Link>
               </div>
             </div>
           </div>
@@ -539,64 +524,52 @@ export const TemplateHomePage: React.FC = () => {
           {/* Screen Lock Pause after Card 2 */}
           <div className="h-[30vh] pointer-events-none" />
 
-          {/* CARD 3 */}
+          {/* CARD 3: LAUNDRY */}
           <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 30 }}>
-            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#deb72e] bg-[#EECA3A] p-6 sm:p-8 shadow-sm flex flex-col justify-between text-[#171A18]">
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#DCE5DE] bg-[#EAF0EB] p-5 sm:p-8 shadow-sm flex flex-col justify-between text-[#171A18]">
               <div>
-                <span className="inline-block rounded-md bg-[#171A18] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#EECA3A] mb-3">
-                  All-in-One Hub
+                <span className="inline-block rounded-md bg-[#225944] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white mb-3">
+                  Laundry
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#171A18]">
-                  One easy starting point
+                  Laundry, without losing a day
                 </h3>
-                <p className="mt-1.5 text-xs sm:text-sm text-[#171A18]/80 leading-relaxed">
-                  Hostels, daily meal subscriptions, and laundry pickups organized in one smooth platform — focus on studies, not chores.
+                <p className="mt-1.5 text-xs sm:text-sm text-[#6B6B63] leading-relaxed">
+                  Find a local laundry, check the services and pricing, then arrange pickup.
                 </p>
               </div>
 
-              {/* Visual Showcase: Integrated Student Hub */}
-              <div className="my-4 w-full rounded-xl border border-[#171A18]/10 bg-white p-4 shadow-xs">
-                <div className="flex items-center justify-between border-b border-[#E5E1D6] pb-2.5">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#225944]">Student Life Hub</span>
-                  <span className="rounded-md bg-[#225944]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#225944]">All Active ✅</span>
-                </div>
-                <div className="mt-2.5 space-y-2">
-                  <div className="flex items-center justify-between rounded-lg bg-[#F7F5EF] p-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="grid h-7 w-7 place-items-center rounded-md bg-[#225944] text-white text-xs">🏠</span>
-                      <div>
-                        <p className="text-xs font-bold text-[#171A18]">Room 204 Stay</p>
-                        <p className="text-[10px] text-[#6B6B63]">Rent: Paid for month</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-[#225944]">Active</span>
+              <div className="my-4 overflow-hidden rounded-2xl bg-white">
+                {featuredLaundry?.image ? (
+                  <img src={featuredLaundry.image} alt={featuredLaundry.name} className="h-40 sm:h-48 w-full object-cover" />
+                ) : (
+                  <div className="flex h-40 sm:h-48 items-center justify-center bg-[#DCE8DF] text-[#225944]">
+                    <Shirt className="h-12 w-12" strokeWidth={1.4} />
                   </div>
-                  <div className="flex items-center justify-between rounded-lg bg-[#F7F5EF] p-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="grid h-7 w-7 place-items-center rounded-md bg-[#EECA3A] text-[#171A18] text-xs">🍲</span>
-                      <div>
-                        <p className="text-xs font-bold text-[#171A18]">Daily 2-Meal Plan</p>
-                        <p className="text-[10px] text-[#6B6B63]">Arriving at 8:15 PM</p>
-                      </div>
+                )}
+                <div className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <h4 className="truncate text-base font-bold">{featuredLaundry?.name || 'Find a laundry nearby'}</h4>
+                      <p className="mt-1 truncate text-xs text-[#6B6B63]">{featuredLaundry?.corridor || 'Pickup options vary by provider'}</p>
                     </div>
-                    <span className="text-xs font-bold text-[#225944]">On Time</span>
+                    {formatPrice(featuredLaundry?.pricePerKg) && <p className="shrink-0 text-sm font-bold text-[#225944]">{formatPrice(featuredLaundry?.pricePerKg)} / kg</p>}
                   </div>
-                  <div className="flex items-center justify-between rounded-lg bg-[#F7F5EF] p-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="grid h-7 w-7 place-items-center rounded-md bg-[#171A18] text-white text-xs">👕</span>
-                      <div>
-                        <p className="text-xs font-bold text-[#171A18]">Laundry Wash</p>
-                        <p className="text-[10px] text-[#6B6B63]">7 clothes scheduled</p>
-                      </div>
+                  {featuredLaundry?.services?.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {featuredLaundry.services.slice(0, 3).map((service) => (
+                        <span key={service.name} className="rounded-full border border-[#DCE5DE] px-3 py-1 text-[11px] font-semibold text-[#225944]">{service.name}</span>
+                      ))}
                     </div>
-                    <span className="text-xs font-bold text-[#225944]">Ready</span>
-                  </div>
+                  ) : (
+                    <p className="mt-3 border-t border-[#E5E1D6] pt-3 text-xs text-[#6B6B63]">Wash, fold, and ironing options on the provider page.</p>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs text-[#171A18]/70 pt-2 border-t border-[#171A18]/10">
                 <span>03 / 04</span>
-                <span className="font-bold text-[#171A18]">Almost there ↓</span>
+                <Link to="/laundry" className="inline-flex items-center gap-1.5 font-bold text-[#225944] hover:underline">Find laundry <ArrowRight className="h-3.5 w-3.5" /></Link>
               </div>
             </div>
           </div>
@@ -604,53 +577,46 @@ export const TemplateHomePage: React.FC = () => {
           {/* Screen Lock Pause after Card 3 */}
           <div className="h-[30vh] pointer-events-none" />
 
-          {/* CARD 4 */}
+          {/* CARD 4: EVERYDAY SERVICES */}
           <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 40 }}>
-            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-white/10 bg-[#171A18] p-6 sm:p-8 shadow-sm flex flex-col justify-between text-white">
+            <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#184232] bg-[#225944] p-5 sm:p-8 shadow-sm flex flex-col justify-between text-white">
               <div>
-                <span className="inline-block rounded-md bg-[#225944] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white mb-3">
-                  Flexible & Custom
+                <span className="inline-block rounded-md bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white mb-3">
+                  Everyday help
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                  Make it your own
+                  Get the little things fixed
                 </h3>
                 <p className="mt-1.5 text-xs sm:text-sm text-white/70 leading-relaxed">
-                  Choose only the services that make your day work better. Pause mess plans during semester breaks, schedule laundry, and customize freely.
+                  Find help for room repairs, cleaning, and other everyday needs around your campus.
                 </p>
               </div>
 
-              {/* Visual Showcase: Smart Controls & Pause */}
-              <div className="my-4 w-full rounded-xl border border-white/10 bg-[#222724] p-4 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                  <span className="text-xs font-bold text-[#EECA3A]">⚡ Smart Student Controls</span>
-                  <span className="rounded-md bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">Customized</span>
+              <div className="my-4 rounded-2xl bg-[#184232] p-5 sm:p-6">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <Wrench className="h-9 w-9 text-[#EECA3A]" strokeWidth={1.4} />
+                  <p className="max-w-[190px] text-right text-xs leading-relaxed text-white/70">Local providers for the jobs you don’t want to put off.</p>
                 </div>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between rounded-lg bg-white/5 p-2.5 border border-white/5">
-                    <div>
-                      <p className="text-xs font-bold text-white">Vacation Pause</p>
-                      <p className="text-[10px] text-white/60">Pauses mess billing for 14 days</p>
+                <div className="space-y-0">
+                  {(featuredService
+                    ? [featuredService, ...extraServices.slice(1, 3)].map((service) => service.name)
+                    : ['Repairs & electrical', 'Room cleaning', 'Campus moving help']
+                  ).map((serviceName) => (
+                    <div key={serviceName} className="flex items-center justify-between border-t border-white/15 py-3 text-sm font-semibold">
+                      <span>{serviceName}</span>
+                      <ArrowRight className="h-4 w-4 text-[#EECA3A]" />
                     </div>
-                    <span className="rounded-md bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-black">Active</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-white/5 p-2.5 border border-white/5">
-                    <div>
-                      <p className="text-xs font-bold text-white">Exam Night Tea Boost</p>
-                      <p className="text-[10px] text-white/60">Snack delivery during finals</p>
-                    </div>
-                    <span className="rounded-md bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-black">Active</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-[#225944]/30 border border-[#225944] p-2.5">
-                    <p className="text-xs font-bold text-[#EECA3A]">💰 Smart Savings</p>
-                    <span className="text-xs font-bold text-white">₹1,450 Saved</span>
-                  </div>
+                  ))}
                 </div>
+                {featuredService && formatPrice(featuredService.basePrice) && (
+                  <p className="mt-2 text-xs text-white/70">From {formatPrice(featuredService.basePrice)} {featuredService.priceUnit}</p>
+                )}
               </div>
 
               <div className="flex items-center justify-between text-xs text-white/60 pt-2 border-t border-white/10">
                 <span>04 / 04</span>
-                <Link to="/pg" className="font-bold text-[#EECA3A] hover:underline inline-flex items-center gap-1.5">
-                  Start Exploring EaseHub <ArrowRight className="h-3.5 w-3.5" />
+                <Link to="/services" className="font-bold text-[#EECA3A] hover:underline inline-flex items-center gap-1.5">
+                  Browse services <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>

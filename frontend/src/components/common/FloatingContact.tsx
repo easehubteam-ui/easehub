@@ -4,8 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 export const FloatingContact: React.FC = () => {
   const location = useLocation();
 
-  // If user is already on the support page, hide floating button to avoid redundancy
-  if (location.pathname === '/support') {
+  // Keep the floating control out of the homepage's full-screen card stack and support page.
+  if (location.pathname === '/' || location.pathname === '/support') {
     return null;
   }
 
