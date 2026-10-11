@@ -48,18 +48,36 @@ export const authApi = {
     return { success: true, data: { user: data.user } };
   },
   forgotPassword: async (data: { emailOrPhone: string }) => {
+    const email = data.emailOrPhone.trim().toLowerCase();
     const { error } = await insforge.auth.sendResetPasswordEmail({
-      email: data.emailOrPhone
+      email,
     });
     if (error) {
       throw new Error(error.message);
     }
-    return { success: true, message: 'Password reset link sent to your email.' };
+    return { success: true, message: 'If an account exists for this email, a password reset code has been sent.' };
   },
-  resetPassword: async (data: { token: string; newPassword: string }) => {
+  resetPassword: async (data: { email?: string; code?: string; token?: string; newPassword: string }) => {
+    let resetToken = data.token;
+
+    if (!resetToken) {
+      if (!data.email || !data.code) {
+        throw new Error('Enter the email address and reset code from your message.');
+      }
+
+      const { data: tokenData, error: tokenError } = await insforge.auth.exchangeResetPasswordToken({
+        email: data.email.trim().toLowerCase(),
+        code: data.code.trim(),
+      });
+      if (tokenError || !tokenData?.token) {
+        throw new Error(tokenError?.message || 'That reset code is invalid or expired.');
+      }
+      resetToken = tokenData.token;
+    }
+
     const { error } = await insforge.auth.resetPassword({
       newPassword: data.newPassword,
-      otp: data.token
+      otp: resetToken,
     });
     if (error) {
       throw new Error(error.message);

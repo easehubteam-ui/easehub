@@ -125,10 +125,12 @@ export const Navbar: React.FC = () => {
           }`}
           style={{ transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)' }}
         >
-          <Link to={homePath} className="flex items-center gap-3 shrink-0 group">
-            <div className="w-10 h-10 rounded-xl bg-[#225944] text-[#EECA3A] flex items-center justify-center font-black text-xl shadow-xs border border-[#184232] group-hover:scale-105 transition-transform duration-200">
-              E
-            </div>
+          <Link to={homePath} className="flex min-w-0 items-center gap-2 sm:gap-3 shrink-0 group">
+            <img
+              src="/logo.png"
+              alt="EaseHub"
+              className="w-10 h-10 rounded-xl object-cover shadow-xs border border-[#E5E1D6] group-hover:scale-105 transition-transform duration-200"
+            />
             <div className="flex flex-col justify-center whitespace-nowrap">
               <span className="text-xl sm:text-2xl font-black tracking-tight text-[#171A18] leading-none group-hover:text-[#225944] transition-colors">
                 Ease<span className="text-[#EECA3A]">Hub</span>
@@ -268,7 +270,7 @@ export const Navbar: React.FC = () => {
               {/* Contact Us Standalone Pill */}
               <Link
                 to="/support"
-                className={`rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                className={`hidden md:inline-flex rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
                   scrolled
                     ? 'px-5 py-2.5 bg-white/95 backdrop-blur-md text-[#171A18] border border-[#E5E1D6] shadow-md hover:bg-[#F7F5EF] active:scale-95'
                     : 'px-4 py-2 bg-[#F7F5EF] text-[#171A18] border border-[#E5E1D6]/80 hover:bg-[#EBE7DC] active:scale-95'
@@ -280,7 +282,7 @@ export const Navbar: React.FC = () => {
               {/* Sign Up Primary Standalone Pill */}
               <Link
                 to="/register"
-                className={`rounded-full bg-[#171A18] hover:bg-[#225944] text-white font-extrabold text-xs sm:text-sm transition-all active:scale-95 whitespace-nowrap ${
+                className={`hidden md:inline-flex rounded-full bg-[#171A18] hover:bg-[#225944] text-white font-extrabold text-xs sm:text-sm transition-all active:scale-95 whitespace-nowrap ${
                   scrolled ? 'px-5 py-2.5 shadow-md' : 'px-5 py-2 shadow-xs hover:shadow-md'
                 }`}
               >
@@ -339,6 +341,13 @@ export const Navbar: React.FC = () => {
                   className="block px-4 py-2.5 rounded-xl text-center bg-[#F7F5EF] text-[#171A18] font-bold"
                 >
                   Log in
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2.5 mt-1 rounded-xl text-center bg-[#225944] text-white font-bold"
+                >
+                  Create account
                 </Link>
               </div>
             )}

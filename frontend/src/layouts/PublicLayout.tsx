@@ -7,6 +7,7 @@ import { PageTransition } from '../components/common/PageTransition';
 
 export const PublicLayout: React.FC = () => {
   const location = useLocation();
+  const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#171A18] flex flex-col font-sans relative">
@@ -20,11 +21,9 @@ export const PublicLayout: React.FC = () => {
         </PageTransition>
       </main>
 
-      {/* Floating Animated WhatsApp Contact Button (Bottom-Right) */}
-      <FloatingContact />
+      {!isAuthPage && <FloatingContact />}
 
-      {/* Global Shared Footer */}
-      <Footer />
+      {!isAuthPage && <Footer />}
     </div>
   );
 };

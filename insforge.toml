@@ -1,0 +1,6 @@
+[auth]
+allowed_redirect_urls = [
+  "http://localhost:5173/dashboard",
+  "http://127.0.0.1:5173/dashboard",
+  "https://easehub-chi.vercel.app/dashboard",
+]

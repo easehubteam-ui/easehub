@@ -77,27 +77,27 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] w-full bg-[#F8FAF6] text-[#191C1A] font-sans antialiased flex flex-col justify-between selection:bg-[#EECA3A] selection:text-[#171A18]">
-      <main className="flex-1 p-3 sm:p-4 md:p-6 flex items-center justify-center relative">
-        <div className="relative w-full max-w-[1100px] flex flex-col justify-center">
+    <div className="min-h-[calc(100dvh-5rem)] w-full bg-[#F8FAF6] text-[#191C1A] font-sans antialiased flex flex-col justify-between selection:bg-[#EECA3A] selection:text-[#171A18]">
+      <main className="flex-1 p-3 sm:p-4 md:p-6 flex items-center justify-center relative overflow-hidden">
+        <div className="relative w-full min-w-0 max-w-[1100px] flex flex-col justify-center">
           {/* Ambient Backdrop Flares */}
           <div className="absolute -top-12 -left-16 w-72 h-72 rounded-full bg-[#225944]/15 blur-3xl pointer-events-none"></div>
           <div className="absolute top-1/2 -right-20 w-80 h-80 rounded-full bg-[#EECA3A]/20 blur-3xl pointer-events-none"></div>
 
           {/* Main Auth Master Grid Container */}
-          <div className="relative w-full grid grid-cols-1 lg:grid-cols-12 rounded-3xl bg-white shadow-xl overflow-hidden border border-[#E5E1D6]">
+          <div className="relative w-full min-w-0 grid grid-cols-1 lg:grid-cols-12 rounded-2xl sm:rounded-3xl bg-white shadow-xl overflow-hidden border border-[#E5E1D6]">
             {/* LEFT COLUMN: Interactive Authentication Form (7 cols) */}
-            <div className="lg:col-span-7 p-6 sm:p-10 md:p-12 flex flex-col justify-between bg-white z-10">
+            <div className="min-w-0 lg:col-span-7 p-4 sm:p-8 md:p-12 flex flex-col justify-between bg-white z-10">
               <div>
                 {/* Header Title & Subtitle */}
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className="inline-flex p-1 rounded-full bg-[#EDEEEB] mb-3 border border-[#E5E1D6]">
                     <div className="px-3.5 py-1 rounded-full text-xs font-bold bg-[#225944] text-white shadow-xs flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[15px]">school</span>
                       <span>Customer &amp; Resident Login</span>
                     </div>
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-[#225944] tracking-tight mb-1">
+                  <h1 className="text-2xl sm:text-3xl leading-tight font-extrabold text-[#225944] tracking-tight mb-1">
                     Welcome back to Ease<span className="text-[#EECA3A]">Hub</span>
                   </h1>
                   <p className="text-xs sm:text-sm text-[#6B6B63]">
@@ -125,7 +125,7 @@ export const LoginPage: React.FC = () => {
                 )}
 
                 {/* EMAIL & PASSWORD AUTHENTICATION FORM */}
-                <form onSubmit={handleEmailSubmit} className="space-y-4">
+                <form onSubmit={handleEmailSubmit} className="space-y-3 sm:space-y-4">
                   <div>
                     <label className="block text-xs font-extrabold text-[#191C1A] mb-1">
                       Email Address
@@ -208,7 +208,7 @@ export const LoginPage: React.FC = () => {
                 </form>
 
                 {/* Google OAuth Section */}
-                <div className="relative my-6 text-center">
+                <div className="relative my-4 sm:my-6 text-center">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-[#E5E1D6]"></div>
                   </div>
@@ -255,7 +255,7 @@ export const LoginPage: React.FC = () => {
               </div>
 
               {/* Bottom Footer Signup Hint & Admin Portal Link */}
-              <div className="pt-6 mt-6 border-t border-[#E5E1D6] flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#6B6B63]">
+              <div className="pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-[#E5E1D6] flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#6B6B63]">
                 <div>
                   <span>Don't have an account? </span>
                   <Link to="/register" className="font-bold text-[#225944] hover:underline">

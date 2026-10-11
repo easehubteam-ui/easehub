@@ -7,6 +7,8 @@ export const ResetPasswordPage: React.FC = () => {
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
 
+  const [email, setEmail] = useState(searchParams.get('email') || '');
+  const [resetCode, setResetCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -18,8 +20,8 @@ export const ResetPasswordPage: React.FC = () => {
     setError(null);
     setMessage(null);
 
-    if (!password || !confirmPassword) {
-      setError('Please fill in both password fields.');
+    if ((!token && (!email.trim() || !resetCode.trim())) || !password || !confirmPassword) {
+      setError(token ? 'Please fill in both password fields.' : 'Enter your email, reset code, and new password.');
       return;
     }
 
@@ -28,14 +30,14 @@ export const ResetPasswordPage: React.FC = () => {
       return;
     }
 
-    if (!token) {
-      setError('Missing reset token. Please request a new password reset link.');
-      return;
-    }
-
     try {
       setIsSubmitting(true);
-      const res = await authApi.resetPassword({ token, newPassword: password });
+      const res = await authApi.resetPassword({
+        email,
+        code: resetCode,
+        token: token || undefined,
+        newPassword: password,
+      });
       if (res.success) {
         setMessage('Password reset successful! Redirecting to login...');
         setTimeout(() => navigate('/login'), 2500);
@@ -50,9 +52,9 @@ export const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAF6] text-[#191C1A] font-sans antialiased flex flex-col justify-between p-4 sm:p-6 selection:bg-[#EECA3A] selection:text-[#171A18]">
-      <div className="max-w-md w-full mx-auto my-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-[#E5E1D6]">
-        <div className="text-center mb-6">
+    <div className="min-h-[calc(100dvh-5rem)] bg-[#F8FAF6] text-[#191C1A] font-sans antialiased flex flex-col justify-center p-3 sm:p-6 selection:bg-[#EECA3A] selection:text-[#171A18]">
+      <div className="max-w-md w-full mx-auto bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl border border-[#E5E1D6]">
+        <div className="text-center mb-4 sm:mb-6">
           <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
             <img
               src="/logo.png"
@@ -64,7 +66,7 @@ export const ResetPasswordPage: React.FC = () => {
             </span>
           </Link>
           <h1 className="text-xl font-extrabold text-[#225944] tracking-tight">Set New Password</h1>
-          <p className="text-xs text-[#6B6B63] mt-1">Enter your new secure account password below</p>
+          <p className="text-xs text-[#6B6B63] mt-1">Enter the code sent to your email and choose a new password.</p>
         </div>
 
         {message && (
@@ -79,7 +81,35 @@ export const ResetPasswordPage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          {!token && (
+            <>
+              <div>
+                <label className="block text-xs font-semibold text-[#191C1A] mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                  className="w-full px-3.5 py-3 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-sm text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#191C1A] mb-1">Reset Code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6-digit code"
+                  required
+                  className="w-full px-3.5 py-3 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-sm tracking-[0.25em] text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+                />
+              </div>
+            </>
+          )}
           <div>
             <label className="block text-xs font-semibold text-[#191C1A] mb-1">New Password</label>
             <input
@@ -88,7 +118,9 @@ export const ResetPasswordPage: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
               required
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+              minLength={6}
+              autoComplete="new-password"
+              className="w-full px-3.5 py-3 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-sm text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
             />
           </div>
 
@@ -100,14 +132,16 @@ export const ResetPasswordPage: React.FC = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••••••"
               required
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+              minLength={6}
+              autoComplete="new-password"
+              className="w-full px-3.5 py-3 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-sm text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 rounded-full bg-[#225944] hover:bg-[#184232] text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
+            className="w-full py-3 rounded-full bg-[#225944] hover:bg-[#184232] text-white text-sm font-bold shadow-md transition-all disabled:opacity-50"
           >
             {isSubmitting ? 'Updating Password...' : 'Reset Password'}
           </button>
@@ -121,9 +155,6 @@ export const ResetPasswordPage: React.FC = () => {
         </div>
       </div>
 
-      <footer className="text-center text-[10px] text-[#6B6B63] py-2">
-        © {new Date().getFullYear()} EaseHub Technologies. All rights reserved.
-      </footer>
     </div>
   );
 };

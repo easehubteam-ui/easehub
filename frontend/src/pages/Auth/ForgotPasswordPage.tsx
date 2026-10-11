@@ -34,8 +34,8 @@ export const ForgotPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAF6] text-[#191C1A] font-sans antialiased flex flex-col justify-between p-4 sm:p-6 selection:bg-[#EECA3A] selection:text-[#171A18]">
-      <div className="max-w-md w-full mx-auto my-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-[#E5E1D6]">
+    <div className="min-h-[calc(100dvh-5rem)] bg-[#F8FAF6] text-[#191C1A] font-sans antialiased flex flex-col justify-center p-3 sm:p-6 selection:bg-[#EECA3A] selection:text-[#171A18]">
+      <div className="max-w-md w-full mx-auto bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-[#E5E1D6]">
         <div className="text-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
             <img
@@ -54,6 +54,12 @@ export const ForgotPasswordPage: React.FC = () => {
         {message && (
           <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
             {message}
+            <Link
+              to={`/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}`}
+              className="mt-2 block font-extrabold text-[#225944] underline underline-offset-2"
+            >
+              Enter reset code
+            </Link>
           </div>
         )}
 
@@ -72,16 +78,16 @@ export const ForgotPasswordPage: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="student@rungta.ac.in"
               required
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-xs text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
+              className="w-full px-3.5 py-3 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-sm text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 rounded-full bg-[#225944] hover:bg-[#184232] text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
+            className="w-full py-3 rounded-full bg-[#225944] hover:bg-[#184232] text-white text-sm font-bold shadow-md transition-all disabled:opacity-50"
           >
-            {isSubmitting ? 'Sending Request...' : 'Send Reset Link'}
+            {isSubmitting ? 'Sending Code...' : 'Send Reset Code'}
           </button>
         </form>
 
@@ -93,9 +99,6 @@ export const ForgotPasswordPage: React.FC = () => {
         </div>
       </div>
 
-      <footer className="text-center text-[10px] text-[#6B6B63] py-2">
-        © {new Date().getFullYear()} EaseHub Technologies. All rights reserved.
-      </footer>
     </div>
   );
 };
