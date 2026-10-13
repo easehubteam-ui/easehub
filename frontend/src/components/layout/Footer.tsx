@@ -126,7 +126,7 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/support" className="hover:text-[#171A18] transition-colors block">
+                <Link to="/privacy-policy" className="hover:text-[#171A18] transition-colors block">
                   Privacy policy
                 </Link>
               </li>
@@ -195,7 +195,7 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link to="/support" className="hover:text-[#171A18] transition-colors">Privacy</Link>
+            <Link to="/privacy-policy" className="hover:text-[#171A18] transition-colors">Privacy</Link>
             <span>•</span>
             <Link to="/support" className="hover:text-[#171A18] transition-colors">Terms</Link>
             <span>•</span>
