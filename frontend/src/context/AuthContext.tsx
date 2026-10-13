@@ -11,6 +11,7 @@ import {
   insforge,
   decodeJwtPayload,
   isJwtStillValid,
+  isOAuthCallbackOnPageLoad,
   syncSdkSessionFromToken,
 } from '../services/insforge';
 
@@ -48,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(() => {
     try {
       if (typeof window === 'undefined') return false;
-      if (window.location.search.includes('insforge_code=')) return true;
+      if (isOAuthCallbackOnPageLoad || window.location.search.includes('insforge_code=')) return true;
       if (localStorage.getItem('easehub_logged_out') === 'true') return false;
       const token = localStorage.getItem('easehub_token');
       return !!token && isJwtStillValid(token);
@@ -145,7 +146,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUser = async () => {
     try {
       const isOAuthCallback =
-        typeof window !== 'undefined' && window.location.search.includes('insforge_code=');
+        typeof window !== 'undefined' &&
+        (isOAuthCallbackOnPageLoad || window.location.search.includes('insforge_code='));
 
       if (isOAuthCallback) {
         localStorage.removeItem('easehub_logged_out');
@@ -536,7 +538,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const redirectUri = `${origin}/dashboard`;
 
       const { error } = await insforge.auth.signInWithOAuth('google', {
-        redirectTo: redirectUri
+        redirectTo: redirectUri,
+        additionalParams: { prompt: 'select_account' },
       });
 
       if (error) {

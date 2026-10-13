@@ -4,6 +4,11 @@
  */
 import { createClient } from '@insforge/sdk';
 
+// The SDK removes `insforge_code` from the URL as soon as it starts exchanging
+// the OAuth callback, so capture the landing state before creating the client.
+export const isOAuthCallbackOnPageLoad =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('insforge_code');
+
 const projectUrl = (import.meta.env && import.meta.env.VITE_INSFORGE_PROJECT_URL) || 'https://289ybt8g.us-east.insforge.app';
 const anonKey = (import.meta.env && import.meta.env.VITE_INSFORGE_ANON_KEY) || 'ik_7b864691972beda6b5dd6e5d67ea743a';
 
@@ -68,7 +73,7 @@ const originalRefreshSession = insforge.auth.refreshSession.bind(insforge.auth);
 
 insforge.auth.refreshSession = async (options?: any) => {
   if (typeof window !== 'undefined') {
-    const isOAuthCallback = window.location.search.includes('insforge_code=');
+    const isOAuthCallback = isOAuthCallbackOnPageLoad || window.location.search.includes('insforge_code=');
     const isLoggedOut = localStorage.getItem('easehub_logged_out') === 'true';
     const storedToken = localStorage.getItem('easehub_token');
     if (!isOAuthCallback && (isLoggedOut || !storedToken)) {
@@ -80,7 +85,7 @@ insforge.auth.refreshSession = async (options?: any) => {
 
 insforge.auth.getCurrentUser = async () => {
   if (typeof window !== 'undefined') {
-    const isOAuthCallback = window.location.search.includes('insforge_code=');
+    const isOAuthCallback = isOAuthCallbackOnPageLoad || window.location.search.includes('insforge_code=');
     if (!isOAuthCallback) {
       const isLoggedOut = localStorage.getItem('easehub_logged_out') === 'true';
       const storedToken = localStorage.getItem('easehub_token');
