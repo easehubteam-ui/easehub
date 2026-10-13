@@ -86,66 +86,11 @@ const mapPGFromDB = (record: any): PGProperty => {
 
 export const pgApi = {
   getAll: async (): Promise<PGProperty[]> => {
-    return pgApi.search({});
-  },
-  
-  search: async (params: {
-    query?: string;
-    city?: string;
-    gender?: 'BOYS' | 'GIRLS' | 'CO-ED';
-    minPrice?: number;
-    maxPrice?: number;
-    amenities?: string[];
-    sortBy?: 'featured' | 'price-low' | 'price-high' | 'rating';
-  } = {}): Promise<PGProperty[]> => {
     try {
-      let query = insforge.database
+      const { data, error } = await insforge.database
         .from('pgs')
         .select('*')
-        .eq('is_active', true)
-        .eq('status', 'active');
-
-      if (params.query) {
-        const searchTerm = `%${params.query.toLowerCase()}%`;
-        query = query.or(`name.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},landmark.ilike.${searchTerm}`);
-      }
-
-      if (params.city) {
-        query = query.ilike('city', `%${params.city}%`);
-      }
-
-      if (params.gender) {
-        query = query.eq('gender', params.gender);
-      }
-
-      if (params.minPrice !== undefined) {
-        query = query.gte('price', params.minPrice);
-      }
-
-      if (params.maxPrice !== undefined) {
-        query = query.lte('price', params.maxPrice);
-      }
-
-      if (params.amenities && params.amenities.length > 0) {
-        query = query.contains('amenities', params.amenities);
-      }
-
-      // Apply sorting
-      switch (params.sortBy) {
-        case 'price-low':
-          query = query.order('price', { ascending: true });
-          break;
-        case 'price-high':
-          query = query.order('price', { ascending: false });
-          break;
-        case 'rating':
-          query = query.order('rating', { ascending: false });
-          break;
-        default:
-          query = query.order('created_at', { ascending: false });
-      }
-
-      const { data, error } = await query;
+        .eq('is_active', true);
 
       if (error || !Array.isArray(data)) return [];
       return data.map(mapPGFromDB);
@@ -153,15 +98,12 @@ export const pgApi = {
       return [];
     }
   },
-  
   getById: async (id: string): Promise<PGProperty | null> => {
     try {
       const { data } = await insforge.database
         .from('pgs')
         .select('*')
-        .eq('id', id)
-        .eq('is_active', true)
-        .eq('status', 'active');
+        .eq('id', id);
 
       const record = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return record ? mapPGFromDB(record) : null;

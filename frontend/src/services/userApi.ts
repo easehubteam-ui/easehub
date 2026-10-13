@@ -1,8 +1,12 @@
 import { insforge } from './insforge';
 import { UserRole, AdminPermissions } from '../types';
 
-const projectUrl = import.meta.env?.VITE_INSFORGE_PROJECT_URL ?? '';
-const anonKey = import.meta.env?.VITE_INSFORGE_ANON_KEY ?? '';
+const projectUrl =
+  (import.meta.env && import.meta.env.VITE_INSFORGE_PROJECT_URL) ||
+  'https://289ybt8g.us-east.insforge.app';
+const anonKey =
+  (import.meta.env && import.meta.env.VITE_INSFORGE_ANON_KEY) ||
+  'ik_7b864691972beda6b5dd6e5d67ea743a';
 
 export interface UserRecord {
   id: string;

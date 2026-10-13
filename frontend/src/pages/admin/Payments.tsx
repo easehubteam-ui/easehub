@@ -57,9 +57,7 @@ export const Payments: React.FC = () => {
       setLoadingScreenshot(true);
       const raw = selectedPayment.screenshotUrl;
       if (raw.startsWith('http://') || raw.startsWith('https://')) {
-        // Legacy records may contain an expired/public-style URL. Never render
-        // it directly; only storage object paths are re-signed below.
-        setSignedScreenshotUrl(null);
+        setSignedScreenshotUrl(raw);
         setLoadingScreenshot(false);
       } else {
         storageApi.getSignedUrl(BUCKETS.PAYMENT_SCREENSHOTS, raw, 3600)

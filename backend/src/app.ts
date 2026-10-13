@@ -26,38 +26,13 @@ import adminRoutes from './routes/admin.routes.js';
 
 const app: Application = express();
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  env.FRONTEND_URL,
-].filter(Boolean);
-
 // 1. Security Middleware
-app.disable('x-powered-by');
-app.use(helmet({
-  crossOriginResourcePolicy: false,
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:', 'http:'],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", 'https:', 'http:'],
-      frameAncestors: ["'self'"],
-    },
-  },
-}));
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // 2. CORS Configuration
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error('Origin not allowed by CORS policy'));
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -65,27 +40,14 @@ app.use(
 );
 
 // 3. Rate Limiting
-const generalLimiter = rateLimit({
+const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again after 15 minutes',
 });
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: false,
-  message: 'Too many authentication attempts, please try again later.',
-});
-app.use('/api', generalLimiter);
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/admin/login', authLimiter);
-app.use('/api/auth/forgot-password', authLimiter);
-app.use('/api/auth/reset-password', authLimiter);
+app.use('/api', limiter);
 
 // 4. Body Parsing Middleware
 app.use(express.json({ limit: '10mb' }));

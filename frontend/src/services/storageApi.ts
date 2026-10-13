@@ -133,14 +133,12 @@ export const storageApi = {
     if (error) throw new Error(error.message || 'Failed to upload payment screenshot');
 
     // Generate signed access URL (valid for 1 hour = 3600 seconds)
-    const { data: signedData, error: signedError } = await insforge.storage
+    const { data: signedData } = await insforge.storage
       .from(BUCKETS.PAYMENT_SCREENSHOTS)
       .createSignedUrl(path, 3600);
 
-    if (signedError || !signedData?.signedUrl) {
-      throw new Error(signedError?.message || 'Failed to generate private payment screenshot URL');
-    }
-    return { path, url: signedData.signedUrl };
+    const signedUrl = signedData?.signedUrl || getPublicImageUrl(BUCKETS.PAYMENT_SCREENSHOTS, path) || '';
+    return { path, url: signedUrl };
   },
 
   /**

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import { laundryApi, LaundryProvider as ApiLaundryProvider } from '../../services/laundryApi';
@@ -34,10 +34,7 @@ export const LaundryPage: React.FC = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [providersList, setProvidersList] = useState<LaundryProvider[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [hasSearched, setHasSearched] = useState<boolean>(false);
-  const initialSearchRef = useRef(true);
 
   // Booking Modal State
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
@@ -81,65 +78,6 @@ export const LaundryPage: React.FC = () => {
     }
   };
 
-  const searchLaundry = async () => {
-    try {
-      setSearchLoading(true);
-      setError('');
-      const data = await laundryApi.search({
-        query: searchQuery || undefined,
-        city: undefined,
-        minPrice: undefined,
-        maxPrice: undefined,
-        services: activeFilter === 'Wash & Fold' ? ['Wash & Fold'] : activeFilter === 'Dry Cleaning' ? ['Dry Cleaning'] : undefined,
-        sortBy: 'featured',
-      });
-      
-      if (Array.isArray(data)) {
-        const mapped: LaundryProvider[] = data.map((l: ApiLaundryProvider) => {
-          const serviceStrings = Array.isArray(l.tags) && l.tags.length > 0
-            ? l.tags
-            : (Array.isArray(l.services)
-                ? l.services.map((s: any) => typeof s === 'string' ? s : (s?.name || String(s)))
-                : ['Wash & Fold', 'Dry Cleaning']);
-
-          return {
-            id: l._id || l.code || String(l.id),
-            name: l.name || 'Express Laundry Partner',
-            location: l.location?.address ? `${l.location.address}, ${l.location.city}` : `${l.corridor || 'Bhilai'}, Chhattisgarh`,
-            rating: l.rating || 4.8,
-            reviewsCount: l.reviewCount || 18,
-            pricePerKg: l.perKgPrice || l.pricePerKg || 50,
-            image: l.image || (l.images && l.images[0]) || '',
-            badge: { text: 'Verified', color: 'bg-[#225944] text-white' },
-            services: serviceStrings.filter(Boolean),
-            turnaround: l.turnaroundHours ? `${l.turnaroundHours} hours` : '24 hours',
-            freePickup: l.pickupAvailable ?? true,
-            specialFeature: 'Doorstep Pickup & Delivery',
-          };
-        });
-        setProvidersList(mapped);
-      }
-      setHasSearched(true);
-    } catch (err: any) {
-      console.error('Failed to search laundry providers:', err);
-      setError('Unable to search laundry providers. Please try again.');
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  // Debounced search effect
-  useEffect(() => {
-    if (initialSearchRef.current) {
-      initialSearchRef.current = false;
-      return;
-    }
-    const timer = setTimeout(() => {
-      searchLaundry();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, activeFilter]);
-
   useEffect(() => {
     loadLaundry();
   }, []);
@@ -171,6 +109,21 @@ export const LaundryPage: React.FC = () => {
       await savedApi.saveItem('laundry', id);
     }
   };
+
+  const filteredProviders = providersList.filter((provider) => {
+    if (activeFilter === 'Wash & Fold' && !provider.services.some((s) => typeof s === 'string' && s.toLowerCase().includes('wash'))) return false;
+    if (activeFilter === 'Dry Cleaning' && !provider.services.some((s) => typeof s === 'string' && s.toLowerCase().includes('dry'))) return false;
+    if (activeFilter === 'Express (24h)' && !provider.turnaround.includes('24')) return false;
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      return (
+        (provider.name || '').toLowerCase().includes(q) ||
+        (provider.location || '').toLowerCase().includes(q) ||
+        (provider.services || []).some((s) => typeof s === 'string' && s.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen flex flex-col selection:bg-[#EECA3A] selection:text-[#171A18]">
@@ -365,7 +318,7 @@ export const LaundryPage: React.FC = () => {
           {/* Results Header */}
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl sm:text-2xl font-bold text-[#171A18]">
-              {providersList.length} Laundry Services near you
+              {filteredProviders.length} Laundry Services near you
             </h2>
 
             <div className="flex items-center space-x-2 text-sm text-[#6B6B63]">
@@ -400,7 +353,7 @@ export const LaundryPage: React.FC = () => {
                     Retry
                   </button>
                 </div>
-              ) : providersList.length === 0 ? (
+              ) : filteredProviders.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-[#E5E3DC] p-12 text-center shadow-xs">
                   <div className="w-16 h-16 bg-[#225944]/10 text-[#225944] rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <span className="material-symbols-outlined text-3xl">dry_cleaning</span>
@@ -411,7 +364,7 @@ export const LaundryPage: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                providersList.map((provider) => {
+                filteredProviders.map((provider) => {
                 const isFav = favorites.includes(provider.id);
 
                 return (

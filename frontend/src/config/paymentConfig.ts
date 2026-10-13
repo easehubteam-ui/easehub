@@ -27,30 +27,6 @@ export const paymentConfig = {
     return `https://wa.me/916201614778?text=${encodeURIComponent(msg)}`;
   },
 
-  getPaymentWhatsAppLink: (details: {
-    bookingId?: string;
-    serviceName?: string;
-    amount?: number;
-    utr?: string;
-  }) => {
-    const message = [
-      'Hello EaseHub Support,',
-      '',
-      'I have submitted payment details for my booking.',
-      '',
-      `Booking ID: ${details.bookingId || 'Not available'}`,
-      `Service: ${details.serviceName || 'EaseHub service'}`,
-      `Amount: ₹${Number(details.amount || 0).toLocaleString('en-IN')}`,
-      `UTR: ${details.utr || 'Not provided'}`,
-      'Payment Status: Verification Pending',
-      '',
-      'Please verify my payment and update my booking status.',
-      '',
-      'Thank you.',
-    ].join('\n');
-    return `https://wa.me/${paymentConfig.easehubWhatsAppNumber}?text=${encodeURIComponent(message)}`;
-  },
-
   // Helper for generating Universal UPI Intent URL for mobile UPI app redirection
   getUpiIntentUrl: (upiId: string = '6201614778@ibl', amount: number = 0, note: string = 'EaseHub Booking Payment') => {
     const params = new URLSearchParams({

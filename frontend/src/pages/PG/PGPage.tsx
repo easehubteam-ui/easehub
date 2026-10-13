@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import LocationMap from '../../components/common/LocationMap';
@@ -52,9 +52,6 @@ export const PGPage: React.FC = () => {
   const [listings, setListings] = useState<PGListing[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [searchLoading, setSearchLoading] = useState<boolean>(false);
-  const [hasSearched, setHasSearched] = useState<boolean>(false);
-  const initialSearchRef = useRef(true);
 
   // Booking Modal States
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
@@ -99,65 +96,9 @@ export const PGPage: React.FC = () => {
     }
   };
 
-  const searchPGs = async () => {
-    try {
-      setSearchLoading(true);
-      setError('');
-      const data = await pgApi.search({
-        query: searchQuery || undefined,
-        gender: activeFilter === 'Boys' ? 'BOYS' : activeFilter === 'Girls' ? 'GIRLS' : activeFilter === 'Unisex' ? 'CO-ED'
-          : searchCategory === 'Boys PG' ? 'BOYS' : searchCategory === 'Girls PG' ? 'GIRLS' : searchCategory === 'Unisex PG' ? 'CO-ED' : undefined,
-        maxPrice: activeFilter === 'Under ₹8,000' ? 8000 : undefined,
-        amenities: activeFilter === 'Food Included' ? ['meal', 'food', 'mess'] : activeFilter === 'Wi-Fi' ? ['wifi', 'wi-fi'] : undefined,
-        sortBy: sortBy as any,
-      });
-      
-      if (Array.isArray(data)) {
-        const mapped: PGListing[] = data.map((p: PGProperty) => ({
-          id: p._id || p.code,
-          name: p.name,
-          location: p.location?.address ? `${p.location.address}, ${p.location.city}` : `${p.corridor || 'Bhilai'}, Chhattisgarh`,
-          rating: p.rating || 5.0,
-          reviewsCount: p.reviewCount || 0,
-          price: p.monthlyRent || 0,
-          images: p.images?.length > 0 ? p.images : [],
-          amenities: p.amenities || [],
-          featured: p.verified ?? true,
-          gender: p.gender || 'CO-ED',
-          roomType: p.roomMatrix || '',
-          locationData: {
-            address: p.location?.address || p.corridor || '',
-            landmark: p.location?.landmark || p.distance || '',
-            city: p.location?.city || 'Bhilai',
-            state: p.location?.state || 'Chhattisgarh',
-            pincode: p.location?.pincode || '',
-            latitude: p.location?.latitude || 0,
-            longitude: p.location?.longitude || 0,
-          },
-        }));
-        setListings(mapped);
-        if (mapped.length > 0) setHoveredListingId(mapped[0].id);
-      }
-      setHasSearched(true);
-    } catch (err: any) {
-      console.error('Failed to search PGs:', err);
-      setError('Unable to search PG listings. Please try again.');
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  // Debounced search effect
   useEffect(() => {
-    if (initialSearchRef.current) {
-      initialSearchRef.current = false;
-      return;
-    }
-    const timer = setTimeout(() => {
-      searchPGs();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, searchCategory, activeFilter, sortBy]);
+    loadPGs();
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && user && user.role === 'customer') {
@@ -201,6 +142,69 @@ export const PGPage: React.FC = () => {
       await savedApi.saveItem('pg', id);
     }
   };
+
+  // Live Filtering Logic across search bar text, category dropdown, pills, and sorting
+  const filteredListings = listings
+    .filter((item) => {
+      // 1. Text Search Filter (city, address, name, landmark, corridor)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesName = item.name.toLowerCase().includes(query);
+        const matchesLoc = item.location.toLowerCase().includes(query);
+        const matchesCity = item.locationData?.city.toLowerCase().includes(query);
+        const matchesAddress = item.locationData?.address.toLowerCase().includes(query);
+        const matchesLandmark = item.locationData?.landmark?.toLowerCase().includes(query);
+        if (!matchesName && !matchesLoc && !matchesCity && !matchesAddress && !matchesLandmark) {
+          return false;
+        }
+      }
+
+      // 2. Category Dropdown Filter
+      if (searchCategory === 'Boys PG') {
+        const isBoys = item.gender?.toUpperCase().includes('BOY') || item.name.toLowerCase().includes('boy');
+        if (!isBoys) return false;
+      } else if (searchCategory === 'Girls PG') {
+        const isGirls = item.gender?.toUpperCase().includes('GIRL') || item.name.toLowerCase().includes('girl');
+        if (!isGirls) return false;
+      } else if (searchCategory === 'Unisex PG') {
+        const isCoEd = item.gender?.toUpperCase().includes('CO-ED') || item.gender?.toUpperCase().includes('UNISEX');
+        if (!isCoEd) return false;
+      }
+
+      // 3. Quick Pill Filters
+      if (activeFilter === 'Boys') {
+        const isBoys = item.gender?.toUpperCase().includes('BOY') || item.name.toLowerCase().includes('boy');
+        if (!isBoys) return false;
+      } else if (activeFilter === 'Girls') {
+        const isGirls = item.gender?.toUpperCase().includes('GIRL') || item.name.toLowerCase().includes('girl');
+        if (!isGirls) return false;
+      } else if (activeFilter === 'Unisex') {
+        const isCoEd = item.gender?.toUpperCase().includes('CO-ED') || item.gender?.toUpperCase().includes('UNISEX');
+        if (!isCoEd) return false;
+      } else if (activeFilter === 'Single Room') {
+        const isSingle = item.roomType?.toLowerCase().includes('single') || item.amenities.some((a) => a.toLowerCase().includes('single'));
+        if (!isSingle) return false;
+      } else if (activeFilter === 'Double Sharing') {
+        const isDouble = item.roomType?.toLowerCase().includes('double') || item.amenities.some((a) => a.toLowerCase().includes('double') || a.toLowerCase().includes('sharing'));
+        if (!isDouble) return false;
+      } else if (activeFilter === 'Under ₹8,000') {
+        if (item.price > 8000) return false;
+      } else if (activeFilter === 'Food Included') {
+        const hasFood = item.amenities.some((a) => a.toLowerCase().includes('meal') || a.toLowerCase().includes('food') || a.toLowerCase().includes('mess'));
+        if (!hasFood) return false;
+      } else if (activeFilter === 'Wi-Fi') {
+        const hasWifi = item.amenities.some((a) => a.toLowerCase().includes('wifi') || a.toLowerCase().includes('wi-fi'));
+        if (!hasWifi) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'price-low') return a.price - b.price;
+      if (sortBy === 'price-high') return b.price - a.price;
+      if (sortBy === 'rating') return b.rating - a.rating;
+      return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+    });
 
   return (
     <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen flex flex-col selection:bg-[#EECA3A] selection:text-[#171A18]">
@@ -285,7 +289,7 @@ export const PGPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    searchPGs();
+                    // Triggers focus or refresh; filteredListings updates automatically in real-time
                   }}
                   className="bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] font-bold px-6 py-3 rounded-xl text-sm transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
                 >
@@ -378,7 +382,7 @@ export const PGPage: React.FC = () => {
         {/* Results Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-extrabold text-[#171A18]">
-            {(loading || searchLoading) ? 'Loading PGs & Hostels...' : error ? 'PG listings unavailable' : `${listings.length} PGs & Hostels found`}
+            {loading ? 'Loading PGs & Hostels...' : error ? 'PG listings unavailable' : `${filteredListings.length} PGs & Hostels found`}
             {searchQuery && (
               <span className="text-base font-normal text-[#6B6B63] ml-2">
                 for "{searchQuery}"
@@ -422,7 +426,7 @@ export const PGPage: React.FC = () => {
                   Retry
                 </button>
               </div>
-            ) : listings.length === 0 ? (
+            ) : filteredListings.length === 0 ? (
               <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
                 <div className="w-16 h-16 bg-[#225944]/10 text-[#225944] rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,7 +452,7 @@ export const PGPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              listings.map((listing) => {
+              filteredListings.map((listing) => {
               const currentImgIdx = activeImageIdx[listing.id] || 0;
               const isSaved = savedIds.includes(listing.id);
               const isHovered = hoveredListingId === listing.id;
@@ -582,7 +586,7 @@ export const PGPage: React.FC = () => {
             
             {/* Live Interactive Map Box linked to Hover State */}
             {(() => {
-              const activePG = listings.find((l) => l.id === hoveredListingId) || listings[0];
+              const activePG = filteredListings.find((l) => l.id === hoveredListingId) || filteredListings[0];
               if (!activePG) {
                 return (
                   <div className="bg-white rounded-2xl border border-[#E5E1D6] p-8 text-center shadow-xs">
@@ -705,11 +709,11 @@ export const PGPage: React.FC = () => {
         {/* Results count reflects every fetched listing. All filtered results are rendered above. */}
         <div className="mt-10 pt-6 border-t border-[#E5E1D6] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs font-semibold text-[#6B6B63]">
-            {(loading || searchLoading)
+            {loading
               ? 'Loading properties...'
               : error
                 ? 'Property count unavailable'
-                : `Showing ${listings.length} properties`}
+                : `Showing ${filteredListings.length} of ${listings.length} properties`}
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from '../../services/authApi';
 
@@ -7,15 +7,6 @@ export const ForgotPasswordPage: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = window.setInterval(() => {
-      setResendCooldown((current) => Math.max(0, current - 1));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [resendCooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +23,6 @@ export const ForgotPasswordPage: React.FC = () => {
       const res = await authApi.forgotPassword({ emailOrPhone: email });
       if (res.success) {
         setMessage(res.message || 'If an account exists for this email, password reset instructions have been sent.');
-        setResendCooldown(60);
       } else {
         setError(res.message || 'Failed to process request.');
       }
@@ -70,17 +60,6 @@ export const ForgotPasswordPage: React.FC = () => {
             >
               Enter reset code
             </Link>
-            <button
-              type="button"
-              disabled={isSubmitting || resendCooldown > 0 || !email.trim()}
-              onClick={() => {
-                const form = document.querySelector('form');
-                form?.requestSubmit();
-              }}
-              className="mt-2 block text-left font-extrabold text-[#225944] disabled:text-[#6B6B63] disabled:no-underline underline underline-offset-2"
-            >
-              {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
-            </button>
           </div>
         )}
 

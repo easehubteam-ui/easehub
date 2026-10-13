@@ -50,7 +50,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ite
 
     try {
       const created = await bookingApi.createBooking({
-        serviceId: item.id,
         serviceName: item.name,
         serviceType: item.type.toUpperCase(),
         amount: item.price,

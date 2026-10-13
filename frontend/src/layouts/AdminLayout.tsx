@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminHeader from '../components/admin/AdminHeader';
@@ -7,24 +7,6 @@ import { PageTransition } from '../components/common/PageTransition';
 export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSidebarOpen(false);
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
-    const isMobile = () => window.matchMedia('(max-width: 1023px)').matches;
-    if (sidebarOpen && isMobile()) document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [sidebarOpen]);
 
   // Extract human-friendly title from pathname
   const getPageTitle = () => {

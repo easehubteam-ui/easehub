@@ -67,21 +67,13 @@ export const CustomerPaymentPage: React.FC = () => {
     let isMounted = true;
     if (isAuthenticated && user && user.role === 'customer') {
       bookingApi.getMyBookings().then(async (bList) => {
-        if (!isMounted) return;
-        if (!Array.isArray(bList) || bList.length === 0) {
-          setPaymentState({ status: 'idle', utr: '', error: 'No booking was found for this account. Create a booking before submitting payment.' });
-          return;
-        }
+        if (!isMounted || !Array.isArray(bList) || bList.length === 0) return;
 
         let target = bList[0];
         const searchId = bookingDetails.bookingId || urlBookingId;
         if (searchId) {
           const found = bList.find((b: any) => b.id === searchId || b.bookingNumber === searchId || b._id === searchId);
-          if (!found) {
-            setPaymentState({ status: 'idle', utr: '', error: 'This booking could not be found for your account.' });
-            return;
-          }
-          target = found;
+          if (found) target = found;
         }
 
         const bId = target.id || target._id || target.bookingNumber;
@@ -95,7 +87,8 @@ export const CustomerPaymentPage: React.FC = () => {
 
         // Query payments table for existing payment record
         try {
-          const existing = await paymentApi.getMyPaymentForBooking(bId);
+          const payments = await paymentApi.getPayments();
+          const existing = payments.find((p: any) => p.bookingId === bId || p.booking_id === bId);
           if (existing && isMounted) {
             setUtrInput(existing.utr !== '—' ? existing.utr || '' : '');
             setUploadedPath(existing.screenshotUrl || '');
@@ -144,8 +137,7 @@ export const CustomerPaymentPage: React.FC = () => {
       setUploadingImage(true);
       try {
         const res = await storageApi.uploadPaymentScreenshot(file, file.name);
-        // Persist only the private object path; signed URLs are short-lived previews.
-        setUploadedPath(res.path);
+        setUploadedPath(res.url || res.path);
       } catch (err: any) {
         console.error('Failed to upload screenshot to private bucket:', err);
       } finally {
@@ -187,9 +179,8 @@ export const CustomerPaymentPage: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to submit payment proof:', err);
       setPaymentState({
-        status: 'idle',
+        status: 'pending',
         utr: cleanUtr,
-        error: err?.message || 'Payment proof could not be submitted. Please try again.',
       });
     }
   };
@@ -213,13 +204,6 @@ export const CustomerPaymentPage: React.FC = () => {
           Scan official EaseHub UPI QR code, complete payment via GPay / PhonePe / Paytm, and submit your UTR reference.
         </p>
       </div>
-
-      {paymentState.error && (
-        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-          <span>{paymentState.error}</span>
-        </div>
-      )}
 
       {/* Booking Summary Card */}
       <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs space-y-4">
@@ -282,18 +266,13 @@ export const CustomerPaymentPage: React.FC = () => {
             </Link>
 
             <a
-              href={paymentConfig.getPaymentWhatsAppLink({
-                bookingId: bookingDetails.bookingId,
-                serviceName: bookingDetails.serviceName,
-                amount: bookingDetails.amount,
-                utr: paymentState.utr,
-              })}
+              href={paymentConfig.getWhatsAppLink(bookingDetails.serviceName)}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2.5 rounded-xl bg-[#EECA3A] text-[#171A18] font-bold text-xs flex items-center gap-1.5"
             >
               <MessageSquare className="w-4 h-4" />
-              <span>Send Payment Details on WhatsApp</span>
+              <span>Chat with Support (+91 6201614778)</span>
             </a>
           </div>
         </div>
@@ -586,7 +565,7 @@ export const CustomerPaymentPage: React.FC = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={paymentState.status === 'submitting' || uploadingImage || !bookingDetails.bookingId}
+                disabled={paymentState.status === 'submitting' || uploadingImage}
                 className="w-full py-3.5 rounded-2xl bg-[#225944] hover:bg-[#174532] text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {paymentState.status === 'submitting' ? (
