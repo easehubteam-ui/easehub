@@ -539,7 +539,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { error } = await insforge.auth.signInWithOAuth('google', {
         redirectTo: redirectUri,
-        additionalParams: { prompt: 'select_account' },
+        additionalParams: {
+          prompt: 'select_account',
+          app_domain: origin,
+        },
       });
 
       if (error) {
