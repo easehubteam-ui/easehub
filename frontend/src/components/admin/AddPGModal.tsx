@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import LocationPicker from '../common/LocationPicker';
 import { storageApi } from '../../services/storageApi';
 
@@ -30,51 +30,66 @@ export interface PGFormData {
   curfew: string;
   rules: string;
   // Status
-  status: 'active' | 'pending' | 'draft';
+  status: 'active' | 'pending' | 'draft' | 'revision' | 'disabled';
 }
 
 export interface AddPGModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmitPG: (data: PGFormData) => void;
+  onSubmitPG: (data: PGFormData) => void | Promise<void>;
   initialData?: Partial<PGFormData>;
+  mode?: 'create' | 'edit';
 }
 
 const defaultPhotos: string[] = [];
+const defaultAmenities = ['wifi', 'ac_unit', 'restaurant', 'local_laundry_service', 'videocam', 'bolt'];
 
-export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmitPG, initialData }) => {
+const createInitialFormData = (initialData?: Partial<PGFormData>): PGFormData => {
+  const isEditing = Boolean(initialData);
+  return {
+    name: initialData?.name ?? '',
+    propertyType: initialData?.propertyType ?? 'PG',
+    gender: initialData?.gender ?? 'BOYS',
+    landlordName: initialData?.landlordName ?? '',
+    landlordPhone: initialData?.landlordPhone ?? '',
+    email: initialData?.email ?? '',
+    description: initialData?.description ?? '',
+    photos: [...(initialData?.photos ?? defaultPhotos)],
+    address: initialData?.address ?? '',
+    landmark: initialData?.landmark ?? '',
+    city: initialData?.city ?? 'Bhilai',
+    state: initialData?.state ?? 'Chhattisgarh',
+    pincode: initialData?.pincode ?? '',
+    latitude: initialData?.latitude ?? null,
+    longitude: initialData?.longitude ?? null,
+    corridor: initialData?.corridor ?? 'Junwani',
+    totalBeds: initialData?.totalBeds ?? (isEditing ? 0 : 30),
+    vacantBeds: initialData?.vacantBeds ?? (isEditing ? 0 : 8),
+    monthlyRent: initialData?.monthlyRent ?? 6000,
+    deposit: initialData?.deposit ?? (isEditing ? 0 : 6000),
+    roomMatrix: initialData?.roomMatrix ?? (isEditing ? '' : 'Single (10) • Double (12) • Triple (8)'),
+    amenities: initialData?.amenities ? [...initialData.amenities] : isEditing ? [] : [...defaultAmenities],
+    curfew: initialData?.curfew ?? (isEditing ? '' : '10:30 PM Curfew'),
+    rules: initialData?.rules ?? (isEditing ? '' : 'No smoking. Visitors permitted till 8:00 PM.'),
+    status: initialData?.status ?? (isEditing ? 'active' : 'pending'),
+  };
+};
+
+export const AddPGModal: React.FC<AddPGModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmitPG,
+  initialData,
+  mode = 'create',
+}) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
-  const [formData, setFormData] = useState<PGFormData>({
-    name: initialData?.name || '',
-    propertyType: initialData?.propertyType || 'PG',
-    gender: initialData?.gender || 'BOYS',
-    landlordName: initialData?.landlordName || '',
-    landlordPhone: initialData?.landlordPhone || '',
-    email: initialData?.email || '',
-    description: initialData?.description || '',
-    photos: initialData?.photos || defaultPhotos,
-    address: initialData?.address || '',
-    landmark: initialData?.landmark || '',
-    city: initialData?.city || 'Bhilai',
-    state: initialData?.state || 'Chhattisgarh',
-    pincode: initialData?.pincode || '',
-    latitude: initialData?.latitude ?? null,
-    longitude: initialData?.longitude ?? null,
-    corridor: initialData?.corridor || 'Junwani',
-    totalBeds: 30,
-    vacantBeds: 8,
-    monthlyRent: 6000,
-    deposit: 6000,
-    roomMatrix: 'Single (10) • Double (12) • Triple (8)',
-    amenities: ['wifi', 'ac_unit', 'restaurant', 'local_laundry_service', 'videocam', 'bolt'],
-    curfew: '10:30 PM Curfew',
-    rules: 'No smoking. Visitors permitted till 8:00 PM.',
-    status: 'pending',
-  });
+  const [formData, setFormData] = useState<PGFormData>(() => createInitialFormData(initialData));
 
   // Preview Image active index
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
@@ -82,6 +97,16 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
   // Map search state
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [isSearchingMap, setIsSearchingMap] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setFormData(createInitialFormData(initialData));
+    setCurrentStep(1);
+    setActivePhotoIdx(0);
+    setMapSearchQuery('');
+    setSaveError('');
+    setIsSaving(false);
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
@@ -175,14 +200,23 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
   };
 
   // Final Publish Handler
-  const handleFinalSubmit = (statusToPublish: 'active' | 'pending' | 'draft') => {
+  const handleFinalSubmit = async (statusToPublish: PGFormData['status']) => {
     if (!formData.name.trim()) {
-      alert('Please enter a valid Property Name.');
+      setSaveError('Please enter a property name before saving.');
       setCurrentStep(1);
       return;
     }
-    onSubmitPG({ ...formData, status: statusToPublish });
-    onClose();
+
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onSubmitPG({ ...formData, status: statusToPublish });
+      onClose();
+    } catch (err: any) {
+      setSaveError(err?.message || `Could not ${mode === 'edit' ? 'update' : 'create'} the property. Please try again.`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -197,10 +231,10 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-[#171A18] tracking-tight">
-                Add New PG / Hostel Property
+                {mode === 'edit' ? 'Edit PG / Hostel Property' : 'Add New PG / Hostel Property'}
               </h2>
               <p className="text-xs text-[#6B6B63] font-medium mt-0.5">
-                Create a verified property listing for EaseHub.
+                {mode === 'edit' ? 'Update the listing details using the same guided form.' : 'Create a verified property listing for EaseHub.'}
               </p>
             </div>
           </div>
@@ -210,13 +244,15 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
             <div className="hidden sm:flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#FFF9E6] border border-[#F3E8B8] text-xs">
               <span className="material-symbols-outlined text-[#EECA3A] text-[20px] shrink-0">lightbulb</span>
               <div className="text-left">
-                <span className="font-bold text-[#171A18] block leading-none">Add complete and accurate information</span>
-                <span className="text-[11px] text-[#6B6B63] mt-0.5 block">This helps students find the right stay and builds trust.</span>
+                  <span className="font-bold text-[#171A18] block leading-none">{mode === 'edit' ? 'Keep listing information up to date' : 'Add complete and accurate information'}</span>
+                  <span className="text-[11px] text-[#6B6B63] mt-0.5 block">This helps students find the right stay and builds trust.</span>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={onClose}
+              disabled={isSaving}
               className="p-2 rounded-full hover:bg-slate-200 text-[#6B6B63] transition-colors shrink-0"
               title="Close modal"
             >
@@ -224,6 +260,12 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
             </button>
           </div>
         </div>
+
+        {saveError && (
+          <div role="alert" className="mx-4 mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-800 sm:mx-6">
+            {saveError}
+          </div>
+        )}
 
         {/* WORKSPACE CONTENT GRID: LEFT STEPPER (3 cols) | MAIN FORM (5 cols) | RIGHT PREVIEW (4 cols) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F8FAF6]">
@@ -646,8 +688,8 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
               {currentStep === 4 && (
                 <div className="space-y-4">
                   <div className="pb-2 border-b border-[#E5E1D6]">
-                    <h3 className="text-lg font-extrabold text-[#171A18]">4. Verification & Publish</h3>
-                    <p className="text-xs text-[#6B6B63]">Review property details and submit for platform verification.</p>
+                    <h3 className="text-lg font-extrabold text-[#171A18]">4. {mode === 'edit' ? 'Review & Save Changes' : 'Verification & Publish'}</h3>
+                    <p className="text-xs text-[#6B6B63]">{mode === 'edit' ? 'Review the updated listing before saving.' : 'Review property details and submit for platform verification.'}</p>
                   </div>
 
                   {/* Summary Overview Card */}
@@ -705,11 +747,11 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
 
                   {/* Publishing Status Selector */}
                   <div className="bg-white p-4 rounded-2xl border border-[#E5E1D6] space-y-2 shadow-xs text-xs">
-                    <span className="font-bold text-[#171A18] block">Set Initial Status</span>
+                    <span className="font-bold text-[#171A18] block">{mode === 'edit' ? 'Listing Status' : 'Set Initial Status'}</span>
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, status: 'draft' as any })}
+                        onClick={() => setFormData({ ...formData, status: 'draft' })}
                         className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
                           formData.status === 'draft'
                             ? 'bg-slate-200 border-slate-400 text-slate-800'
@@ -762,11 +804,18 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
                 <div className="rounded-2xl border border-[#E5E1D6] overflow-hidden bg-white shadow-xs">
                   {/* Photo Carousel Preview */}
                   <div className="relative h-44 w-full bg-slate-100">
-                    <img
-                      src={formData.photos[activePhotoIdx] || defaultPhotos[0]}
-                      alt="Property live preview"
-                      className="w-full h-full object-cover"
-                    />
+                    {formData.photos[activePhotoIdx] ? (
+                      <img
+                        src={formData.photos[activePhotoIdx]}
+                        alt={`${formData.name || 'Property'} preview`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center gap-2 text-[#6B6B63]">
+                        <span className="material-symbols-outlined text-3xl text-[#225944]/60">add_photo_alternate</span>
+                        <span className="text-[11px] font-semibold">Property photos will preview here</span>
+                      </div>
+                    )}
                     
                     {/* Image Counter Badge */}
                     <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -853,6 +902,7 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
           <button
             type="button"
             onClick={onClose}
+            disabled={isSaving}
             className="px-5 py-2.5 rounded-2xl bg-[#F3F4F0] hover:bg-[#EDEEEB] text-xs font-bold text-[#171A18] transition-colors"
           >
             Cancel
@@ -862,6 +912,7 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
             <button
               type="button"
               onClick={() => handleFinalSubmit('draft')}
+              disabled={isSaving || isUploading}
               className="px-4 py-2.5 rounded-2xl bg-white border border-[#E5E1D6] hover:bg-[#F8FAF6] text-xs font-bold text-[#171A18] flex items-center gap-1.5 transition-colors shadow-2xs"
             >
               <span className="material-symbols-outlined text-[16px]">bookmark</span>
@@ -898,16 +949,18 @@ export const AddPGModal: React.FC<AddPGModalProps> = ({ isOpen, onClose, onSubmi
                 <button
                   type="button"
                   onClick={() => handleFinalSubmit('pending')}
+                  disabled={isSaving || isUploading}
                   className="px-5 py-2.5 rounded-2xl bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] text-xs font-extrabold transition-all shadow-xs"
                 >
-                  Submit for Verification
+                    {isSaving ? 'Saving…' : mode === 'edit' ? 'Submit Changes for Review' : 'Submit for Verification'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleFinalSubmit('active')}
+                    onClick={() => handleFinalSubmit(mode === 'edit' ? formData.status : 'active')}
+                    disabled={isSaving || isUploading}
                   className="px-6 py-2.5 rounded-2xl bg-[#225944] hover:bg-[#184232] text-white text-xs font-bold shadow-md transition-all"
                 >
-                  Publish Property
+                    {isSaving ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Publish Property'}
                 </button>
               </div>
             )}

@@ -16,6 +16,8 @@ export interface PGProperty {
   _id: string;
   code: string;
   name: string;
+  description?: string;
+  propertyType?: 'PG' | 'Hostel';
   gender: 'BOYS' | 'GIRLS' | 'CO-ED';
   images: string[];
   verified: boolean;
@@ -51,6 +53,8 @@ const mapPGFromDB = (record: any): PGProperty => {
     _id: record.id || '',
     code: record.code || (record.id ? `PG-${String(record.id).slice(0, 6)}` : '—'),
     name: record.name || '—',
+    description: record.description || '',
+    propertyType: record.property_type === 'Hostel' ? 'Hostel' : 'PG',
     gender: record.gender || 'CO-ED',
     images: normalizedImages,
     verified: record.verified ?? true,
@@ -116,8 +120,8 @@ export const pgApi = {
     const dbPayload = {
       code,
       name: data.name || 'New PG',
-      description: data.corridor || 'EaseHub Verified Accommodation',
-      property_type: 'PG',
+      description: data.description || 'EaseHub Verified Accommodation',
+      property_type: data.propertyType || 'PG',
       gender: data.gender || 'BOYS',
       room_type: data.roomMatrix || 'Single / Double Sharing',
       price: data.monthlyRent || 0,
@@ -135,15 +139,19 @@ export const pgApi = {
       is_active: true
     };
 
-    await insforge.database.from('pgs').insert([dbPayload]);
+    const { error: insertError } = await insforge.database.from('pgs').insert([dbPayload]);
+    if (insertError) throw new Error(insertError.message || 'Failed to create PG listing.');
     const { data: created } = await insforge.database.from('pgs').select('*').eq('code', code);
     const rec = Array.isArray(created) && created.length > 0 ? created[0] : null;
     return rec ? mapPGFromDB(rec) : null;
   },
   update: async (id: string, data: Partial<PGProperty>): Promise<PGProperty | null> => {
     const dbPayload: any = {};
-    if (data.name) dbPayload.name = data.name;
-    if (data.gender) dbPayload.gender = data.gender;
+    if (data.name !== undefined) dbPayload.name = data.name;
+    if (data.description !== undefined) dbPayload.description = data.description;
+    if (data.propertyType !== undefined) dbPayload.property_type = data.propertyType;
+    if (data.gender !== undefined) dbPayload.gender = data.gender;
+    if (data.roomMatrix !== undefined) dbPayload.room_type = data.roomMatrix;
     if (data.monthlyRent !== undefined) dbPayload.price = data.monthlyRent;
     if (data.deposit !== undefined) dbPayload.security_deposit = data.deposit;
     if (data.amenities) dbPayload.amenities = data.amenities;
@@ -159,7 +167,8 @@ export const pgApi = {
       dbPayload.longitude = data.location.longitude;
     }
 
-    await insforge.database.from('pgs').update(dbPayload).eq('id', id);
+    const { error } = await insforge.database.from('pgs').update(dbPayload).eq('id', id);
+    if (error) throw new Error(error.message || 'Failed to update PG listing.');
     return pgApi.getById(id);
   },
   delete: async (id: string) => {

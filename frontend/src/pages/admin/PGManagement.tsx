@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import AdminLocationPicker, { LocationFormValues } from '../../components/admin/AdminLocationPicker';
-import AddPGModal from '../../components/admin/AddPGModal';
+import AddPGModal, { PGFormData } from '../../components/admin/AddPGModal';
 import { pgApi } from '../../services/pgApi';
 
 interface PGProperty {
   id: string;
   code: string;
   name: string;
+  propertyType?: 'PG' | 'Hostel';
+  description?: string;
+  photos?: string[];
   gender: 'BOYS' | 'GIRLS' | 'CO-ED';
   image: string;
   verified: boolean;
@@ -48,8 +51,11 @@ export const PGManagement: React.FC = () => {
           id: p._id || p.code,
           code: p.code || '#PG-BH-1001',
           name: p.name,
+          propertyType: p.propertyType || 'PG',
+          description: p.description || '',
           gender: (p.gender as any) || 'BOYS',
           image: p.images?.[0] || '',
+          photos: p.images || [],
           verified: p.verified ?? true,
           corridor: p.corridor || p.location?.city || '',
           distance: p.distance || '',
@@ -96,6 +102,44 @@ export const PGManagement: React.FC = () => {
   const [foodFilter, setFoodFilter] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPG, setEditingPG] = useState<PGProperty | null>(null);
+
+  const editFormData = useMemo<Partial<PGFormData> | undefined>(() => {
+    if (!editingPG) return undefined;
+    return {
+      name: editingPG.name,
+      propertyType: editingPG.propertyType || 'PG',
+      gender: editingPG.gender,
+      landlordName: editingPG.landlordName || '',
+      landlordPhone: editingPG.landlordPhone || '',
+      email: '',
+      description: editingPG.description || '',
+      photos: editingPG.photos?.length ? [...editingPG.photos] : editingPG.image ? [editingPG.image] : [],
+      address: editingPG.location?.address || '',
+      landmark: editingPG.location?.landmark || '',
+      city: editingPG.location?.city || 'Bhilai',
+      state: editingPG.location?.state || 'Chhattisgarh',
+      pincode: editingPG.location?.pincode || '',
+      latitude: editingPG.location?.latitude ?? null,
+      longitude: editingPG.location?.longitude ?? null,
+      corridor: editingPG.corridor || editingPG.location?.city || 'Junwani',
+      totalBeds: editingPG.totalBeds || 0,
+      vacantBeds: editingPG.vacantBeds || 0,
+      monthlyRent: editingPG.monthlyRent,
+      deposit: editingPG.deposit,
+      roomMatrix: editingPG.roomMatrix || '',
+      amenities: [...editingPG.amenities],
+      curfew: editingPG.curfew || '',
+      rules: '',
+      status: editingPG.status,
+    };
+  }, [editingPG]);
+
+  const handleEditPG = (pg: PGProperty) => {
+    setSelectedPG(null);
+    setEditingPG(pg);
+    setShowAddModal(true);
+  };
 
   const handleDeletePG = async (pg: PGProperty) => {
     if (window.confirm(`Are you sure you want to delete property "${pg.name}"?`)) {
@@ -268,7 +312,10 @@ export const PGManagement: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setEditingPG(null);
+              setShowAddModal(true);
+            }}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#225944] text-white hover:bg-[#184232] transition-all font-bold text-xs shadow-md"
           >
             <span className="material-symbols-outlined text-[20px]">add_circle</span>
@@ -594,9 +641,9 @@ export const PGManagement: React.FC = () => {
                     <td className="py-4 px-4 text-right min-w-[130px]" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => setSelectedPG(pg)}
+                          onClick={() => handleEditPG(pg)}
                           className="p-1.5 rounded-lg hover:bg-slate-100 text-[#225944]"
-                          title="Inspect / Edit Dossier"
+                          title="Edit property"
                         >
                           <span className="material-symbols-outlined text-[18px]">edit_square</span>
                         </button>
@@ -824,57 +871,61 @@ export const PGManagement: React.FC = () => {
               </button>
 
               <button
-                onClick={() => {
-                  setProperties(properties.map((p) => (p.id === selectedPG.id ? { ...p, status: 'active', verified: true } : p)));
-                  setSelectedPG(null);
-                  alert(`Published and approved ${selectedPG.name}!`);
-                }}
+                onClick={() => handleEditPG(selectedPG)}
                 className="px-5 py-2.5 rounded-full bg-[#225944] text-white font-bold hover:bg-[#184232] text-xs shadow-md transition"
               >
-                Save &amp; Publish
+                Edit Property
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Redesigned 4-Step Add New PG / Hostel Modal */}
+      {/* Shared four-step add/edit PG form */}
       <AddPGModal
+        key={editingPG ? `edit-${editingPG.id}` : 'create-pg'}
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        mode={editingPG ? 'edit' : 'create'}
+        initialData={editFormData}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingPG(null);
+        }}
         onSubmitPG={async (formData) => {
-          try {
-            await pgApi.create({
-              name: formData.name,
-              gender: formData.gender,
-              landlordName: formData.landlordName,
-              landlordPhone: formData.landlordPhone,
-              totalBeds: formData.totalBeds,
-              monthlyRent: formData.monthlyRent,
-              deposit: formData.deposit,
-              corridor: formData.corridor,
-              distance: formData.landmark || 'Near BIT Campus',
-              amenities: formData.amenities,
-              curfew: formData.curfew,
-              roomMatrix: formData.roomMatrix,
-              images: formData.photos,
-              location: {
-                address: formData.address,
-                landmark: formData.landmark,
-                city: formData.city,
-                state: formData.state,
-                pincode: formData.pincode,
-                latitude: formData.latitude ?? undefined,
-                longitude: formData.longitude ?? undefined,
-              },
-              status: 'active',
-            });
-            await fetchProperties();
-            setShowAddModal(false);
-          } catch (err) {
-            console.error('Failed to save PG to database:', err);
-            alert('Failed to save PG to database. Please check your admin login session.');
+          const propertyData = {
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            propertyType: formData.propertyType,
+            gender: formData.gender,
+            roomMatrix: formData.roomMatrix,
+            monthlyRent: formData.monthlyRent,
+            deposit: formData.deposit,
+            amenities: formData.amenities,
+            images: formData.photos,
+            location: {
+              address: formData.address,
+              landmark: formData.landmark,
+              city: formData.city,
+              state: formData.state,
+              pincode: formData.pincode,
+              latitude: formData.latitude ?? undefined,
+              longitude: formData.longitude ?? undefined,
+            },
+            status: formData.status === 'draft' ? 'pending' as const : formData.status,
+          };
+
+          if (editingPG) {
+            const updated = await pgApi.update(editingPG.id, propertyData);
+            if (!updated) throw new Error('The property could not be updated. Please try again.');
+          } else {
+            const created = await pgApi.create(propertyData);
+            if (!created) throw new Error('The property could not be created. Please try again.');
           }
+
+          await fetchProperties();
+          setSelectedPG(null);
+          setEditingPG(null);
+          setShowAddModal(false);
         }}
       />
     </div>
