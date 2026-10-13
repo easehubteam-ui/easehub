@@ -520,7 +520,7 @@ export const PGManagement: React.FC = () => {
                 {filteredProperties.map((pg) => (
                   <tr
                     key={pg.id}
-                    onClick={() => setSelectedPG(pg)}
+                    onClick={() => handleEditPG(pg)}
                     className={`hover:bg-[#F8FAF6] transition-colors cursor-pointer ${
                       selectedPG?.id === pg.id ? 'bg-amber-50/60' : ''
                     }`}
@@ -641,16 +641,29 @@ export const PGManagement: React.FC = () => {
                     <td className="py-4 px-4 text-right min-w-[130px]" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          type="button"
+                          onClick={() => setSelectedPG(pg)}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 text-[#6B6B63]"
+                          title="View audit dossier"
+                          aria-label={`View ${pg.name} audit dossier`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">visibility</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleEditPG(pg)}
                           className="p-1.5 rounded-lg hover:bg-slate-100 text-[#225944]"
                           title="Edit property"
+                          aria-label={`Edit ${pg.name}`}
                         >
                           <span className="material-symbols-outlined text-[18px]">edit_square</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeletePG(pg)}
                           className="p-1.5 rounded-lg hover:bg-rose-100 text-rose-700 transition"
                           title="Delete Property"
+                          aria-label={`Delete ${pg.name}`}
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
