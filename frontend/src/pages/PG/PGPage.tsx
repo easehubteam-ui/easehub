@@ -154,10 +154,6 @@ export const PGPage: React.FC = () => {
       return;
     }
     const timer = setTimeout(() => {
-
-  useEffect(() => {
-    loadPGs();
-  }, []);
       searchPGs();
     }, 300);
     return () => clearTimeout(timer);

@@ -39,7 +39,6 @@ export const PGDetails: React.FC = () => {
 
   const [pg, setPg] = useState<PGProperty | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentImgIdx, setCurrentImgIdx] = useState<number>(0);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -57,29 +56,16 @@ export const PGDetails: React.FC = () => {
     }
 
     setLoading(true);
-    setLoadError(null);
-    let timeoutId: number | undefined;
-    const detailRequest = Promise.race([
-      pgApi.getById(id),
-      new Promise<null>((_, reject) => {
-        timeoutId = window.setTimeout(() => reject(new Error('Listing request timed out')), 10000);
-      }),
-    ]);
-
-    detailRequest
+    pgApi.getById(id)
       .then((data) => {
         if (!isMounted) return;
         setPg(data);
         setLoading(false);
       })
-      .catch((err: any) => {
+      .catch(() => {
         if (!isMounted) return;
         setPg(null);
-        setLoadError(err?.message || 'Unable to load this listing.');
         setLoading(false);
-      })
-      .finally(() => {
-        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       });
 
     return () => {
@@ -177,8 +163,8 @@ export const PGDetails: React.FC = () => {
   if (!pg) {
     return (
       <NotFound
-        title={loadError ? 'Unable to load PG details' : 'PG Property Not Found'}
-        message={loadError ? 'The listing service took too long to respond. Please go back and try again.' : 'The accommodation listing you are looking for does not exist or may have been unlisted.'}
+        title="PG Property Not Found"
+        message="The accommodation listing you are looking for does not exist or may have been unlisted."
       />
     );
   }

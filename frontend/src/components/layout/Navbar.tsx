@@ -92,15 +92,6 @@ export const Navbar: React.FC = () => {
   }, [currentPath]);
 
   useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMobileMenuOpen(false);
@@ -337,7 +328,6 @@ export const Navbar: React.FC = () => {
               scrolled ? 'flex' : 'flex xl:hidden'
             }`}
             aria-label="Toggle Navigation Menu"
-            aria-expanded={mobileMenuOpen}
             title="Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -348,59 +338,49 @@ export const Navbar: React.FC = () => {
       {/* DRAWER MENU OVERLAY */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/10"
-              aria-hidden="true"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className={`mt-2 bg-white border border-[#E5E1D6] rounded-[24px] p-4 shadow-2xl space-y-1.5 text-sm font-bold text-[#171A18] absolute top-full right-4 sm:right-8 z-50 ${
-                scrolled ? 'w-64' : 'w-72'
-              }`}
-            >
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2.5 rounded-xl transition-colors ${
-                    currentPath === link.path
-                      ? 'bg-[#225944] text-white font-extrabold'
-                      : 'hover:bg-[#F7F5EF] text-[#171A18]'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className={`mt-2 bg-white border border-[#E5E1D6] rounded-[24px] p-4 shadow-2xl space-y-1.5 text-sm font-bold text-[#171A18] absolute top-full right-4 sm:right-8 ${
+              scrolled ? 'w-64' : 'w-72'
+            }`}
+          >
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-4 py-2.5 rounded-xl transition-colors ${
+                  currentPath === link.path
+                    ? 'bg-[#225944] text-white font-extrabold'
+                    : 'hover:bg-[#F7F5EF] text-[#171A18]'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
 
-              {!isAuthenticated && (
-                <div className="pt-2 border-t border-[#E5E1D6]">
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-2.5 rounded-xl text-center bg-[#F7F5EF] text-[#171A18] font-bold"
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-2.5 mt-1 rounded-xl text-center bg-[#225944] text-white font-bold"
-                  >
-                    Create account
-                  </Link>
-                </div>
-              )}
-            </motion.div>
-          </>
+            {!isAuthenticated && (
+              <div className="pt-2 border-t border-[#E5E1D6]">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2.5 rounded-xl text-center bg-[#F7F5EF] text-[#171A18] font-bold"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2.5 mt-1 rounded-xl text-center bg-[#225944] text-white font-bold"
+                >
+                  Create account
+                </Link>
+              </div>
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
     </header>
