@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,9 +8,12 @@ export const AuthCallbackPage: React.FC = () => {
   const location = useLocation();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const handledRef = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
+      if (handledRef.current) return;
+      handledRef.current = true;
       try {
         setIsProcessing(true);
         const params = new URLSearchParams(location.search);

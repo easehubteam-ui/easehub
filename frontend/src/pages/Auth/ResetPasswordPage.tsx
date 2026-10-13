@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { authApi } from '../../services/authApi';
 
@@ -14,6 +14,33 @@ export const ResetPasswordPage: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (!email.trim() || resendCooldown > 0 || isSubmitting) return;
+    setError(null);
+    setMessage(null);
+    try {
+      setIsSubmitting(true);
+      const res = await authApi.forgotPassword({ emailOrPhone: email });
+      if (res.success) {
+        setMessage('If an account exists for this email, a new reset code has been sent.');
+        setResendCooldown(60);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Unable to resend the reset code. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +134,19 @@ export const ResetPasswordPage: React.FC = () => {
                   required
                   className="w-full px-3.5 py-3 rounded-xl bg-[#F3F4F0] border border-[#E5E1D6] text-sm tracking-[0.25em] text-[#191C1A] focus:outline-none focus:ring-2 focus:ring-[#225944]"
                 />
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <Link to="/forgot-password" className="font-bold text-[#225944] hover:underline">
+                  Back to email
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isSubmitting || resendCooldown > 0 || !email.trim()}
+                  className="font-bold text-[#225944] underline underline-offset-2 disabled:text-[#6B6B63] disabled:no-underline"
+                >
+                  {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+                </button>
               </div>
             </>
           )}
