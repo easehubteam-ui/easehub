@@ -357,7 +357,7 @@ export const Navbar: React.FC = () => {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.12 }}
             className={`mt-2 bg-white border border-[#E5E1D6] rounded-[24px] p-4 shadow-2xl space-y-1.5 text-sm font-bold text-[#171A18] absolute top-full right-4 sm:right-8 ${
               scrolled ? 'w-64' : 'w-72'
             }`}
