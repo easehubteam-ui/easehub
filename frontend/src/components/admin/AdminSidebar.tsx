@@ -107,9 +107,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           <div className="flex flex-col gap-2 px-2 pb-3 border-b border-[#E5E1D6]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-[#225944] flex items-center justify-center text-white shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[24px]">apartment</span>
-                </div>
+                <img
+                  src="/logo.png"
+                  alt="EaseHub logo"
+                  className="w-10 h-10 rounded-xl object-cover shadow-sm shrink-0"
+                />
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-lg text-[#225944] tracking-tight">EaseHub</span>
