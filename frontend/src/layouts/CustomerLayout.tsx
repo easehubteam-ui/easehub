@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { isAdminRole } from '../types';
 import FloatingContact from '../components/common/FloatingContact';
 import { savedApi } from '../services/savedApi';
 import { PageTransition } from '../components/common/PageTransition';
+import { Menu, X } from 'lucide-react';
 
 export const CustomerLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -12,9 +12,12 @@ export const CustomerLayout: React.FC = () => {
   const currentPath = location.pathname;
   const navigate = useNavigate();
 
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [accountSidebarOpen, setAccountSidebarOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number>(0);
-  const isAdmin = isAdminRole(user?.role);
+
+  useEffect(() => {
+    setAccountSidebarOpen(false);
+  }, [currentPath]);
 
   useEffect(() => {
     let isMounted = true;
@@ -31,7 +34,7 @@ export const CustomerLayout: React.FC = () => {
   }, [user?.id]);
 
   const handleLogout = async () => {
-    setUserDropdownOpen(false);
+    setAccountSidebarOpen(false);
     await logout();
     navigate('/', { replace: true });
   };
@@ -176,98 +179,121 @@ export const CustomerLayout: React.FC = () => {
               </span>
             </Link>
 
-            {/* User Profile Avatar Button */}
-            <div className="relative">
-              <button
-                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl border border-[#E5E1D6] bg-white hover:bg-[#F7F5EF] transition shadow-xs"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#225944] text-white font-black text-xs flex items-center justify-center shadow-xs">
-                  {(user?.name || user?.email || 'U').slice(0, 2).toUpperCase()}
-                </div>
-                <span className="hidden sm:inline font-bold text-xs text-[#171A18] max-w-[100px] truncate">
-                  {user?.name?.split(' ')[0] || 'Account'}
-                </span>
-                <span className="material-symbols-outlined text-[16px] text-[#6B6B63]">expand_more</span>
-              </button>
-
-              {/* User Account Dropdown Menu */}
-              {userDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-[#E5E1D6] p-2 z-50 space-y-1 animate-in fade-in zoom-in-95">
-                  <div className="px-3 py-2 border-b border-[#E5E1D6] mb-1">
-                    <p className="text-xs font-bold text-[#171A18]">{user?.name || 'Student Resident'}</p>
-                    <p className="text-[10px] text-[#6B6B63] truncate">{user?.email}</p>
-                  </div>
-
-                  <Link
-                    to="/account"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-[#225944]">account_circle</span>
-                    <span>My Account</span>
-                  </Link>
-
-                  <Link
-                    to="/bookings"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-[#225944]">calendar_month</span>
-                    <span>My Bookings</span>
-                  </Link>
-
-                  <Link
-                    to="/payment"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-[#225944]">qr_code_scanner</span>
-                    <span>Make Payment</span>
-                  </Link>
-
-                  <Link
-                    to="/wishlist"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-rose-500">favorite</span>
-                    <span>Saved Wishlist</span>
-                  </Link>
-
-                  <Link
-                    to="/community"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-[#225944]">forum</span>
-                    <span>Community Support</span>
-                  </Link>
-
-                  <Link
-                    to="/support/chat"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-[#171A18] hover:bg-[#F7F5EF] transition"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-[#225944]">support_agent</span>
-                    <span>Admin Support Chat</span>
-                  </Link>
-
-                  <div className="pt-1 border-t border-[#E5E1D6]">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      <span>Log Out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Account sidebar trigger; profile details live in the sidebar. */}
+            <button
+              type="button"
+              onClick={() => setAccountSidebarOpen(true)}
+              aria-label="Open account sidebar"
+              title="Account menu"
+              className="p-2 sm:p-2.5 rounded-xl bg-white hover:bg-[#F7F5EF] text-[#171A18] transition border border-[#E5E1D6] shadow-xs"
+            >
+              <Menu className="w-5 h-5" aria-hidden="true" />
+            </button>
           </div>
         </div>
       </header>
+
+      {accountSidebarOpen && (
+        <div className="fixed inset-0 z-[70]">
+          <button
+            type="button"
+            aria-label="Close account sidebar"
+            onClick={() => setAccountSidebarOpen(false)}
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Account sidebar"
+            className="absolute inset-y-0 right-0 flex w-[min(22rem,90vw)] flex-col border-l border-[#E5E1D6] bg-white p-5 shadow-2xl animate-in slide-in-from-right duration-200"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E1D6] pb-4">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#6B6B63]">Your account</p>
+                <h2 className="mt-1 text-lg font-black text-[#225944]">EaseHub</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAccountSidebarOpen(false)}
+                aria-label="Close account sidebar"
+                className="rounded-xl border border-[#E5E1D6] p-2 text-[#171A18] transition hover:bg-[#F7F5EF]"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#F7F5EF] p-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#225944] text-sm font-black text-white">
+                {(user?.name || user?.email || 'U').slice(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-extrabold text-[#171A18]">{user?.name || 'Student Resident'}</p>
+                <p className="truncate text-xs text-[#6B6B63]">{user?.email}</p>
+              </div>
+            </div>
+
+            <nav aria-label="Account navigation" className="mt-5 flex-1 space-y-1 overflow-y-auto">
+              <Link
+                to="/account"
+                onClick={() => setAccountSidebarOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#225944]">account_circle</span>
+                My Account
+              </Link>
+              <Link
+                to="/bookings"
+                onClick={() => setAccountSidebarOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#225944]">calendar_month</span>
+                My Bookings
+              </Link>
+              <Link
+                to="/payment"
+                onClick={() => setAccountSidebarOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#225944]">qr_code_scanner</span>
+                Make Payment
+              </Link>
+              <Link
+                to="/wishlist"
+                onClick={() => setAccountSidebarOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+              >
+                <span className="material-symbols-outlined text-[20px] text-rose-500">favorite</span>
+                Saved Wishlist{savedCount > 0 ? ` (${savedCount})` : ''}
+              </Link>
+              <Link
+                to="/community"
+                onClick={() => setAccountSidebarOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#225944]">forum</span>
+                Community Support
+              </Link>
+              <Link
+                to="/support/chat"
+                onClick={() => setAccountSidebarOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#225944]">support_agent</span>
+                Admin Support Chat
+              </Link>
+            </nav>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-4 flex w-full items-center gap-3 rounded-xl border-t border-[#E5E1D6] px-3 py-4 text-left text-sm font-extrabold text-rose-600 transition hover:bg-rose-50"
+            >
+              <span className="material-symbols-outlined text-[20px]">logout</span>
+              Log Out
+            </button>
+          </aside>
+        </div>
+      )}
 
       {/* Main App Content Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
