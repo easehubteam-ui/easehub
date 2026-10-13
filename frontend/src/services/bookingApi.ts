@@ -155,21 +155,6 @@ export const bookingApi = {
 
     const bookingRow = inserted[0];
 
-    // Initialize payment record in 'payments' table linked by booking_id
-    try {
-      await insforge.database
-        .from('payments')
-        .insert([{
-          booking_id: bookingRow.id,
-          user_id: profile.id,
-          amount: bookingRow.amount,
-          payment_method: 'qr',
-          status: 'VERIFICATION_PENDING'
-        }]);
-    } catch (payErr) {
-      console.warn('Payment record initialization notice:', payErr);
-    }
-
     // Fire edge function in background if deployed
     insforge.functions.invoke('create-booking', {
       body: {

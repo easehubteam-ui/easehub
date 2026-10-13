@@ -8,7 +8,7 @@ import { paymentConfig } from '../../config/paymentConfig';
 import { ShieldCheck, QrCode, Upload, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Phone, MessageSquare, Copy, Check, ExternalLink, Smartphone } from 'lucide-react';
 
 interface PaymentState {
-  status: 'idle' | 'submitting' | 'pending' | 'verified' | 'rejected';
+  status: 'idle' | 'submitting' | 'pending' | 'verified' | 'rejected' | 'error';
   utr: string;
   rejectionReason?: string;
   error?: string;
@@ -90,16 +90,21 @@ export const CustomerPaymentPage: React.FC = () => {
           const payments = await paymentApi.getPayments();
           const existing = payments.find((p: any) => p.bookingId === bId || p.booking_id === bId);
           if (existing && isMounted) {
-            setUtrInput(existing.utr !== '—' ? existing.utr || '' : '');
+            const submittedUtr = existing.utr && existing.utr !== '—' ? String(existing.utr).trim() : '';
+            setUtrInput(submittedUtr);
             setUploadedPath(existing.screenshotUrl || '');
 
             const st = (existing.status || '').toLowerCase();
             if (st === 'verified' || st === 'completed') {
-              setPaymentState({ status: 'verified', utr: existing.utr || '' });
+              setPaymentState({ status: 'verified', utr: submittedUtr });
             } else if (st === 'rejected') {
-              setPaymentState({ status: 'rejected', utr: existing.utr || '', rejectionReason: existing.rejectionReason });
-            } else if (st.includes('pending')) {
-              setPaymentState({ status: 'pending', utr: existing.utr || '' });
+              setPaymentState({ status: 'rejected', utr: submittedUtr, rejectionReason: existing.rejectionReason });
+            } else if (st.includes('pending') && submittedUtr) {
+              // A verification-pending row only represents a submitted payment
+              // when it contains a UTR. Older bookings may have a blank stub.
+              setPaymentState({ status: 'pending', utr: submittedUtr });
+            } else {
+              setPaymentState({ status: 'idle', utr: '' });
             }
           }
         } catch (pErr) {
@@ -179,8 +184,9 @@ export const CustomerPaymentPage: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to submit payment proof:', err);
       setPaymentState({
-        status: 'pending',
+        status: 'error',
         utr: cleanUtr,
+        error: err?.message || 'Payment proof could not be submitted. Please try again.',
       });
     }
   };
@@ -237,6 +243,12 @@ export const CustomerPaymentPage: React.FC = () => {
       </div>
 
       {/* Status Screen Banners */}
+      {paymentState.status === 'error' && (
+        <div role="alert" className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold">
+          {paymentState.error || 'Payment proof could not be submitted. Please try again.'}
+        </div>
+      )}
+
       {paymentState.status === 'pending' && (
         <div className="p-6 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-950 space-y-4 animate-in fade-in">
           <div className="flex items-center justify-between">
@@ -490,7 +502,13 @@ export const CustomerPaymentPage: React.FC = () => {
                   maxLength={16}
                   placeholder="Enter your UTR / transaction ID (e.g. 408291048291)"
                   value={utrInput}
-                  onChange={(e) => setUtrInput(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                  onChange={(e) => {
+                    const nextUtr = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+                    setUtrInput(nextUtr);
+                    if (paymentState.status === 'error') {
+                      setPaymentState({ status: 'idle', utr: nextUtr });
+                    }
+                  }}
                   className="w-full px-4 py-3 rounded-2xl bg-[#F7F5EF] border border-[#E5E1D6] text-sm font-mono font-bold text-[#171A18] focus:outline-none focus:ring-2 focus:ring-[#225944]"
                 />
                 <p className="text-[10px] text-[#6B6B63] mt-1 font-medium">
