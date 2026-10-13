@@ -67,6 +67,14 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close navigation overlays whenever the route changes, even if navigation
+  // was triggered by something other than a menu item's click handler.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setLegalDropdownOpen(false);
+    setUserDropdownOpen(false);
+  }, [currentPath]);
+
   useEffect(() => {
     let isMounted = true;
     if (isAuthenticated && user && user.role === 'customer') {
@@ -374,14 +382,22 @@ export const Navbar: React.FC = () => {
               <Link
                 to="/privacy-policy"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-xl px-4 py-2.5 text-[#171A18] transition-colors hover:bg-[#F7F5EF]"
+                className={`block rounded-xl px-4 py-2.5 transition-colors ${
+                  currentPath === '/privacy-policy'
+                    ? 'bg-[#225944] text-white font-extrabold'
+                    : 'text-[#171A18] hover:bg-[#F7F5EF]'
+                }`}
               >
                 Privacy Policy
               </Link>
               <Link
                 to="/terms-and-conditions"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-xl px-4 py-2.5 text-[#171A18] transition-colors hover:bg-[#F7F5EF]"
+                className={`block rounded-xl px-4 py-2.5 transition-colors ${
+                  currentPath === '/terms-and-conditions'
+                    ? 'bg-[#225944] text-white font-extrabold'
+                    : 'text-[#171A18] hover:bg-[#F7F5EF]'
+                }`}
               >
                 Terms &amp; Conditions
               </Link>
