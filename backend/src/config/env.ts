@@ -25,5 +25,4 @@ export const env = {
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   INSFORGE_PROJECT_URL: process.env.INSFORGE_PROJECT_URL || 'https://289ybt8g.us-east.insforge.app',
   INSFORGE_ANON_KEY: requireEnv('INSFORGE_ANON_KEY'),
-  INSFORGE_SERVICE_ROLE_KEY: requireEnv('INSFORGE_SERVICE_ROLE_KEY'),
 };
