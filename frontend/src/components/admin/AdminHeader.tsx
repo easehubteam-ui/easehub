@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -12,12 +12,33 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle, title })
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const closeMenus = () => {
+      setShowProfileMenu(false);
+      setShowNotifications(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMenus();
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) closeMenus();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, []);
 
   return (
-    <header className="h-16 bg-white border-b border-[#E5E1D6] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+    <header ref={headerRef} className="h-16 bg-white border-b border-[#E5E1D6] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
       {/* Left side */}
       <div className="flex items-center gap-4">
         <button
+          aria-label="Open admin navigation"
           onClick={onMenuToggle}
           className="lg:hidden p-2 rounded-xl bg-[#F3F4F0] text-[#171A18] hover:bg-[#EDEEEB] transition-colors"
         >
@@ -39,6 +60,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle, title })
         {hasPermission('notifications') && (
           <div className="relative">
             <button
+              aria-label="Open notifications"
+              aria-expanded={showNotifications}
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-2.5 rounded-xl bg-[#F3F4F0] hover:bg-[#EDEEEB] text-[#171A18] relative transition-colors"
             >
@@ -69,6 +92,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle, title })
         {/* Profile menu dropdown */}
         <div className="relative">
           <button
+            aria-label="Open admin profile menu"
+            aria-expanded={showProfileMenu}
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-[#F3F4F0] transition-colors border border-transparent hover:border-[#E5E1D6]"
           >

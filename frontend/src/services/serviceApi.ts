@@ -63,11 +63,59 @@ const mapServiceFromDB = (record: any): ExtraServiceItem => {
 
 export const serviceApi = {
   getAll: async (includeInactive: boolean = false): Promise<ExtraServiceItem[]> => {
+    return serviceApi.search({}, includeInactive);
+  },
+  
+  search: async (params: {
+    query?: string;
+    city?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: 'featured' | 'price-low' | 'price-high' | 'rating';
+  } = {}, includeInactive: boolean = false): Promise<ExtraServiceItem[]> => {
     try {
       let query = insforge.database.from('services').select('*');
       if (!includeInactive) {
         query = query.eq('is_active', true);
       }
+
+      if (params.query) {
+        const searchTerm = `%${params.query.toLowerCase()}%`;
+        query = query.or(`name.ilike.${searchTerm},description.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},category.ilike.${searchTerm}`);
+      }
+
+      if (params.city) {
+        query = query.ilike('city', `%${params.city}%`);
+      }
+
+      if (params.category) {
+        query = query.ilike('category', `%${params.category}%`);
+      }
+
+      if (params.minPrice !== undefined) {
+        query = query.gte('starting_price', params.minPrice);
+      }
+
+      if (params.maxPrice !== undefined) {
+        query = query.lte('starting_price', params.maxPrice);
+      }
+
+      // Apply sorting
+      switch (params.sortBy) {
+        case 'price-low':
+          query = query.order('starting_price', { ascending: true });
+          break;
+        case 'price-high':
+          query = query.order('starting_price', { ascending: false });
+          break;
+        case 'rating':
+          query = query.order('rating', { ascending: false });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
       const { data, error } = await query;
 
       if (error || !Array.isArray(data)) return [];
@@ -76,15 +124,17 @@ export const serviceApi = {
       return [];
     }
   },
+  
   getServices: async (includeInactive: boolean = false): Promise<ExtraServiceItem[]> => {
-    return serviceApi.getAll(includeInactive);
+    return serviceApi.search({}, includeInactive);
   },
   getById: async (id: string): Promise<ExtraServiceItem | null> => {
     try {
       const { data } = await insforge.database
         .from('services')
         .select('*')
-        .eq('id', id);
+        .eq('id', id)
+        .eq('is_active', true);
 
       const record = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return record ? mapServiceFromDB(record) : null;

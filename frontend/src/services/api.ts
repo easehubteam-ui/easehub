@@ -13,8 +13,7 @@ export const api = axios.create({
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
-    // Optionally attach Bearer token if stored locally
-    const token = localStorage.getItem('easehub_token');
+    const token = typeof window !== 'undefined' ? window.sessionStorage.getItem('easehub_token') : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,8 +29,9 @@ api.interceptors.response.use(
     if (error.response) {
       const { status } = error.response;
       if (status === 401) {
-        // Clear cached token on unauthenticated error
-        localStorage.removeItem('easehub_token');
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.removeItem('easehub_token');
+        }
       } else if (status === 403) {
         console.warn('Access Forbidden:', error.response.data?.message);
       } else if (status >= 500) {

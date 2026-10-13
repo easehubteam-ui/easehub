@@ -81,11 +81,61 @@ const mapMealFromDB = (record: any): MealProvider => {
 
 export const mealApi = {
   getAll: async (): Promise<MealProvider[]> => {
+    return mealApi.search({});
+  },
+  
+  search: async (params: {
+    query?: string;
+    city?: string;
+    isVeg?: boolean;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: 'featured' | 'price-low' | 'price-high' | 'rating';
+  } = {}): Promise<MealProvider[]> => {
     try {
-      const { data, error } = await insforge.database
+      let query = insforge.database
         .from('meal_providers')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('status', 'active');
+
+      if (params.query) {
+        const searchTerm = `%${params.query.toLowerCase()}%`;
+        query = query.or(`name.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},landmark.ilike.${searchTerm}`);
+      }
+
+      if (params.city) {
+        query = query.ilike('city', `%${params.city}%`);
+      }
+
+      if (params.isVeg !== undefined) {
+        query = query.eq('is_veg', params.isVeg);
+      }
+
+      if (params.minPrice !== undefined) {
+        query = query.gte('daily_price', params.minPrice);
+      }
+
+      if (params.maxPrice !== undefined) {
+        query = query.lte('daily_price', params.maxPrice);
+      }
+
+      // Apply sorting
+      switch (params.sortBy) {
+        case 'price-low':
+          query = query.order('daily_price', { ascending: true });
+          break;
+        case 'price-high':
+          query = query.order('daily_price', { ascending: false });
+          break;
+        case 'rating':
+          query = query.order('rating', { ascending: false });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query;
 
       if (error || !Array.isArray(data)) return [];
       return data.map(mapMealFromDB);
@@ -93,12 +143,15 @@ export const mealApi = {
       return [];
     }
   },
+  
   getById: async (id: string): Promise<MealProvider | null> => {
     try {
       const { data } = await insforge.database
         .from('meal_providers')
         .select('*')
-        .eq('id', id);
+        .eq('id', id)
+        .eq('is_active', true)
+        .eq('status', 'active');
 
       const record = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return record ? mapMealFromDB(record) : null;

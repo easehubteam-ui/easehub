@@ -4,8 +4,8 @@
  */
 import { createClient } from '@insforge/sdk';
 
-const projectUrl = (import.meta.env && import.meta.env.VITE_INSFORGE_PROJECT_URL) || 'https://289ybt8g.us-east.insforge.app';
-const anonKey = (import.meta.env && import.meta.env.VITE_INSFORGE_ANON_KEY) || 'ik_7b864691972beda6b5dd6e5d67ea743a';
+const projectUrl = import.meta.env?.VITE_INSFORGE_PROJECT_URL ?? '';
+const anonKey = import.meta.env?.VITE_INSFORGE_ANON_KEY ?? '';
 
 export const insforge = createClient({
   baseUrl: projectUrl,
@@ -69,8 +69,8 @@ const originalRefreshSession = insforge.auth.refreshSession.bind(insforge.auth);
 insforge.auth.refreshSession = async (options?: any) => {
   if (typeof window !== 'undefined') {
     const isOAuthCallback = window.location.search.includes('insforge_code=');
-    const isLoggedOut = localStorage.getItem('easehub_logged_out') === 'true';
-    const storedToken = localStorage.getItem('easehub_token');
+    const isLoggedOut = typeof window !== 'undefined' && window.sessionStorage.getItem('easehub_logged_out') === 'true';
+    const storedToken = typeof window !== 'undefined' ? window.sessionStorage.getItem('easehub_token') : null;
     if (!isOAuthCallback && (isLoggedOut || !storedToken)) {
       return { data: null, error: null } as any;
     }
@@ -82,8 +82,8 @@ insforge.auth.getCurrentUser = async () => {
   if (typeof window !== 'undefined') {
     const isOAuthCallback = window.location.search.includes('insforge_code=');
     if (!isOAuthCallback) {
-      const isLoggedOut = localStorage.getItem('easehub_logged_out') === 'true';
-      const storedToken = localStorage.getItem('easehub_token');
+      const isLoggedOut = typeof window !== 'undefined' && window.sessionStorage.getItem('easehub_logged_out') === 'true';
+      const storedToken = typeof window !== 'undefined' ? window.sessionStorage.getItem('easehub_token') : null;
 
       if (isLoggedOut || !storedToken) {
         return { data: { user: null }, error: null } as any;
@@ -93,7 +93,7 @@ insforge.auth.getCurrentUser = async () => {
         const payload = decodeJwtPayload(storedToken);
         let storedUserObj: any = null;
         try {
-          const raw = localStorage.getItem('easehub_user');
+          const raw = typeof window !== 'undefined' ? window.sessionStorage.getItem('easehub_user') : null;
           if (raw) storedUserObj = JSON.parse(raw);
         } catch {
           // ignore parse error
@@ -127,12 +127,12 @@ insforge.auth.getCurrentUser = async () => {
 // Synchronously attach stored session token on startup only if user did not log out and token is valid
 if (typeof window !== 'undefined') {
   try {
-    const isLoggedOut = localStorage.getItem('easehub_logged_out') === 'true';
-    const storedToken = localStorage.getItem('easehub_token');
+    const isLoggedOut = typeof window !== 'undefined' && window.sessionStorage.getItem('easehub_logged_out') === 'true';
+    const storedToken = typeof window !== 'undefined' ? window.sessionStorage.getItem('easehub_token') : null;
     if (!isLoggedOut && storedToken && isJwtStillValid(storedToken)) {
       let storedUserObj: any = null;
       try {
-        const raw = localStorage.getItem('easehub_user');
+        const raw = typeof window !== 'undefined' ? window.sessionStorage.getItem('easehub_user') : null;
         if (raw) storedUserObj = JSON.parse(raw);
       } catch {
         // ignore
@@ -143,8 +143,10 @@ if (typeof window !== 'undefined') {
         name: storedUserObj?.name,
       });
     } else {
-      localStorage.removeItem('easehub_token');
-      localStorage.removeItem('easehub_user');
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem('easehub_token');
+        window.sessionStorage.removeItem('easehub_user');
+      }
       syncSdkSessionFromToken(null);
     }
   } catch (err) {

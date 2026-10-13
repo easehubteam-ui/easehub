@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import { useAuth } from '../../context/AuthContext';
@@ -31,7 +31,10 @@ export const ServicesPage: React.FC = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [providersList, setProvidersList] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const initialSearchRef = useRef(true);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -68,6 +71,54 @@ export const ServicesPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const searchServices = async () => {
+    try {
+      setSearchLoading(true);
+      setError('');
+      const data = await serviceApi.search({
+        query: searchQuery || undefined,
+        category: activeFilter !== 'All Services' && activeFilter !== 'More' ? activeFilter : undefined,
+        sortBy: 'featured',
+      });
+      
+      if (Array.isArray(data)) {
+        const mapped: ServiceProvider[] = data.map((s: ExtraServiceItem) => ({
+          id: s._id || s.code,
+          name: s.name,
+          category: s.category || 'General Service',
+          location: s.location?.address ? `${s.location.address}, ${s.location.city}` : `${s.corridor || 'Bhilai'}, Chhattisgarh`,
+          rating: s.rating || 5.0,
+          reviewsCount: s.reviewCount || 0,
+          startingPrice: s.basePrice || 0,
+          image: s.images?.[0] || '',
+          badge: { text: 'Verified', color: 'bg-[#225944] text-white' },
+          verified: true,
+          tags: [s.priceUnit || 'per visit', s.corridor || 'Bhilai'],
+          features: ['⚡ Verified EaseHub Partner', '₹ Transparent Pricing', '🕒 Doorstep Service'],
+        }));
+        setProvidersList(mapped);
+      }
+      setHasSearched(true);
+    } catch (err: any) {
+      console.error('Failed to search services:', err);
+      setError('Unable to search services. Please try again.');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    if (initialSearchRef.current) {
+      initialSearchRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      searchServices();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeFilter]);
 
   useEffect(() => {
     loadServices();
@@ -113,25 +164,6 @@ export const ServicesPage: React.FC = () => {
     });
     setIsBookingModalOpen(true);
   };
-
-  const filteredProviders = providersList.filter((provider) => {
-    if (activeFilter !== 'All Services' && activeFilter !== 'More') {
-      if (!provider.category.toLowerCase().includes(activeFilter.toLowerCase()) &&
-          !provider.tags.some((t) => t.toLowerCase().includes(activeFilter.toLowerCase()))) {
-        return false;
-      }
-    }
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      return (
-        provider.name.toLowerCase().includes(q) ||
-        provider.category.toLowerCase().includes(q) ||
-        provider.location.toLowerCase().includes(q) ||
-        provider.tags.some((t) => t.toLowerCase().includes(q))
-      );
-    }
-    return true;
-  });
 
   return (
     <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen flex flex-col selection:bg-[#EECA3A] selection:text-[#171A18]">
@@ -329,7 +361,7 @@ export const ServicesPage: React.FC = () => {
             {/* Results Counter & Sort */}
             <div className="flex items-center justify-between pb-2">
               <h2 className="text-xl font-extrabold text-[#171A18] tracking-tight">
-                {filteredProviders.length} Trusted Service Providers near you
+                {providersList.length} Trusted Service Providers near you
               </h2>
               <div className="flex items-center gap-2 text-sm text-[#6B6B63]">
                 <span className="text-xs font-medium text-[#6B6B63]">Sort by:</span>
@@ -359,18 +391,18 @@ export const ServicesPage: React.FC = () => {
                   Retry
                 </button>
               </div>
-            ) : filteredProviders.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
-                <div className="w-16 h-16 bg-[#225944]/10 text-[#225944] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="material-symbols-outlined text-3xl">home_repair_service</span>
+) : providersList.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
+                  <div className="w-16 h-16 bg-[#225944]/10 text-[#225944] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <span className="material-symbols-outlined text-3xl">home_repair_service</span>
+                  </div>
+                  <h3 className="text-xl font-extrabold text-[#171A18]">No extra services available yet.</h3>
+                  <p className="text-sm text-[#6B6B63] mt-2 font-medium">
+                    Verified repair and utility service providers will appear here once added from the Admin Panel.
+                  </p>
                 </div>
-                <h3 className="text-xl font-extrabold text-[#171A18]">No extra services available yet.</h3>
-                <p className="text-sm text-[#6B6B63] mt-2 font-medium">
-                  Verified repair and utility service providers will appear here once added from the Admin Panel.
-                </p>
-              </div>
-            ) : (
-              filteredProviders.map((provider) => {
+              ) : (
+                providersList.map((provider) => {
               const isFav = favorites.includes(provider.id);
 
               return (

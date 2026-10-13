@@ -11,6 +11,7 @@ import AdminProtectedRoute from '../components/auth/AdminProtectedRoute';
 import HomePage from '../pages/Home/TemplateHomePage';
 import LoginPage from '../pages/Auth/LoginPage';
 import RegisterPage from '../pages/Auth/RegisterPage';
+import AuthCallbackPage from '../pages/Auth/AuthCallbackPage';
 
 // Lazy-Loaded Guest Pages
 const ForgotPasswordPage = React.lazy(() => import('../pages/Auth/ForgotPasswordPage'));
@@ -110,6 +111,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/services/:id" element={<ServicesPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/support" element={<SupportPage />} />

@@ -16,6 +16,7 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number>(0);
+  const headerRef = useRef<HTMLElement>(null);
 
   const scrolledRef = useRef(false);
   const lastScrollY = useRef(0);
@@ -85,6 +86,34 @@ export const Navbar: React.FC = () => {
     };
   }, [isAuthenticated, user, currentPath]);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setUserDropdownOpen(false);
+  }, [currentPath]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileMenuOpen(false);
+        setUserDropdownOpen(false);
+      }
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, []);
+
   const handleLogout = async () => {
     setUserDropdownOpen(false);
     setMobileMenuOpen(false);
@@ -106,7 +135,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <header className="sticky top-3 sm:top-5 z-50 w-full px-4 sm:px-8 max-w-[1420px] mx-auto pointer-events-auto flex justify-end h-[70px] min-h-[70px]">
+    <header ref={headerRef} className="sticky top-3 sm:top-5 z-50 w-full px-4 sm:px-8 max-w-[1420px] mx-auto pointer-events-auto flex justify-end h-[70px] min-h-[70px]">
       {/* SYNCHRONIZED MORPHING NAVBAR CONTAINER (TRANSPARENT BACKGROUND WHEN SCROLLED) */}
       <div
         className={`flex items-center justify-between h-full transition-all duration-300 ease-expo-out ${

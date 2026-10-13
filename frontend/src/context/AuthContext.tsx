@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   User,
   AdminPermissionKey,
@@ -29,16 +29,44 @@ interface AuthContextType {
   refreshUser: () => Promise<User | null>;
 }
 
+const sessionStore = {
+  get: (key: string) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return window.sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set: (key: string, value: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(key, value);
+    } catch {
+      // Ignore storage quota / privacy exceptions.
+    }
+  },
+  remove: (key: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // Ignore storage errors.
+    }
+  },
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const oauthInProgressRef = useRef(false);
   const [user, setUser] = useState<User | null>(() => {
     try {
       if (typeof window === 'undefined') return null;
-      if (localStorage.getItem('easehub_logged_out') === 'true') return null;
-      const token = localStorage.getItem('easehub_token');
+      if (sessionStore.get('easehub_logged_out') === 'true') return null;
+      const token = sessionStore.get('easehub_token');
       if (!token || !isJwtStillValid(token)) return null;
-      const stored = localStorage.getItem('easehub_user');
+      const stored = sessionStore.get('easehub_user');
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -49,20 +77,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (typeof window === 'undefined') return false;
       if (window.location.search.includes('insforge_code=')) return true;
-      if (localStorage.getItem('easehub_logged_out') === 'true') return false;
-      const token = localStorage.getItem('easehub_token');
+      if (sessionStore.get('easehub_logged_out') === 'true') return false;
+      const token = sessionStore.get('easehub_token');
       return !!token && isJwtStillValid(token);
     } catch {
       return false;
     }
   });
 
-  // Helper to fetch or initialize public.users profile for an InsForge Auth user
   const fetchOrSyncProfile = async (authUser: any): Promise<User | null> => {
     if (!authUser || !authUser.id) return null;
 
     try {
-      // 1. Query by auth_user_id
       const { data: profilesByAuth } = await insforge.database
         .from('users')
         .select('*')
@@ -70,7 +96,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let profile = Array.isArray(profilesByAuth) && profilesByAuth.length > 0 ? profilesByAuth[0] : null;
 
-      // 2. If not found by auth_user_id, attempt email match (for existing customers or seed records)
       if (!profile && authUser.email) {
         const { data: profilesByEmail } = await insforge.database
           .from('users')
@@ -79,7 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (Array.isArray(profilesByEmail) && profilesByEmail.length > 0) {
           const existing = profilesByEmail[0];
-          // Link auth_user_id to existing profile
           await insforge.database
             .from('users')
             .update({ auth_user_id: authUser.id })
@@ -93,7 +117,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // 3. If still no profile, create a default customer profile (Google / OAuth new user)
       if (!profile) {
         const googleName = authUser.name || authUser.profile?.name || authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User';
         const googleAvatar = authUser.profile?.avatar || authUser.user_metadata?.avatar_url || authUser.avatar_url || null;
@@ -144,26 +167,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
-      const isOAuthCallback =
-        typeof window !== 'undefined' && window.location.search.includes('insforge_code=');
+      const isOAuthCallback = typeof window !== 'undefined' && window.location.search.includes('insforge_code=');
 
       if (isOAuthCallback) {
-        localStorage.removeItem('easehub_logged_out');
+        sessionStore.remove('easehub_logged_out');
       } else if (typeof window !== 'undefined') {
-        const isLoggedOut = localStorage.getItem('easehub_logged_out') === 'true';
-        const storedToken = localStorage.getItem('easehub_token');
+        const isLoggedOut = sessionStore.get('easehub_logged_out') === 'true';
+        const storedToken = sessionStore.get('easehub_token');
 
         if (isLoggedOut || !storedToken || !isJwtStillValid(storedToken)) {
-          localStorage.removeItem('easehub_token');
-          localStorage.removeItem('easehub_user');
+          sessionStore.remove('easehub_token');
+          sessionStore.remove('easehub_user');
           syncSdkSessionFromToken(null);
           setUser(null);
           return null;
         }
       }
 
-      const storedToken =
-        typeof window !== 'undefined' ? localStorage.getItem('easehub_token') : null;
+      const storedToken = typeof window !== 'undefined' ? sessionStore.get('easehub_token') : null;
 
       let activeAuthUser: any = null;
       let activeToken: string | null = storedToken;
@@ -183,16 +204,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (isOAuthCallback) {
         const { data } = await insforge.auth.getCurrentUser();
         activeAuthUser = data?.user;
-        const postOAuthToken: string | null =
-          (insforge as any)?.tokenManager?.getAccessToken?.() || null;
+        const postOAuthToken: string | null = (insforge as any)?.tokenManager?.getAccessToken?.() || null;
         if (postOAuthToken && isJwtStillValid(postOAuthToken)) {
           activeToken = postOAuthToken;
-          localStorage.setItem('easehub_token', postOAuthToken);
+          sessionStore.set('easehub_token', postOAuthToken);
         }
       }
 
-      // Abort if user logged out while async check was in flight
-      if (typeof window !== 'undefined' && localStorage.getItem('easehub_logged_out') === 'true') {
+      if (typeof window !== 'undefined' && sessionStore.get('easehub_logged_out') === 'true') {
         syncSdkSessionFromToken(null);
         setUser(null);
         return null;
@@ -201,16 +220,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (activeAuthUser && activeToken) {
         const profile = await fetchOrSyncProfile(activeAuthUser);
 
-        // Abort if user logged out while profile fetch was in flight
-        if (typeof window !== 'undefined' && localStorage.getItem('easehub_logged_out') === 'true') {
+        if (typeof window !== 'undefined' && sessionStore.get('easehub_logged_out') === 'true') {
           syncSdkSessionFromToken(null);
           setUser(null);
           return null;
         }
 
         if (profile && profile.isActive) {
-          localStorage.setItem('easehub_token', activeToken);
-          localStorage.setItem('easehub_user', JSON.stringify(profile));
+          sessionStore.set('easehub_token', activeToken);
+          sessionStore.set('easehub_user', JSON.stringify(profile));
           syncSdkSessionFromToken(activeToken, {
             id: profile.authUserId || activeAuthUser.id,
             email: profile.email,
@@ -219,15 +237,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(profile);
           return profile;
         } else {
-          localStorage.removeItem('easehub_token');
-          localStorage.removeItem('easehub_user');
+          sessionStore.remove('easehub_token');
+          sessionStore.remove('easehub_user');
           syncSdkSessionFromToken(null);
           setUser(null);
           return null;
         }
       } else {
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
         return null;
@@ -237,8 +255,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                              err?.message?.toLowerCase().includes('network') ||
                              err?.message?.toLowerCase().includes('failed to fetch');
       if (!isNetworkError) {
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
       }
@@ -251,25 +269,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     refreshUser();
 
-    // Subscribe to InsForge auth state changes (token refreshed, sign in/out)
     const unsubscribe = insforge.auth.onAuthStateChange(async (event) => {
       if (event === 'signedOut') {
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         setUser(null);
       } else if (event === 'tokenRefreshed') {
-        if (typeof window !== 'undefined' && localStorage.getItem('easehub_logged_out') === 'true') {
+        if (typeof window !== 'undefined' && sessionStore.get('easehub_logged_out') === 'true') {
           return;
         }
-        const latestToken: string | null =
-          (insforge as any)?.tokenManager?.getAccessToken?.() || null;
+        const latestToken: string | null = (insforge as any)?.tokenManager?.getAccessToken?.() || null;
         if (latestToken && typeof window !== 'undefined') {
-          localStorage.setItem('easehub_token', latestToken);
+          sessionStore.set('easehub_token', latestToken);
         }
       }
     });
 
-    // Cross-tab logout / session change listener
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'easehub_logged_out' && e.newValue === 'true') {
         syncSdkSessionFromToken(null);
@@ -302,7 +317,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email and password are required.');
       }
 
-      // Clear any previous session state before signing in
       syncSdkSessionFromToken(null);
 
       const { data, error } = await insforge.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
@@ -318,20 +332,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await fetchOrSyncProfile(data.user);
       if (!profile) {
         await insforge.auth.signOut();
-        localStorage.setItem('easehub_logged_out', 'true');
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.set('easehub_logged_out', 'true');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
         throw new Error('Unable to retrieve user profile.');
       }
 
-      // STRICT ROLE BOUNDARY FOR CUSTOMER LOGIN
       if (isAdminRole(profile.role) || profile.role.toLowerCase() !== 'customer') {
         await insforge.auth.signOut();
-        localStorage.setItem('easehub_logged_out', 'true');
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.set('easehub_logged_out', 'true');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
         throw new Error('Admin accounts must use Admin Login.');
@@ -339,18 +352,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!profile.isActive) {
         await insforge.auth.signOut();
-        localStorage.setItem('easehub_logged_out', 'true');
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.set('easehub_logged_out', 'true');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
         throw new Error('Your account has been deactivated. Please contact support.');
       }
 
-      // Persist session token and profile
-      localStorage.removeItem('easehub_logged_out');
-      localStorage.setItem('easehub_token', data.accessToken);
-      localStorage.setItem('easehub_user', JSON.stringify(profile));
+      sessionStore.remove('easehub_logged_out');
+      sessionStore.set('easehub_token', data.accessToken);
+      sessionStore.set('easehub_user', JSON.stringify(profile));
       syncSdkSessionFromToken(data.accessToken, {
         id: profile.authUserId || data.user.id,
         email: profile.email,
@@ -374,7 +386,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email and password are required.');
       }
 
-      // Clear any previous session state before signing in
       syncSdkSessionFromToken(null);
 
       const { data, error } = await insforge.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
@@ -390,20 +401,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await fetchOrSyncProfile(data.user);
       if (!profile) {
         await insforge.auth.signOut();
-        localStorage.setItem('easehub_logged_out', 'true');
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.set('easehub_logged_out', 'true');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
         throw new Error('Unable to retrieve administrator profile.');
       }
 
-      // STRICT ROLE BOUNDARY FOR ADMIN LOGIN (Both Super Admin and Sub Admin)
       if (!isAdminRole(profile.role)) {
         await insforge.auth.signOut();
-        localStorage.setItem('easehub_logged_out', 'true');
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.set('easehub_logged_out', 'true');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
         throw new Error('Access denied. Admin privileges required.');
@@ -411,18 +421,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!profile.isActive) {
         await insforge.auth.signOut();
-        localStorage.setItem('easehub_logged_out', 'true');
-        localStorage.removeItem('easehub_token');
-        localStorage.removeItem('easehub_user');
+        sessionStore.set('easehub_logged_out', 'true');
+        sessionStore.remove('easehub_token');
+        sessionStore.remove('easehub_user');
         syncSdkSessionFromToken(null);
         setUser(null);
         throw new Error('Administrator account is inactive.');
       }
 
-      // Persist session token and profile
-      localStorage.removeItem('easehub_logged_out');
-      localStorage.setItem('easehub_token', data.accessToken);
-      localStorage.setItem('easehub_user', JSON.stringify(profile));
+      sessionStore.remove('easehub_logged_out');
+      sessionStore.set('easehub_token', data.accessToken);
+      sessionStore.set('easehub_user', JSON.stringify(profile));
       syncSdkSessionFromToken(data.accessToken, {
         id: profile.authUserId || data.user.id,
         email: profile.email,
@@ -447,7 +456,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       syncSdkSessionFromToken(null);
 
-      // 1. Sign up user via InsForge Auth
       const { error: signUpError } = await insforge.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -463,7 +471,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(signUpError.message || 'Registration failed. Please try again.');
       }
 
-      // 2. Authenticate immediately to obtain access token & active session for RLS
       const { data: signInData, error: signInError } = await insforge.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password
@@ -480,7 +487,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const authUser = signInData.user;
 
-      // 3. Create public.users profile in PostgreSQL
       const formattedPhone = phone && String(phone).trim() !== '' ? String(phone).trim() : null;
       const { error: insertError } = await insforge.database
         .from('users')
@@ -505,13 +511,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Failed to create user profile in database:', insertError);
       }
 
-      // 4. Retrieve mapped profile for application context
       const profile = await fetchOrSyncProfile(authUser);
 
-      localStorage.removeItem('easehub_logged_out');
-      localStorage.setItem('easehub_token', signInData.accessToken);
+      sessionStore.remove('easehub_logged_out');
+      sessionStore.set('easehub_token', signInData.accessToken);
       if (profile) {
-        localStorage.setItem('easehub_user', JSON.stringify(profile));
+        sessionStore.set('easehub_user', JSON.stringify(profile));
       }
       syncSdkSessionFromToken(signInData.accessToken, {
         id: profile?.authUserId || authUser.id,
@@ -528,21 +533,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
+    if (oauthInProgressRef.current) return;
+    oauthInProgressRef.current = true;
     try {
-      localStorage.removeItem('easehub_logged_out');
+      sessionStore.remove('easehub_logged_out');
       const origin = typeof window !== 'undefined' && window.location.origin
         ? window.location.origin
         : 'https://easehub-chi.vercel.app';
-      const redirectUri = `${origin}/dashboard`;
+      
+      // Store intended destination before OAuth redirect
+      const location = window.location;
+      const fromPath = location.pathname + location.search;
+      if (fromPath !== '/login' && fromPath !== '/register' && fromPath !== '/') {
+        sessionStore.set('easehub_oauth_redirect', fromPath);
+      }
+
+      const redirectUri = `${origin}/auth/callback`;
 
       const { error } = await insforge.auth.signInWithOAuth('google', {
         redirectTo: redirectUri
       });
 
       if (error) {
+        sessionStore.remove('easehub_oauth_redirect');
         throw new Error(error.message || 'Google sign-in failed. Please try again.');
       }
     } catch (err: any) {
+      oauthInProgressRef.current = false;
       const msg = err?.message || 'Google sign-in failed. Please try again.';
       throw new Error(msg);
     }
@@ -550,20 +567,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      // 1. Immediately mark logged-out state and clear local storage + React state
-      localStorage.setItem('easehub_logged_out', 'true');
-      localStorage.removeItem('easehub_token');
-      localStorage.removeItem('easehub_user');
+      sessionStore.set('easehub_logged_out', 'true');
+      sessionStore.remove('easehub_token');
+      sessionStore.remove('easehub_user');
       setUser(null);
 
-      // 2. Call signOut while SDK still has the accessToken + CSRF cookie so backend revokes refresh cookie
       await insforge.auth.signOut();
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      localStorage.setItem('easehub_logged_out', 'true');
-      localStorage.removeItem('easehub_token');
-      localStorage.removeItem('easehub_user');
+      sessionStore.set('easehub_logged_out', 'true');
+      sessionStore.remove('easehub_token');
+      sessionStore.remove('easehub_user');
       syncSdkSessionFromToken(null);
       setUser(null);
       setIsLoading(false);

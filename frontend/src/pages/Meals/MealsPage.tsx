@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import LocationMap from '../../components/common/LocationMap';
@@ -40,6 +40,9 @@ export const MealsPage: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<MealProvider | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const initialSearchRef = useRef(true);
 
   // Booking Modal State
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
@@ -92,6 +95,71 @@ export const MealsPage: React.FC = () => {
     }
   };
 
+  const searchMeals = async () => {
+    try {
+      setSearchLoading(true);
+      setError('');
+      const data = await mealApi.search({
+        query: searchQuery || undefined,
+        isVeg: activeFilter === 'Veg' ? true : activeFilter === 'Non-Veg' ? false : undefined,
+        sortBy: 'featured',
+      });
+      
+      if (Array.isArray(data)) {
+        const mapped: MealProvider[] = data.map((m: ApiMealProvider) => {
+          const safeTags = Array.isArray(m.tags) ? m.tags : [];
+          const lat = m.location?.latitude;
+          const lng = m.location?.longitude;
+
+          return {
+            id: m._id || m.code || String(m.id),
+            name: m.name || 'Verified Mess Partner',
+            location: m.location?.address ? `${m.location.address}, ${m.location.city}` : `${m.corridor || 'Bhilai'}, Chhattisgarh`,
+            rating: m.rating || 4.9,
+            reviewsCount: m.reviewCount || 24,
+            pricePerMeal: m.dailyPrice || 120,
+            image: m.image || '',
+            badge: { text: m.isVeg ? 'Pure Veg' : 'Veg & Non-Veg', color: 'bg-[#225944] text-white' },
+            tags: safeTags,
+            mealsPerDay: 'Breakfast, Lunch & Dinner',
+            deliveryAvailable: true,
+            opensAt: '7:00 AM',
+            isVeg: m.isVeg ?? true,
+            locationData: {
+              address: m.location?.address || m.corridor || 'Bhilai',
+              landmark: m.location?.landmark || m.distance || '',
+              city: m.location?.city || 'Bhilai',
+              state: m.location?.state || 'Chhattisgarh',
+              pincode: m.location?.pincode || '',
+              latitude: lat ?? undefined,
+              longitude: lng ?? undefined,
+            },
+          };
+        });
+        setProvidersList(mapped);
+        if (mapped.length > 0) setSelectedProvider(mapped[0]);
+      }
+      setHasSearched(true);
+    } catch (err: any) {
+      console.error('Failed to search meal providers:', err);
+      setError('Unable to search meal providers. Please try again.');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    if (initialSearchRef.current) {
+      initialSearchRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      searchMeals();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeFilter]);
+
   useEffect(() => {
     loadMeals();
   }, []);
@@ -108,35 +176,24 @@ export const MealsPage: React.FC = () => {
   }, [isAuthenticated, user]);
 
   const toggleFavorite = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated || !user) {
       navigate('/login');
       return;
     }
-    const isFav = favorites.includes(id);
-    if (isFav) {
-      setFavorites((prev) => prev.filter((item) => item !== id));
-      await savedApi.removeSavedItem('meals', id);
-    } else {
-      setFavorites((prev) => [...prev, id]);
-      await savedApi.saveItem('meals', id);
+
+    const isSaved = favorites.includes(id);
+    setFavorites((prev) => isSaved ? prev.filter((itemId) => itemId !== id) : [...prev, id]);
+    try {
+      if (isSaved) {
+        await savedApi.removeSavedItem('meals', id);
+      } else {
+        await savedApi.saveItem('meals', id);
+      }
+    } catch {
+      setFavorites((prev) => isSaved ? [...prev, id] : prev.filter((itemId) => itemId !== id));
     }
   };
-
-  const filteredProviders = providersList.filter((provider) => {
-    if (activeFilter === 'Veg' && !provider.isVeg) return false;
-    if (activeFilter === 'Non-Veg' && provider.isVeg) return false;
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      return (
-        (provider.name || '').toLowerCase().includes(q) ||
-        (provider.location || '').toLowerCase().includes(q) ||
-        (provider.tags || []).some((t) => typeof t === 'string' && t.toLowerCase().includes(q))
-      );
-    }
-    return true;
-  });
 
   return (
     <div className="bg-[#F7F5EF] text-[#171A18] font-sans antialiased min-h-screen flex flex-col selection:bg-[#EECA3A] selection:text-[#171A18]">
@@ -255,6 +312,7 @@ export const MealsPage: React.FC = () => {
                 {/* Submit Search Button */}
                 <button
                   type="button"
+                  onClick={searchMeals}
                   className="w-full md:w-auto px-8 py-3.5 bg-[#EECA3A] hover:bg-[#E0BD2C] text-[#171A18] font-bold rounded-xl flex items-center justify-center space-x-2 shadow-xs transition-all duration-200"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +378,7 @@ export const MealsPage: React.FC = () => {
                 {/* Result Header */}
                 <div className="flex items-center justify-between pb-1">
                   <h2 className="text-xl sm:text-2xl font-black text-[#171A18] tracking-tight">
-                    {filteredProviders.length} Meal Providers near you
+                    {(loading || searchLoading) ? 'Loading Meal Providers...' : `${providersList.length} Meal Providers near you`}
                   </h2>
                   <div className="flex items-center space-x-2">
                     <span className="text-xs sm:text-sm font-medium text-[#6B6B63]">Sort by:</span>
@@ -351,7 +409,7 @@ export const MealsPage: React.FC = () => {
                       Retry
                     </button>
                   </div>
-                ) : filteredProviders.length === 0 ? (
+                ) : providersList.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#E5E1D6] p-12 text-center shadow-xs">
                     <div className="w-16 h-16 bg-[#225944]/10 text-[#225944] rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <span className="material-symbols-outlined text-3xl">restaurant_menu</span>
@@ -361,8 +419,8 @@ export const MealsPage: React.FC = () => {
                       Verified mess and tiffin services will appear here once added from the Admin Panel.
                     </p>
                   </div>
-                ) : (
-                  filteredProviders.map((provider) => {
+) : (
+              providersList.map((provider) => {
                   const isFav = favorites.includes(provider.id);
 
                   return (

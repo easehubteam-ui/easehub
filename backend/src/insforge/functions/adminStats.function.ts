@@ -6,7 +6,7 @@
 export default async function (req: Request) {
   try {
     const baseUrl = process.env.INSFORGE_PROJECT_URL || 'https://289ybt8g.us-east.insforge.app';
-    const anonKey = process.env.INSFORGE_ANON_KEY || 'ik_7b864691972beda6b5dd6e5d67ea743a';
+    const anonKey = process.env.INSFORGE_ANON_KEY || '';
 
     const headers = {
       'apikey': anonKey,

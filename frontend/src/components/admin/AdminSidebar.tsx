@@ -121,7 +121,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                 </div>
               </div>
 
-              <button onClick={onClose} className="lg:hidden text-[#6B6B63] hover:text-[#171A18]">
+              <button aria-label="Close admin navigation" onClick={onClose} className="lg:hidden text-[#6B6B63] hover:text-[#171A18]">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>

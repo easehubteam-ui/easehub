@@ -82,11 +82,64 @@ const mapLaundryFromDB = (record: any): LaundryProvider => {
 
 export const laundryApi = {
   getAll: async (): Promise<LaundryProvider[]> => {
+    return laundryApi.search({});
+  },
+  
+  search: async (params: {
+    query?: string;
+    city?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    services?: string[];
+    sortBy?: 'featured' | 'price-low' | 'price-high' | 'rating' | 'turnaround';
+  } = {}): Promise<LaundryProvider[]> => {
     try {
-      const { data, error } = await insforge.database
+      let query = insforge.database
         .from('laundry_providers')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('status', 'active');
+
+      if (params.query) {
+        const searchTerm = `%${params.query.toLowerCase()}%`;
+        query = query.or(`name.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},landmark.ilike.${searchTerm}`);
+      }
+
+      if (params.city) {
+        query = query.ilike('city', `%${params.city}%`);
+      }
+
+      if (params.minPrice !== undefined) {
+        query = query.gte('pricing->>pricePerKg', params.minPrice.toString());
+      }
+
+      if (params.maxPrice !== undefined) {
+        query = query.lte('pricing->>pricePerKg', params.maxPrice.toString());
+      }
+
+      if (params.services && params.services.length > 0) {
+        query = query.contains('services', params.services.map(s => ({ name: s })));
+      }
+
+      // Apply sorting
+      switch (params.sortBy) {
+        case 'price-low':
+          query = query.order('pricing->>pricePerKg', { ascending: true });
+          break;
+        case 'price-high':
+          query = query.order('pricing->>pricePerKg', { ascending: false });
+          break;
+        case 'rating':
+          query = query.order('rating', { ascending: false });
+          break;
+        case 'turnaround':
+          query = query.order('turnaround_hours', { ascending: true });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query;
 
       if (error || !Array.isArray(data)) return [];
       return data.map(mapLaundryFromDB);
@@ -94,12 +147,15 @@ export const laundryApi = {
       return [];
     }
   },
+  
   getById: async (id: string): Promise<LaundryProvider | null> => {
     try {
       const { data } = await insforge.database
         .from('laundry_providers')
         .select('*')
-        .eq('id', id);
+        .eq('id', id)
+        .eq('is_active', true)
+        .eq('status', 'active');
 
       const record = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return record ? mapLaundryFromDB(record) : null;
