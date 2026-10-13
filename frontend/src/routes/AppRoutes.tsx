@@ -17,6 +17,7 @@ const ForgotPasswordPage = React.lazy(() => import('../pages/Auth/ForgotPassword
 const ResetPasswordPage = React.lazy(() => import('../pages/Auth/ResetPasswordPage'));
 const SupportPage = React.lazy(() => import('../pages/Support/SupportPage').then(m => ({ default: m.SupportPage })));
 const PrivacyPolicyPage = React.lazy(() => import('../pages/Legal/PrivacyPolicyPage'));
+const TermsAndConditionsPage = React.lazy(() => import('../pages/Legal/TermsAndConditionsPage'));
 
 // Lazy-Loaded Customer Pages
 const DashboardPage = React.lazy(() => import('../pages/Dashboard/DashboardPage'));
@@ -115,6 +116,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
           </Route>
 
           {/* Authenticated Customer Service App (Dedicated App Layout & Protected Account Pages) */}

@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [legalDropdownOpen, setLegalDropdownOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number>(0);
 
   const scrolledRef = useRef(false);
@@ -175,6 +176,41 @@ export const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLegalDropdownOpen((open) => !open)}
+                aria-expanded={legalDropdownOpen}
+                aria-haspopup="menu"
+                className={`inline-flex items-center gap-1.5 py-1.5 px-1 text-[15px] tracking-tight transition-colors ${
+                  currentPath === '/privacy-policy' || currentPath === '/terms-and-conditions'
+                    ? 'text-[#225944] font-extrabold'
+                    : 'text-[#171A18] hover:text-[#225944]'
+                }`}
+              >
+                Legal <ChevronDown className={`h-4 w-4 transition-transform ${legalDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {legalDropdownOpen && (
+                <div role="menu" className="absolute right-0 top-full z-50 mt-3 w-52 rounded-2xl border border-[#E5E1D6] bg-white p-1.5 text-xs font-semibold shadow-xl">
+                  <Link
+                    role="menuitem"
+                    to="/privacy-policy"
+                    onClick={() => setLegalDropdownOpen(false)}
+                    className="block rounded-xl px-3 py-2.5 text-[#171A18] transition-colors hover:bg-[#F7F5EF]"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    role="menuitem"
+                    to="/terms-and-conditions"
+                    onClick={() => setLegalDropdownOpen(false)}
+                    className="block rounded-xl px-3 py-2.5 text-[#171A18] transition-colors hover:bg-[#F7F5EF]"
+                  >
+                    Terms &amp; Conditions
+                  </Link>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
 
@@ -332,6 +368,24 @@ export const Navbar: React.FC = () => {
                 {link.label}
               </Link>
             ))}
+
+            <div className="border-t border-[#E5E1D6] pt-2">
+              <p className="px-4 pb-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#6B6B63]">Legal</p>
+              <Link
+                to="/privacy-policy"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block rounded-xl px-4 py-2.5 text-[#171A18] transition-colors hover:bg-[#F7F5EF]"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                to="/terms-and-conditions"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block rounded-xl px-4 py-2.5 text-[#171A18] transition-colors hover:bg-[#F7F5EF]"
+              >
+                Terms &amp; Conditions
+              </Link>
+            </div>
 
             {!isAuthenticated && (
               <div className="pt-2 border-t border-[#E5E1D6]">

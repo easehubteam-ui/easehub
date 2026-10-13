@@ -188,7 +188,7 @@ export const RegisterPage: React.FC = () => {
                         required
                       />
                       <span className="text-xs text-[#6B6B63]">
-                        I agree to EaseHub's <a href="#" className="text-[#225944] underline">Terms of Service</a> & <Link to="/privacy-policy" className="text-[#225944] underline">Privacy Policy</Link>
+                        I agree to EaseHub's <Link to="/terms-and-conditions" className="text-[#225944] underline">Terms of Service</Link> & <Link to="/privacy-policy" className="text-[#225944] underline">Privacy Policy</Link>
                       </span>
                     </label>
                   </div>
