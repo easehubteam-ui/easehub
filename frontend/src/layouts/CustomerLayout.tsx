@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useServiceExperience } from '../context/ServiceExperienceContext';
 import FloatingContact from '../components/common/FloatingContact';
 import { savedApi } from '../services/savedApi';
 import { PageTransition } from '../components/common/PageTransition';
@@ -8,16 +9,47 @@ import { Menu, X } from 'lucide-react';
 
 export const CustomerLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const { settings: serviceSettings } = useServiceExperience();
   const location = useLocation();
   const currentPath = location.pathname;
   const navigate = useNavigate();
+  const isPathActive = (path: string) =>
+    currentPath === path || currentPath.startsWith(`${path}/`);
+  const isNotificationsPage =
+    currentPath === '/account' && new URLSearchParams(location.search).get('tab') === 'notifications';
+  const accountNavLinkClass = (isActive: boolean) =>
+    `flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition ${
+      isActive ? 'bg-[#225944] text-white' : 'text-[#171A18] hover:bg-[#F7F5EF]'
+    }`;
+  const accountNavIconClass = (isActive: boolean, defaultColor = 'text-[#225944]') =>
+    `material-symbols-outlined text-[20px] ${isActive ? 'text-white' : defaultColor}`;
 
   const [accountSidebarOpen, setAccountSidebarOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number>(0);
+  const accountSidebarTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setAccountSidebarOpen(false);
-  }, [currentPath]);
+  }, [location.key]);
+
+  useEffect(() => {
+    if (!accountSidebarOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setAccountSidebarOpen(false);
+      accountSidebarTriggerRef.current?.focus();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [accountSidebarOpen]);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,7 +72,7 @@ export const CustomerLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#171A18] flex flex-col font-sans relative pb-20 md:pb-0">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#171A18] flex flex-col font-sans relative pb-20 xl:pb-0">
       {/* App-like Top Navigation Bar for Logged-In Customers */}
       <header className="sticky top-3 z-40 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto my-2 pointer-events-auto transition-all duration-300">
         <div className="w-full rounded-full px-4 sm:px-6 py-2 glass-navbar flex items-center justify-between gap-4 transition-all duration-300">
@@ -65,11 +97,11 @@ export const CustomerLayout: React.FC = () => {
 
 
           {/* Desktop App Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs sm:text-sm font-bold">
+          <nav className="hidden xl:flex items-center gap-6 text-xs sm:text-sm font-bold">
             <Link
               to="/dashboard"
               className={`py-2 transition-all flex items-center gap-1.5 ${
-                currentPath === '/dashboard'
+                isPathActive('/dashboard')
                   ? 'text-[#225944] border-b-2 border-[#225944]'
                   : 'text-[#6B6B63] hover:text-[#171A18]'
               }`}
@@ -81,7 +113,7 @@ export const CustomerLayout: React.FC = () => {
             <Link
               to="/pg"
               className={`py-2 transition-all flex items-center gap-1.5 ${
-                currentPath === '/pg'
+                isPathActive('/pg')
                   ? 'text-[#225944] border-b-2 border-[#225944]'
                   : 'text-[#6B6B63] hover:text-[#171A18]'
               }`}
@@ -90,46 +122,46 @@ export const CustomerLayout: React.FC = () => {
               <span>PG / Hostel</span>
             </Link>
 
-            <Link
+            {Boolean(serviceSettings?.new_meals_enabled || serviceSettings?.old_meals_enabled) && <Link
               to="/meals"
               className={`py-2 transition-all flex items-center gap-1.5 ${
-                currentPath === '/meals'
+                isPathActive('/meals')
                   ? 'text-[#225944] border-b-2 border-[#225944]'
                   : 'text-[#6B6B63] hover:text-[#171A18]'
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">restaurant</span>
               <span>Meals</span>
-            </Link>
+            </Link>}
 
-            <Link
+            {Boolean(serviceSettings?.new_laundry_enabled || serviceSettings?.old_laundry_enabled) && <Link
               to="/laundry"
               className={`py-2 transition-all flex items-center gap-1.5 ${
-                currentPath === '/laundry'
+                isPathActive('/laundry')
                   ? 'text-[#225944] border-b-2 border-[#225944]'
                   : 'text-[#6B6B63] hover:text-[#171A18]'
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">local_laundry_service</span>
               <span>Laundry</span>
-            </Link>
+            </Link>}
 
-            <Link
+            {Boolean(serviceSettings?.extra_services_enabled) && <Link
               to="/services"
               className={`py-2 transition-all flex items-center gap-1.5 ${
-                currentPath === '/services'
+                isPathActive('/services')
                   ? 'text-[#225944] border-b-2 border-[#225944]'
                   : 'text-[#6B6B63] hover:text-[#171A18]'
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">build</span>
               <span>Services</span>
-            </Link>
+            </Link>}
 
             <Link
               to="/bookings"
               className={`py-2 transition-all flex items-center gap-1.5 ${
-                currentPath === '/bookings'
+                isPathActive('/bookings')
                   ? 'text-[#225944] border-b-2 border-[#225944]'
                   : 'text-[#6B6B63] hover:text-[#171A18]'
               }`}
@@ -141,7 +173,7 @@ export const CustomerLayout: React.FC = () => {
             <Link
               to="/community"
               className={`py-2 transition-all flex items-center gap-1.5 ${
-                currentPath === '/community'
+                isPathActive('/community')
                   ? 'text-[#225944] border-b-2 border-[#225944]'
                   : 'text-[#6B6B63] hover:text-[#171A18]'
               }`}
@@ -156,7 +188,7 @@ export const CustomerLayout: React.FC = () => {
             {/* Wishlist Heart Icon */}
             <Link
               to="/wishlist"
-              className="p-2 sm:p-2.5 rounded-xl bg-[#F7F5EF] hover:bg-[#E5E1D6] text-[#171A18] transition relative flex items-center justify-center border border-[#E5E1D6]"
+              className="hidden sm:flex p-2 sm:p-2.5 rounded-xl bg-[#F7F5EF] hover:bg-[#E5E1D6] text-[#171A18] transition relative items-center justify-center border border-[#E5E1D6]"
               title="Saved Wishlist"
             >
               <span className="material-symbols-outlined text-[20px] text-rose-500">favorite</span>
@@ -170,7 +202,7 @@ export const CustomerLayout: React.FC = () => {
             {/* Notifications Bell Icon */}
             <Link
               to="/account?tab=notifications"
-              className="p-2 sm:p-2.5 rounded-xl bg-[#F7F5EF] hover:bg-[#E5E1D6] text-[#171A18] transition relative flex items-center justify-center border border-[#E5E1D6]"
+              className="hidden sm:flex p-2 sm:p-2.5 rounded-xl bg-[#F7F5EF] hover:bg-[#E5E1D6] text-[#171A18] transition relative items-center justify-center border border-[#E5E1D6]"
               title="Notifications"
             >
               <span className="material-symbols-outlined text-[20px]">notifications</span>
@@ -182,8 +214,11 @@ export const CustomerLayout: React.FC = () => {
             {/* Account sidebar trigger; profile details live in the sidebar. */}
             <button
               type="button"
+              ref={accountSidebarTriggerRef}
               onClick={() => setAccountSidebarOpen(true)}
               aria-label="Open account sidebar"
+              aria-expanded={accountSidebarOpen}
+              aria-controls="customer-account-sidebar"
               title="Account menu"
               className="p-2 sm:p-2.5 rounded-xl bg-white hover:bg-[#F7F5EF] text-[#171A18] transition border border-[#E5E1D6] shadow-xs"
             >
@@ -202,6 +237,7 @@ export const CustomerLayout: React.FC = () => {
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
           />
           <aside
+            id="customer-account-sidebar"
             role="dialog"
             aria-modal="true"
             aria-label="Account sidebar"
@@ -236,49 +272,57 @@ export const CustomerLayout: React.FC = () => {
               <Link
                 to="/account"
                 onClick={() => setAccountSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+                className={accountNavLinkClass(isPathActive('/account') && !isNotificationsPage)}
               >
-                <span className="material-symbols-outlined text-[20px] text-[#225944]">account_circle</span>
+                <span className={accountNavIconClass(isPathActive('/account') && !isNotificationsPage)}>account_circle</span>
                 My Account
+              </Link>
+              <Link
+                to="/account?tab=notifications"
+                onClick={() => setAccountSidebarOpen(false)}
+                className={accountNavLinkClass(isNotificationsPage)}
+              >
+                <span className={accountNavIconClass(isNotificationsPage)}>notifications</span>
+                Notifications
               </Link>
               <Link
                 to="/bookings"
                 onClick={() => setAccountSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+                className={accountNavLinkClass(isPathActive('/bookings') || isPathActive('/booking/confirmation'))}
               >
-                <span className="material-symbols-outlined text-[20px] text-[#225944]">calendar_month</span>
+                <span className={accountNavIconClass(isPathActive('/bookings') || isPathActive('/booking/confirmation'))}>calendar_month</span>
                 My Bookings
               </Link>
               <Link
                 to="/payment"
                 onClick={() => setAccountSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+                className={accountNavLinkClass(isPathActive('/payment'))}
               >
-                <span className="material-symbols-outlined text-[20px] text-[#225944]">qr_code_scanner</span>
+                <span className={accountNavIconClass(isPathActive('/payment'))}>qr_code_scanner</span>
                 Make Payment
               </Link>
               <Link
                 to="/wishlist"
                 onClick={() => setAccountSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+                className={accountNavLinkClass(isPathActive('/wishlist'))}
               >
-                <span className="material-symbols-outlined text-[20px] text-rose-500">favorite</span>
+                <span className={accountNavIconClass(isPathActive('/wishlist'), 'text-rose-500')}>favorite</span>
                 Saved Wishlist{savedCount > 0 ? ` (${savedCount})` : ''}
               </Link>
               <Link
                 to="/community"
                 onClick={() => setAccountSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+                className={accountNavLinkClass(isPathActive('/community'))}
               >
-                <span className="material-symbols-outlined text-[20px] text-[#225944]">forum</span>
+                <span className={accountNavIconClass(isPathActive('/community'))}>forum</span>
                 Community Support
               </Link>
               <Link
                 to="/support/chat"
                 onClick={() => setAccountSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#171A18] transition hover:bg-[#F7F5EF]"
+                className={accountNavLinkClass(isPathActive('/support/chat'))}
               >
-                <span className="material-symbols-outlined text-[20px] text-[#225944]">support_agent</span>
+                <span className={accountNavIconClass(isPathActive('/support/chat'))}>support_agent</span>
                 Admin Support Chat
               </Link>
             </nav>
@@ -306,11 +350,11 @@ export const CustomerLayout: React.FC = () => {
       <FloatingContact />
 
       {/* Mobile Bottom Navigation Bar (Fixed for App Feel) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E5E1D6] px-2 py-2 shadow-lg flex items-center justify-around">
+      <div className="xl:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E5E1D6] px-2 py-2 shadow-lg flex items-center justify-around">
         <Link
           to="/dashboard"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition ${
-            currentPath === '/dashboard' ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
+          className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition ${
+            isPathActive('/dashboard') ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
           }`}
         >
           <span className="material-symbols-outlined text-[22px]">home</span>
@@ -319,38 +363,38 @@ export const CustomerLayout: React.FC = () => {
 
         <Link
           to="/pg"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition ${
-            currentPath === '/pg' ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
+          className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition ${
+            isPathActive('/pg') ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
           }`}
         >
           <span className="material-symbols-outlined text-[22px]">domain</span>
           <span className="text-[10px]">PG</span>
         </Link>
 
-        <Link
+        {(serviceSettings?.new_meals_enabled || serviceSettings?.old_meals_enabled) && <Link
           to="/meals"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition ${
-            currentPath === '/meals' ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
+          className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition ${
+            isPathActive('/meals') ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
           }`}
         >
           <span className="material-symbols-outlined text-[22px]">restaurant</span>
           <span className="text-[10px]">Meals</span>
-        </Link>
+        </Link>}
 
-        <Link
+        {(serviceSettings?.new_laundry_enabled || serviceSettings?.old_laundry_enabled) && <Link
           to="/laundry"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition ${
-            currentPath === '/laundry' ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
+          className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition ${
+            isPathActive('/laundry') ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
           }`}
         >
           <span className="material-symbols-outlined text-[22px]">local_laundry_service</span>
           <span className="text-[10px]">Laundry</span>
-        </Link>
+        </Link>}
 
         <Link
           to="/account"
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition ${
-            currentPath.includes('/account') || currentPath === '/bookings' ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
+          className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition ${
+            isPathActive('/account') || isPathActive('/bookings') || isPathActive('/booking/confirmation') ? 'text-[#225944] font-bold' : 'text-[#6B6B63]'
           }`}
         >
           <span className="material-symbols-outlined text-[22px]">person</span>

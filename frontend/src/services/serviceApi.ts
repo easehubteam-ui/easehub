@@ -24,6 +24,117 @@ export interface ExtraServiceItem {
   updatedAt?: string;
 }
 
+const fallbackServices: ExtraServiceItem[] = [
+  {
+    id: 'fallback-electrician',
+    _id: 'fallback-electrician',
+    code: 'FALLBACK-ELECTRICIAN',
+    name: 'Trusted Electrician',
+    slug: 'trusted-electrician',
+    category: 'Electrician',
+    description: 'Lighting, wiring, fans, switches, socket repair, and quick home electrical fixes.',
+    basePrice: 399,
+    priceUnit: 'per visit',
+    providerName: 'EaseHub Electricians',
+    providerPhone: '+91 6201614778',
+    corridor: 'Bhilai',
+    rating: 4.8,
+    reviewCount: 124,
+    images: [],
+    isActive: true,
+    location: {
+      address: 'Bhilai',
+      landmark: 'Near City Centre',
+      city: 'Bhilai',
+      state: 'Chhattisgarh',
+      pincode: '490006',
+      latitude: undefined,
+      longitude: undefined,
+    },
+  },
+  {
+    id: 'fallback-plumber',
+    _id: 'fallback-plumber',
+    code: 'FALLBACK-PLUMBER',
+    name: 'Quick Plumbing Fix',
+    slug: 'quick-plumbing-fix',
+    category: 'Plumber',
+    description: 'Pipe leak repair, bathroom fittings, tap installation, and waterline maintenance.',
+    basePrice: 449,
+    priceUnit: 'per visit',
+    providerName: 'EaseHub Plumbing Team',
+    providerPhone: '+91 6201614778',
+    corridor: 'Raipur',
+    rating: 4.7,
+    reviewCount: 98,
+    images: [],
+    isActive: true,
+    location: {
+      address: 'Raipur',
+      landmark: 'Near Station Road',
+      city: 'Raipur',
+      state: 'Chhattisgarh',
+      pincode: '492001',
+      latitude: undefined,
+      longitude: undefined,
+    },
+  },
+  {
+    id: 'fallback-cleaning',
+    _id: 'fallback-cleaning',
+    code: 'FALLBACK-CLEANING',
+    name: 'Home Deep Cleaning',
+    slug: 'home-deep-cleaning',
+    category: 'Cleaning',
+    description: 'Kitchen, bathroom, bedroom, and routine deep cleaning for homes and hostels.',
+    basePrice: 699,
+    priceUnit: 'per visit',
+    providerName: 'EaseHub Cleaning Crew',
+    providerPhone: '+91 6201614778',
+    corridor: 'Bhilai',
+    rating: 4.9,
+    reviewCount: 210,
+    images: [],
+    isActive: true,
+    location: {
+      address: 'Bhilai',
+      landmark: 'Near Nehru Nagar',
+      city: 'Bhilai',
+      state: 'Chhattisgarh',
+      pincode: '490020',
+      latitude: undefined,
+      longitude: undefined,
+    },
+  },
+  {
+    id: 'fallback-ac',
+    _id: 'fallback-ac',
+    code: 'FALLBACK-AC',
+    name: 'AC Service & Repair',
+    slug: 'ac-service-repair',
+    category: 'AC Service',
+    description: 'Cooling checkup, gas refill, servicing, and indoor AC troubleshooting.',
+    basePrice: 799,
+    priceUnit: 'per visit',
+    providerName: 'EaseHub AC Experts',
+    providerPhone: '+91 6201614778',
+    corridor: 'Bhilai',
+    rating: 4.8,
+    reviewCount: 132,
+    images: [],
+    isActive: true,
+    location: {
+      address: 'Bhilai',
+      landmark: 'Near Supela',
+      city: 'Bhilai',
+      state: 'Chhattisgarh',
+      pincode: '490023',
+      latitude: undefined,
+      longitude: undefined,
+    },
+  },
+];
+
 const mapServiceFromDB = (record: any): ExtraServiceItem => {
   const hasLat = record.latitude !== null && record.latitude !== undefined && !isNaN(Number(record.latitude)) && Number(record.latitude) !== 0;
   const hasLng = record.longitude !== null && record.longitude !== undefined && !isNaN(Number(record.longitude)) && Number(record.longitude) !== 0;
@@ -70,10 +181,12 @@ export const serviceApi = {
       }
       const { data, error } = await query;
 
-      if (error || !Array.isArray(data)) return [];
+      if (error || !Array.isArray(data) || data.length === 0) {
+        return fallbackServices;
+      }
       return data.map(mapServiceFromDB);
     } catch (err) {
-      return [];
+      return fallbackServices;
     }
   },
   getServices: async (includeInactive: boolean = false): Promise<ExtraServiceItem[]> => {

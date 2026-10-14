@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import AdminLocationPicker, { LocationFormValues } from '../../components/admin/AdminLocationPicker';
 import AddMealProviderModal, { MealProviderFormData } from '../../components/admin/AddMealProviderModal';
 import { mealApi } from '../../services/mealApi';
+import MealPlanManager from '../../components/admin/MealPlanManager';
+import ServiceBookingQueue from '../../components/admin/ServiceBookingQueue';
 
 interface MealProvider {
   id: string;
@@ -208,6 +210,8 @@ export const MealsManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MealPlanManager />
+      <ServiceBookingQueue bookingType="MEAL" title="Meal bookings" />
       {/* Top Breadcrumbs & Page Action Header */}
       <div className="flex flex-col gap-2 pt-2">
         <div className="flex items-center gap-2 text-[#6B6B63] text-xs font-semibold">

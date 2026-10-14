@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { DataTable, Column } from '../../components/admin/DataTable';
 import AddLaundryModal, { LaundryFormData } from '../../components/admin/AddLaundryModal';
 import { laundryApi } from '../../services/laundryApi';
-import { bookingApi } from '../../services/bookingApi';
+import { serviceExperienceApi } from '../../services/serviceExperienceApi';
+import LaundryPlanManager from '../../components/admin/LaundryPlanManager';
 
 interface LaundryOrder {
   id: string;
+  rawId: string;
   customerName: string;
   roomNo: string;
   weight: string;
   stage: 'Scheduled' | 'Picked Up' | 'In Wash' | 'Ready' | 'Delivered';
+  isServiceCatalogBooking: boolean;
   vendor: string;
   requestedAt: string;
 }
@@ -62,20 +65,28 @@ export const LaundryManagement: React.FC = () => {
   const fetchLaundryOrders = async () => {
     try {
       setLoadingOrders(true);
-      const list = await bookingApi.getBookings();
+      const list = await serviceExperienceApi.getAdminServiceBookings('LAUNDRY');
       if (Array.isArray(list)) {
-        const laundryBookings = list.filter((b: any) => {
-          const type = (b.booking_type || b.bookingType || b.serviceType || b.category || '').toLowerCase();
-          const sName = (b.service_name || b.serviceName || '').toLowerCase();
-          return type.includes('laundry') || sName.includes('laundry') || sName.includes('wash');
+        const normalized = list.map((b: any) => {
+          let metadata: any = {};
+          try { metadata = typeof b.notes === 'string' ? JSON.parse(b.notes) : (b.notes || {}); } catch { metadata = {}; }
+          return { ...b, _serviceMetadata: metadata };
+        });
+        const laundryBookings = normalized.filter((b: any) => {
+          const type = String(b.booking_type || b.bookingType || b.serviceType || b.category || '').toLowerCase();
+          const catalogType = String(b._serviceMetadata?.catalogType || '').toLowerCase();
+          const sName = String(b._serviceMetadata?.serviceName || b.service_name || b.serviceName || '').toLowerCase();
+          return type === 'laundry' || catalogType.includes('laundry') || sName.includes('laundry') || sName.includes('wash');
         });
 
         const mapped: LaundryOrder[] = laundryBookings.map((b: any) => ({
           id: b.booking_number || b.bookingNumber || `LND-${(b.id || '').slice(0, 6)}`,
-          customerName: b.user_name || b.userName || b.user?.fullName || b.user?.email || 'Student',
+          rawId: b.id || b._id,
+          customerName: b.users?.name || b.user_name || b.userName || b.user?.fullName || b.user?.email || '—',
           roomNo: b.address || 'Address not specified',
-          weight: b.notes || b.description || `${b.amount ? `₹${b.amount}` : 'Laundry Order'}`,
-          stage: (b.status === 'completed' || b.status === 'COMPLETED') ? 'Delivered' : (b.status === 'in_progress' || b.status === 'assigned') ? 'In Wash' : 'Scheduled',
+          weight: `${b._serviceMetadata?.quantity ?? ''}${b._serviceMetadata?.billingPeriod === 'per_kg' ? ' kg · ' : ''}${b._serviceMetadata?.serviceName || b._serviceMetadata?.details || b.description || 'Laundry Order'} · ₹${Number(b.amount) || 0}`,
+          stage: (b.status === 'completed' || b.status === 'COMPLETED') ? 'Delivered' : (b.status === 'in_progress' || b.status === 'IN_PROGRESS') ? 'In Wash' : (b.status === 'assigned' || b.status === 'ASSIGNED') ? 'Picked Up' : 'Scheduled',
+          isServiceCatalogBooking: b._serviceMetadata?.source === 'easehub_service_catalog',
           vendor: b.provider_name || b.vendor || 'Campus Laundry Partner',
           requestedAt: new Date(b.created_at || b.createdAt || Date.now()).toLocaleString('en-IN'),
         }));
@@ -93,10 +104,20 @@ export const LaundryManagement: React.FC = () => {
     fetchLaundryOrders();
   }, []);
 
-  const updateStage = (id: string, newStage: LaundryOrder['stage']) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, stage: newStage } : o))
-    );
+  const updateStage = async (id: string, newStage: LaundryOrder['stage']) => {
+    const order = orders.find((item) => item.id === id);
+    if (!order) return;
+    if (order.isServiceCatalogBooking) {
+      const targetStatus = newStage === 'Delivered' ? 'COMPLETED' : newStage === 'Scheduled' ? 'PENDING' : newStage === 'Picked Up' ? 'ASSIGNED' : 'IN_PROGRESS';
+      try {
+        await serviceExperienceApi.updateBookingStatus(order.rawId, targetStatus);
+      } catch (err: any) {
+        alert(err?.message || 'Laundry booking status was not saved.');
+        await fetchLaundryOrders();
+        return;
+      }
+    }
+    setOrders((prev) => prev.map((item) => (item.id === id ? { ...item, stage: newStage } : item)));
   };
 
   const handleDeleteLaundry = async (p: LaundryPartner) => {
@@ -189,6 +210,7 @@ export const LaundryManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <LaundryPlanManager />
       {/* Top Breadcrumb & Action Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

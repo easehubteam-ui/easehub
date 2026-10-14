@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useServiceExperience } from '../../context/ServiceExperienceContext';
 
 export const Footer: React.FC = () => {
+  const { settings } = useServiceExperience();
   return (
     <footer className="relative w-full bg-[#F7F5EF] text-[#171A18] pt-12 pb-16 font-sans">
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,7 +44,7 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Column 2: Meals & Mess */}
-          <div>
+          {(settings?.old_meals_enabled || settings?.new_meals_enabled) && <div>
             <h4 className="text-[16px] sm:text-[18px] font-bold text-[#171A18] mb-3 sm:mb-4">
               Meals & Mess
             </h4>
@@ -73,19 +75,20 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
             </ul>
-          </div>
+          </div>}
 
           {/* Column 3: Services */}
-          <div>
+          {(settings?.old_laundry_enabled || settings?.new_laundry_enabled || settings?.extra_services_enabled) && <div>
             <h4 className="text-[16px] sm:text-[18px] font-bold text-[#171A18] mb-3 sm:mb-4">
               Services
             </h4>
             <ul className="space-y-3 text-sm text-[#55554E]">
-              <li>
+              {settings?.old_laundry_enabled || settings?.new_laundry_enabled ? <li>
                 <Link to="/laundry" className="hover:text-[#171A18] transition-colors block">
                   Doorstep Laundry
                 </Link>
-              </li>
+              </li> : null}
+              {settings?.extra_services_enabled && <>
               <li>
                 <Link to="/services" className="hover:text-[#171A18] transition-colors block">
                   Room Deep Cleaning
@@ -106,8 +109,9 @@ export const Footer: React.FC = () => {
                   Campus Moving Help
                 </Link>
               </li>
+              </>}
             </ul>
-          </div>
+          </div>}
 
           {/* Column 4: Company */}
           <div>

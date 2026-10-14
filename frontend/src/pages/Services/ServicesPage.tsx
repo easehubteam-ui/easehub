@@ -5,8 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { serviceApi, ExtraServiceItem } from '../../services/serviceApi';
 import { savedApi } from '../../services/savedApi';
 
-import { BookingModal, BookingModalItem } from '../../components/common/BookingModal';
-import { paymentConfig } from '../../config/paymentConfig';
+import ServiceBookingModal, { ServiceBookingOption } from '../../components/services/ServiceBookingModal';
 import PlaceholderImage from '../../components/common/PlaceholderImage';
 import { SkeletonCard } from '../../components/common/SkeletonCard';
 
@@ -23,6 +22,7 @@ interface ServiceProvider {
   verified: boolean;
   tags: string[];
   features: string[];
+  bookingType?: 'service' | 'custom_service';
 }
 
 export const ServicesPage: React.FC = () => {
@@ -36,8 +36,7 @@ export const ServicesPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Booking Modal State
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
-  const [bookingModalItem, setBookingModalItem] = useState<BookingModalItem | null>(null);
+  const [bookingOption, setBookingOption] = useState<ServiceBookingOption | null>(null);
 
   const loadServices = async () => {
     try {
@@ -58,6 +57,7 @@ export const ServicesPage: React.FC = () => {
           verified: true,
           tags: [s.priceUnit || 'per visit', s.corridor || 'Bhilai'],
           features: ['⚡ Verified EaseHub Partner', '₹ Transparent Pricing', '🕒 Doorstep Service'],
+          bookingType: String(s.id || s._id).startsWith('fallback-') ? 'custom_service' : 'service',
         }));
         setProvidersList(mapped);
       }
@@ -102,16 +102,16 @@ export const ServicesPage: React.FC = () => {
   };
 
   const handleBooking = (provider: ServiceProvider) => {
-    setBookingModalItem({
-      id: provider.id,
+    const catalogType = provider.bookingType === 'custom_service' ? 'custom_service' : 'service';
+    setBookingOption({
+      catalogType,
+      catalogId: catalogType === 'service' ? provider.id : undefined,
       name: provider.name,
-      type: 'Service',
       price: provider.startingPrice,
-      priceUnit: '/ visit',
-      location: provider.location,
-      image: provider.image,
+      billingPeriod: 'per_item',
+      description: provider.category,
+      customServiceName: catalogType === 'custom_service' ? provider.name : undefined,
     });
-    setIsBookingModalOpen(true);
   };
 
   const filteredProviders = providersList.filter((provider) => {
@@ -571,6 +571,7 @@ export const ServicesPage: React.FC = () => {
               <button
                 type="button"
                 aria-label="Submit Custom Service Request"
+                onClick={() => setBookingOption({ catalogType: 'custom_service', name: 'Custom Service Request', customServiceName: 'Custom Service Request', price: 0, billingPeriod: 'per_item', description: 'Describe the service you need and we will follow up with a quote.' })}
                 className="w-11 h-11 rounded-xl bg-[#225944] hover:bg-[#194434] text-white flex items-center justify-center shrink-0 transition"
               >
                 →
@@ -584,11 +585,7 @@ export const ServicesPage: React.FC = () => {
       </main>
 
       {/* Global Booking & Contact Modal */}
-      <BookingModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-        item={bookingModalItem}
-      />
+      <ServiceBookingModal option={bookingOption} onClose={() => setBookingOption(null)} />
     </div>
   );
 };

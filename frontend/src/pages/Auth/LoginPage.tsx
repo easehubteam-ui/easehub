@@ -26,6 +26,10 @@ export const LoginPage: React.FC = () => {
     }
     return target;
   };
+  const getTargetState = () => {
+    const pendingServiceRequest = (location.state as any)?.pendingServiceRequest;
+    return pendingServiceRequest ? { pendingServiceRequest } : undefined;
+  };
 
   // Auto-redirect if user is already authenticated
   useEffect(() => {
@@ -33,7 +37,7 @@ export const LoginPage: React.FC = () => {
       if (isAdminRole(user.role)) {
         navigate(getFirstAllowedAdminPath(user), { replace: true });
       } else {
-        navigate(getTargetUrl(), { replace: true });
+        navigate(getTargetUrl(), { replace: true, state: getTargetState() });
       }
     }
   }, [isAuthenticated, user]);
@@ -64,7 +68,7 @@ export const LoginPage: React.FC = () => {
         if (isAdminRole(loggedUser.role)) {
           navigate(getFirstAllowedAdminPath(loggedUser), { replace: true });
         } else {
-          navigate(getTargetUrl(), { replace: true });
+          navigate(getTargetUrl(), { replace: true, state: getTargetState() });
         }
       } else {
         setErrorMsg('Invalid email or password. Please try again.');

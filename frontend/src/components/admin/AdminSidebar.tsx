@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AdminPermissionKey } from '../../types';
 
@@ -18,7 +18,37 @@ interface SidebarNavItem {
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { logout, isSuperAdmin, hasPermission } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const mobileViewport = window.matchMedia('(max-width: 1023px)');
+    if (!mobileViewport.matches) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previouslyFocusedElement = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      onClose();
+      previouslyFocusedElement?.focus();
+    };
+    const handleViewportChange = (event: MediaQueryListEvent) => {
+      if (!event.matches) onClose();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    mobileViewport.addEventListener('change', handleViewportChange);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      mobileViewport.removeEventListener('change', handleViewportChange);
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [isOpen, onClose]);
 
   const handleLogout = async () => {
     await logout();
@@ -91,13 +121,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
     <>
       {/* Mobile Backdrop */}
       {isOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Close navigation menu"
           onClick={onClose}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          className="fixed inset-0 w-full h-full border-0 p-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
         />
       )}
 
       <aside
+        id="admin-navigation-sidebar"
         className={`fixed top-0 left-0 bottom-0 w-64 bg-[#ffffff] text-[#191c1a] z-50 flex flex-col justify-between shadow-xl border-r border-[#E5E1D6] transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -123,14 +156,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                 </div>
               </div>
 
-              <button onClick={onClose} className="lg:hidden text-[#6B6B63] hover:text-[#171A18]">
+              <button type="button" onClick={onClose} aria-label="Close navigation menu" className="lg:hidden text-[#6B6B63] hover:text-[#171A18]">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
           </div>
 
           {/* Nav Categories List */}
-          <nav className="flex-1 overflow-y-auto pr-1 py-3 space-y-3 custom-scrollbar">
+          <nav aria-label="Admin navigation" className="flex-1 overflow-y-auto pr-1 py-3 space-y-3 custom-scrollbar">
             {visibleCategories.map((cat) => (
               <div key={cat.group} className="space-y-0.5">
                 {cat.group !== 'Overview' && (
@@ -143,13 +176,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                     key={item.path}
                     to={item.path}
                     onClick={onClose}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                        isActive
+                    className={({ isActive }) => {
+                      const isCurrentRoute =
+                        isActive || (item.path === '/admin/pg' && location.pathname === '/admin/properties');
+                      return `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                        isCurrentRoute
                           ? 'bg-[#225944] text-white shadow-sm font-bold'
                           : 'text-[#404944] hover:bg-[#EDEEEB] hover:text-[#191c1a]'
                       }`
-                    }
+                    }}
                   >
                     <span className="material-symbols-outlined text-[18px] shrink-0">{item.icon}</span>
                     <span className="truncate">{item.label}</span>

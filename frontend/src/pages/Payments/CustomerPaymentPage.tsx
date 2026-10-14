@@ -5,6 +5,7 @@ import { paymentApi } from '../../services/paymentApi';
 import { bookingApi } from '../../services/bookingApi';
 import { storageApi } from '../../services/storageApi';
 import { paymentConfig } from '../../config/paymentConfig';
+import { serviceExperienceApi } from '../../services/serviceExperienceApi';
 import { ShieldCheck, QrCode, Upload, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Phone, MessageSquare, Copy, Check, ExternalLink, Smartphone } from 'lucide-react';
 
 interface PaymentState {
@@ -23,6 +24,7 @@ export const CustomerPaymentPage: React.FC = () => {
   const routeState = location.state || {};
   const queryParams = new URLSearchParams(location.search);
   const urlBookingId = queryParams.get('bookingId') || queryParams.get('id') || '';
+  const isServiceBooking = Boolean(routeState.serviceBooking || queryParams.get('source') === 'service');
 
   const [bookingDetails, setBookingDetails] = useState<{
     bookingId?: string;
@@ -69,18 +71,20 @@ export const CustomerPaymentPage: React.FC = () => {
       bookingApi.getMyBookings().then(async (bList) => {
         if (!isMounted || !Array.isArray(bList) || bList.length === 0) return;
 
-        let target = bList[0];
         const searchId = bookingDetails.bookingId || urlBookingId;
-        if (searchId) {
-          const found = bList.find((b: any) => b.id === searchId || b.bookingNumber === searchId || b._id === searchId);
-          if (found) target = found;
-        }
+        const target = searchId
+          ? bList.find((b: any) => b.id === searchId || b.bookingNumber === searchId || b.booking_number === searchId || b._id === searchId)
+          : isServiceBooking ? null : bList[0];
+        if (!target && isServiceBooking) return;
+        if (!target) return;
 
         const bId = target.id || target._id || target.bookingNumber;
+        let bookingMetadata: any = {};
+        try { bookingMetadata = typeof target.notes === 'string' ? JSON.parse(target.notes) : (target.notes || {}); } catch { bookingMetadata = {}; }
         setBookingDetails({
           bookingId: bId,
-          amount: target.amount || 4500,
-          serviceName: target.notes || target.serviceName || target.roomType || 'EaseHub Student Stay',
+          amount: Number(target.amount) || 0,
+          serviceName: bookingMetadata.serviceName || target.serviceName || target.roomType || target.notes || 'EaseHub Service',
           providerName: 'EaseHub Verified Partner',
           address: target.address || 'Bhilai, CG',
         });
@@ -113,7 +117,7 @@ export const CustomerPaymentPage: React.FC = () => {
       }).catch(() => {});
     }
     return () => { isMounted = false; };
-  }, [isAuthenticated, user, urlBookingId]);
+  }, [isAuthenticated, user, urlBookingId, isServiceBooking]);
 
   if (authLoading) {
     return (
@@ -169,13 +173,20 @@ export const CustomerPaymentPage: React.FC = () => {
     setPaymentState({ status: 'submitting', utr: cleanUtr });
 
     try {
-      await paymentApi.submitProof({
-        bookingId: bookingDetails.bookingId,
-        amount: bookingDetails.amount || 4500,
-        utr: cleanUtr,
-        screenshotUrl: uploadedPath || '',
-        serviceName: bookingDetails.serviceName,
-      });
+      if (isServiceBooking) {
+        if (!bookingDetails.bookingId || !bookingDetails.amount) {
+          throw new Error('The selected service booking could not be loaded. Return to My Bookings and retry payment.');
+        }
+        await serviceExperienceApi.submitPaymentProof(bookingDetails.bookingId, cleanUtr, uploadedPath || '');
+      } else {
+        await paymentApi.submitProof({
+          bookingId: bookingDetails.bookingId,
+          amount: bookingDetails.amount,
+          utr: cleanUtr,
+          screenshotUrl: uploadedPath || '',
+          serviceName: bookingDetails.serviceName,
+        });
+      }
 
       setPaymentState({
         status: 'pending',

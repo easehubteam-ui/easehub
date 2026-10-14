@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ServiceVisibilityControls from '../../components/admin/ServiceVisibilityControls';
 
 export const Settings: React.FC = () => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -88,6 +89,7 @@ export const Settings: React.FC = () => {
           </div>
         </form>
       </div>
+      <ServiceVisibilityControls />
     </div>
   );
 };

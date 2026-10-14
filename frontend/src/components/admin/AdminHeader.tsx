@@ -4,10 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 
 interface AdminHeaderProps {
   onMenuToggle: () => void;
+  isSidebarOpen: boolean;
   title?: string;
 }
 
-export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle, title }) => {
+export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle, isSidebarOpen, title }) => {
   const { user, logout, isSuperAdmin, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -18,7 +19,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle, title })
       {/* Left side */}
       <div className="flex items-center gap-4">
         <button
+          type="button"
           onClick={onMenuToggle}
+          aria-label="Open admin navigation menu"
+          aria-expanded={isSidebarOpen}
+          aria-controls="admin-navigation-sidebar"
           className="lg:hidden p-2 rounded-xl bg-[#F3F4F0] text-[#171A18] hover:bg-[#EDEEEB] transition-colors"
         >
           <span className="material-symbols-outlined text-[20px]">menu</span>

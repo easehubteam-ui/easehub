@@ -1,6 +1,7 @@
 import React, { useLayoutEffect } from 'react';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ServiceExperienceProvider } from './context/ServiceExperienceContext';
 import { AppRoutes } from './routes/AppRoutes';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -21,7 +22,9 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
-          <AppRoutes />
+          <ServiceExperienceProvider>
+            <AppRoutes />
+          </ServiceExperienceProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

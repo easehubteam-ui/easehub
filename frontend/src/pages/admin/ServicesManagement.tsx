@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import AddServiceModal, { ServiceFormData } from '../../components/admin/AddServiceModal';
 import { serviceApi } from '../../services/serviceApi';
+import { serviceExperienceApi } from '../../services/serviceExperienceApi';
+import ServiceBookingQueue from '../../components/admin/ServiceBookingQueue';
 
 interface ServiceCategory {
   id: string;
@@ -20,15 +22,6 @@ interface ServiceCategory {
   assignedTechs: { name: string; rating: number; jobs: number; role: string; avatar: string }[];
   customQueriesCount: number;
   rawItem?: any;
-}
-
-interface CustomQuery {
-  id: string;
-  studentName: string;
-  location: string;
-  timeAgo: string;
-  issue: string;
-  status: 'pending_quote' | 'tech_assigned' | 'resolved';
 }
 
 export const ServicesManagement: React.FC = () => {
@@ -52,6 +45,7 @@ export const ServicesManagement: React.FC = () => {
   const [editBasePrice, setEditBasePrice] = useState<number>(0);
   const [editNightSurge, setEditNightSurge] = useState<number>(0);
   const [editSlaMins, setEditSlaMins] = useState<number>(0);
+  const [customRequestCount, setCustomRequestCount] = useState(0);
 
   const fetchCategories = async () => {
     try {
@@ -108,13 +102,19 @@ export const ServicesManagement: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    serviceExperienceApi.getAdminServiceBookings('SERVICE').then((bookings) => {
+      const count = bookings.filter((booking: any) => {
+        if (String(booking.booking_type || '').toUpperCase() !== 'SERVICE') return false;
+        try {
+          const meta = typeof booking.notes === 'string' ? JSON.parse(booking.notes) : booking.notes;
+          return meta?.catalogType === 'custom_service' && String(booking.status).toUpperCase() === 'PENDING';
+        } catch {
+          return false;
+        }
+      }).length;
+      setCustomRequestCount(count);
+    }).catch((err) => console.error('Failed to load custom service requests:', err));
   }, []);
-
-  const customQueries: CustomQuery[] = [
-    { id: 'Q-901', studentName: 'Sneha Patel', location: 'Royal Boys PG, Room 204 (Junwani)', timeAgo: '15m ago', issue: 'Need laptop charger repair & 5-socket surge protector board setup.', status: 'pending_quote' },
-    { id: 'Q-902', studentName: 'Rahul Verma', location: 'Green Villa PG, Room 305 (Smriti Nagar)', timeAgo: '42m ago', issue: 'Bicycle front tire valve replacement & chain lubrication.', status: 'tech_assigned' },
-    { id: 'Q-903', studentName: 'Priya Sharma', location: 'Sunshine Girls Hostel (Nehru Nagar)', timeAgo: '1h 10m ago', issue: 'Heavy trunk box lifting to 3rd floor room.', status: 'resolved' },
-  ];
 
   const handleSelectCategory = (cat: ServiceCategory) => {
     setSelectedCategory(cat);
@@ -323,6 +323,7 @@ export const ServicesManagement: React.FC = () => {
 
   return (
     <div className="space-y-6 text-[#191c1a]">
+      <ServiceBookingQueue bookingType="SERVICE" title="Extra service requests" />
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-20 right-6 z-50 bg-[#02412e] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce">
@@ -485,7 +486,7 @@ export const ServicesManagement: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-[#191c1a]">{customQueries.length} Pending</div>
+            <div className="text-2xl font-black text-[#191c1a]">{customRequestCount} Pending</div>
             <div className="text-xs text-amber-700 font-bold mt-1 flex items-center gap-1">
               <span className="material-symbols-outlined text-[14px]">warning</span>
               <span>Student Custom Tickets Queue</span>

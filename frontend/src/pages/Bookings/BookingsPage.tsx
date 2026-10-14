@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { bookingApi } from '../../services/bookingApi';
+import { paymentApi } from '../../services/paymentApi';
 import { useAuth } from '../../context/AuthContext';
 import { SkeletonCard } from '../../components/common/SkeletonCard';
 
@@ -12,7 +13,7 @@ interface CustomerBooking {
   providerName: string;
   date: string;
   amount: number;
-  paymentStatus: 'Escrow Held' | 'Paid UPI' | 'COD' | 'Pending Verification';
+  paymentStatus: 'Escrow Held' | 'Paid UPI' | 'COD' | 'Pending Verification' | 'Payment Rejected';
   bookingStatus: 'Pending' | 'Confirmed' | 'Assigned' | 'In Progress' | 'Ready' | 'Completed' | 'Cancelled';
   details: string;
 }
@@ -20,7 +21,7 @@ interface CustomerBooking {
 export const BookingsPage: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'All' | 'PG' | 'Meals' | 'Laundry'>('All');
+  const [activeTab, setActiveTab] = useState<'All' | 'PG' | 'Meals' | 'Laundry' | 'Service'>('All');
   const [selectedBooking, setSelectedBooking] = useState<CustomerBooking | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<CustomerBooking | null>(null);
   const [bookingsList, setBookingsList] = useState<CustomerBooking[]>([]);
@@ -30,26 +31,36 @@ export const BookingsPage: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const list = await bookingApi.getMyBookings();
+      const [list, paymentMap] = await Promise.all([
+        bookingApi.getMyBookings(),
+        paymentApi.getMyPaymentStatuses().catch(() => ({})),
+      ]);
       if (Array.isArray(list)) {
-        const mapped: CustomerBooking[] = list.map((b: any) => ({
-          id: b.bookingNumber || b._id || b.id,
-          originalId: b.id || b._id || b.bookingNumber,
-          category: (b.serviceType as any) || (b.bookingType as any) || 'PG',
-          serviceName: b.roomType || b.serviceName || 'EaseHub Booking',
-          providerName: b.serviceName || 'EaseHub Verified Partner',
-          date: new Date(b.createdAt || b.scheduledDate || Date.now()).toLocaleDateString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-          }),
-          amount: b.amount || 0,
-          paymentStatus: b.paymentStatus === 'verified' ? 'Paid UPI' : 'Pending Verification',
-          bookingStatus: (b.status
-            ? b.status.charAt(0).toUpperCase() + b.status.slice(1).toLowerCase()
-            : 'Confirmed') as any,
-          details: `${b.address || 'Bhilai'}. ${b.description || b.notes || ''}`,
-        }));
+        const paymentStatuses = (paymentMap ?? {}) as Record<string, string>;
+        const mapped: CustomerBooking[] = list.map((b: any) => {
+          let metadata: any = {};
+          try { metadata = typeof b.notes === 'string' ? JSON.parse(b.notes) : (b.notes || {}); }
+          catch { metadata = { details: b.notes }; }
+          const rawType = String(b.booking_type || b.serviceType || b.bookingType || 'PG').toUpperCase();
+          const category: CustomerBooking['category'] = rawType === 'MEAL' ? 'Meals' : rawType === 'LAUNDRY' ? 'Laundry' : rawType === 'SERVICE' ? 'Service' : 'PG';
+          const rawStatus = String(b.status || 'PENDING').toUpperCase();
+          const paymentStatusValue: string | undefined = paymentStatuses[String(b.id)] ?? b.payment_status ?? b.paymentStatus ?? 'PENDING';
+          const paymentStatus = String(paymentStatusValue).toUpperCase();
+          return {
+            id: b.booking_number || b.bookingNumber || b._id || b.id,
+            originalId: b.id || b._id || b.booking_number,
+            category,
+            serviceName: metadata.serviceName || b.service_name_snapshot || b.room_type || b.roomType || (category === 'PG' ? 'EaseHub Booking' : 'Service Booking'),
+            providerName: metadata.providerName || metadata.serviceName || b.service_name_snapshot || b.serviceName || 'EaseHub Verified Partner',
+            date: new Date(b.created_at || b.createdAt || b.scheduled_date || b.scheduledDate || Date.now()).toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'short', year: 'numeric'
+            }),
+            amount: Number(b.amount) || 0,
+            paymentStatus: paymentStatus === 'VERIFIED' ? 'Paid UPI' : paymentStatus === 'REJECTED' ? 'Payment Rejected' : 'Pending Verification',
+            bookingStatus: (rawStatus === 'IN_PROGRESS' ? 'In Progress' : rawStatus.charAt(0) + rawStatus.slice(1).toLowerCase()) as CustomerBooking['bookingStatus'],
+            details: `${b.address || 'Address not specified'}. ${metadata.details || metadata.notes || b.description || ''}`,
+          };
+        });
         setBookingsList(mapped);
       } else {
         setBookingsList([]);
@@ -138,7 +149,7 @@ export const BookingsPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl p-2 border border-[#E5E1D6] shadow-xs flex items-center gap-2">
-        {(['All', 'PG', 'Meals', 'Laundry'] as const).map((tab) => (
+        {(['All', 'PG', 'Meals', 'Laundry', 'Service'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}

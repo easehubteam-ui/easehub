@@ -24,7 +24,9 @@ const DashboardPage = React.lazy(() => import('../pages/Dashboard/DashboardPage'
 const PGPage = React.lazy(() => import('../pages/PG/PGPage').then(m => ({ default: m.PGPage })));
 const PGDetails = React.lazy(() => import('../pages/PG/PGDetails').then(m => ({ default: m.PGDetails })));
 const MealsPage = React.lazy(() => import('../pages/Meals/MealsPage').then(m => ({ default: m.MealsPage })));
+const NewMealsPage = React.lazy(() => import('../pages/Meals/NewMealsPage').then(m => ({ default: m.NewMealsPage })));
 const LaundryPage = React.lazy(() => import('../pages/Laundry/LaundryPage').then(m => ({ default: m.LaundryPage })));
+const NewLaundryPage = React.lazy(() => import('../pages/Laundry/NewLaundryPage').then(m => ({ default: m.NewLaundryPage })));
 const ServicesPage = React.lazy(() => import('../pages/Services/ServicesPage').then(m => ({ default: m.ServicesPage })));
 const BookingsPage = React.lazy(() => import('../pages/Bookings/BookingsPage'));
 const AccountPage = React.lazy(() => import('../pages/Account/AccountPage'));
@@ -57,6 +59,7 @@ const SubAdmins = React.lazy(() => import('../pages/admin/SubAdmins'));
 import NotFound from '../pages/NotFound/NotFound';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { useAuth } from '../context/AuthContext';
+import { useServiceExperience } from '../context/ServiceExperienceContext';
 import { isAdminRole, getFirstAllowedAdminPath } from '../types';
 
 const RouteLoading: React.FC = () => (
@@ -67,6 +70,37 @@ const RouteLoading: React.FC = () => (
     </div>
   </div>
 );
+
+const ServiceVisibilityLoading: React.FC = () => (
+  <div role="status" className="flex min-h-[40vh] items-center justify-center text-sm font-semibold text-[#225944]">
+    Checking current service availability…
+  </div>
+);
+
+const MealsExperienceRoute: React.FC = () => {
+  const { settings, isLoading, error } = useServiceExperience();
+  if (isLoading) return <ServiceVisibilityLoading />;
+  if (error || !settings) return <div role="alert" className="mx-auto my-12 max-w-xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-800">Meal availability could not be verified. Please try again later.</div>;
+  if (settings.new_meals_enabled) return <NewMealsPage />;
+  if (settings.old_meals_enabled) return <MealsPage />;
+  return <Navigate to="/" replace />;
+};
+
+const LaundryExperienceRoute: React.FC = () => {
+  const { settings, isLoading, error } = useServiceExperience();
+  if (isLoading) return <ServiceVisibilityLoading />;
+  if (error || !settings) return <div role="alert" className="mx-auto my-12 max-w-xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-800">Laundry availability could not be verified. Please try again later.</div>;
+  if (settings.new_laundry_enabled) return <NewLaundryPage />;
+  if (settings.old_laundry_enabled) return <LaundryPage />;
+  return <Navigate to="/" replace />;
+};
+
+const ExtraServicesRoute: React.FC = () => {
+  const { settings, isLoading, error } = useServiceExperience();
+  if (isLoading) return <ServiceVisibilityLoading />;
+  if (error || !settings) return <div role="alert" className="mx-auto my-12 max-w-xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-800">Service availability could not be verified. Please try again later.</div>;
+  return settings.extra_services_enabled ? <ServicesPage /> : <Navigate to="/" replace />;
+};
 
 const RootRoute: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -105,11 +139,11 @@ export const AppRoutes: React.FC = () => {
             <Route path="/" element={<RootRoute />} />
             <Route path="/pg" element={<PGPage />} />
             <Route path="/pg/:id" element={<PGDetails />} />
-            <Route path="/meals" element={<MealsPage />} />
-            <Route path="/meals/:id" element={<MealsPage />} />
-            <Route path="/laundry" element={<LaundryPage />} />
-            <Route path="/services" element={<ServicesPage />} />
-            <Route path="/services/:id" element={<ServicesPage />} />
+            <Route path="/meals" element={<MealsExperienceRoute />} />
+            <Route path="/meals/:id" element={<MealsExperienceRoute />} />
+            <Route path="/laundry" element={<LaundryExperienceRoute />} />
+            <Route path="/services" element={<ExtraServicesRoute />} />
+            <Route path="/services/:id" element={<ExtraServicesRoute />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />

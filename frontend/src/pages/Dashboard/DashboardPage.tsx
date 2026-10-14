@@ -4,23 +4,28 @@ import { Link } from 'react-router-dom';
 import { bookingApi } from '../../services/bookingApi';
 import { pgApi } from '../../services/pgApi';
 import { mealApi } from '../../services/mealApi';
+import { useServiceExperience } from '../../context/ServiceExperienceContext';
+import { MealServicePlan, serviceExperienceApi } from '../../services/serviceExperienceApi';
 import { Skeleton } from '../../components/common/Skeleton';
 import { SkeletonCard } from '../../components/common/SkeletonCard';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { settings: serviceSettings } = useServiceExperience();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeBookings, setActiveBookings] = useState<any[]>([]);
   const [recommendedPGs, setRecommendedPGs] = useState<any[]>([]);
   const [recommendedMeals, setRecommendedMeals] = useState<any[]>([]);
+  const [recommendedMealPlans, setRecommendedMealPlans] = useState<MealServicePlan[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       bookingApi.getMyBookings().catch(() => []),
       pgApi.getAll().catch(() => []),
-      mealApi.getAll().catch(() => []),
-    ]).then(([userBookings, pgs, meals]) => {
+      serviceSettings?.old_meals_enabled ? mealApi.getAll().catch(() => []) : Promise.resolve([]),
+      serviceSettings?.new_meals_enabled ? serviceExperienceApi.getMealPlans().catch(() => []) : Promise.resolve([]),
+    ]).then(([userBookings, pgs, meals, plans]) => {
       if (Array.isArray(userBookings)) {
         setActiveBookings(userBookings);
       }
@@ -30,9 +35,10 @@ export const DashboardPage: React.FC = () => {
       if (Array.isArray(meals)) {
         setRecommendedMeals(meals.slice(0, 4));
       }
+      if (Array.isArray(plans)) setRecommendedMealPlans(plans.filter((plan) => plan.is_active && plan.is_available).slice(0, 4));
       setLoading(false);
     });
-  }, []);
+  }, [serviceSettings?.old_meals_enabled, serviceSettings?.new_meals_enabled]);
 
   return (
     <div className="space-y-8">
@@ -101,6 +107,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Service Card 2: MEALS */}
+        {(serviceSettings?.old_meals_enabled || serviceSettings?.new_meals_enabled) && <>
         <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs hover:shadow-md transition flex flex-col justify-between group">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-[#EECA3A] text-[#171A18] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform shadow-xs">
@@ -123,8 +130,10 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
         </div>
+        </>}
 
         {/* Service Card 3: LAUNDRY */}
+        {(serviceSettings?.old_laundry_enabled || serviceSettings?.new_laundry_enabled) && <>
         <div className="bg-white rounded-3xl p-6 border border-[#E5E1D6] shadow-xs hover:shadow-md transition flex flex-col justify-between group">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-[#4F7A65] text-white flex items-center justify-center mb-4 group-hover:scale-105 transition-transform shadow-xs">
@@ -147,6 +156,7 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
         </div>
+        </>}
       </div>
 
       {/* 3. Active Bookings Section */}
@@ -263,6 +273,31 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Recommended Meals */}
+        {serviceSettings?.new_meals_enabled && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-extrabold text-amber-800 uppercase tracking-wider">Available meal plans</h3>
+              <Link to="/meals" className="text-xs font-bold text-[#225944] hover:underline">Explore plans →</Link>
+            </div>
+            {recommendedMealPlans.length === 0 ? (
+              <div className="rounded-2xl border border-[#E5E1D6] bg-white p-5 text-xs text-[#6B6B63]">No active meal plan records are currently available.</div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {recommendedMealPlans.map((plan) => (
+                  <div key={plan.id} className="rounded-2xl border border-[#E5E1D6] bg-white p-4 shadow-xs">
+                    <div className="flex items-start justify-between gap-2">
+                      <div><p className="text-[10px] font-bold uppercase text-[#225944]">{plan.category.replace('_', '-')}</p><h4 className="mt-1 font-extrabold text-[#171A18]">{plan.name}</h4></div>
+                      <span className="shrink-0 text-sm font-black text-[#225944]">₹{Number(plan.price).toLocaleString('en-IN')}/{plan.billing_period === 'daily' ? 'day' : 'mo'}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-[#6B6B63]">{plan.description}</p>
+                    <Link to="/meals" className="mt-3 inline-block text-xs font-bold text-[#225944] hover:underline">View plan →</Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {serviceSettings?.old_meals_enabled && <>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-extrabold text-amber-800 uppercase tracking-wider">Popular Tiffin &amp; Mess Plans</h3>
@@ -302,6 +337,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
         </div>
+        </>}
       </div>
 
       {/* Community & Admin Support Banner */}

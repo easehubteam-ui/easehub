@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../services/bookingApi';
+import { paymentApi } from '../../services/paymentApi';
+import { serviceExperienceApi } from '../../services/serviceExperienceApi';
 
 interface OrderBooking {
   id: string;
@@ -20,8 +22,8 @@ interface OrderBooking {
   address: string;
   roomNode: string;
   amount: number;
-  paymentStatus: 'Escrow Held' | 'Paid UPI' | 'COD' | 'Refunded UPI';
-  status: 'pending' | 'confirmed' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  paymentStatus: 'Escrow Held' | 'Paid UPI' | 'COD' | 'Refunded UPI' | 'Pending Verification' | 'Payment Unavailable' | 'Payment Rejected';
+  status: 'pending' | 'confirmed' | 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
   studentNote: string;
   breakdown: { label: string; amount: string; isDiscount?: boolean }[];
   timeline: { title: string; time: string; done: boolean; active?: boolean }[];
@@ -36,7 +38,16 @@ export const Bookings: React.FC = () => {
 
   const fetchOrders = async () => {
     try {
-      const list = await bookingApi.getBookings();
+      const [list, paymentList] = await Promise.all([
+        bookingApi.getBookings(),
+        paymentApi.getPayments().catch(() => []),
+      ]);
+      const paymentByBookingId = new Map<string, string>();
+      for (const payment of paymentList) {
+        if (payment.bookingId && !paymentByBookingId.has(payment.bookingId)) {
+          paymentByBookingId.set(payment.bookingId, String(payment.status || ''));
+        }
+      }
       if (Array.isArray(list)) {
         const mapped: OrderBooking[] = list.map((b: any) => {
           // Support both joined object (b.users) and flat columns (b.user_name)
@@ -49,12 +60,16 @@ export const Bookings: React.FC = () => {
             joinedUser?.phone || b.user_phone || b.userPhone || '—';
           const customerCity =
             joinedUser?.city || joinedUser?.address || b.city || '—';
-          const serviceName =
-            joinedService?.name || b.service_name || b.serviceName || b.notes || b.description || '—';
-          const serviceType =
-            joinedService?.service_type || joinedService?.category || b.booking_type || b.serviceType || 'Service';
+          let metadata: any = {};
+          try { metadata = typeof b.notes === 'string' ? JSON.parse(b.notes) : (b.notes || {}); }
+          catch { metadata = { details: b.notes }; }
+          const rawType = String(b.booking_type || b.serviceType || b.bookingType || '').toUpperCase();
+          const serviceType = rawType === 'PG' ? 'PG Stay' : rawType === 'MEAL' ? 'Meals' : rawType === 'LAUNDRY' ? 'Laundry' : 'Service';
+          const serviceName = joinedService?.name || metadata.serviceName || b.service_name || b.serviceName || b.service_name_snapshot || '—';
           const providerName =
             b.vendor || b.provider_name || b.providerName || serviceName || '—';
+          const paymentState = String(paymentByBookingId.get(b.id) || b.payment_status || b.paymentStatus || '').toUpperCase();
+          const normalizedPayment: OrderBooking['paymentStatus'] = paymentState === 'VERIFIED' ? 'Paid UPI' : paymentState === 'REJECTED' ? 'Payment Rejected' : paymentState === 'VERIFICATION_PENDING' || paymentState === 'PENDING' ? 'Pending Verification' : paymentState ? 'Escrow Held' : 'Payment Unavailable';
 
           return {
             id: b.booking_number || b.bookingNumber || b._id || b.id,
@@ -65,7 +80,7 @@ export const Bookings: React.FC = () => {
             customerPhone,
             customerCampus: customerCity,
             parentPhone: '—',
-            category: serviceType as any,
+            category: serviceType as OrderBooking['category'],
             categoryLabel: serviceType,
             serviceName,
             providerName,
@@ -75,9 +90,9 @@ export const Bookings: React.FC = () => {
             address: b.address || joinedUser?.address || '—',
             roomNode: b.room_type || b.roomType || '—',
             amount: Number(b.amount) || 0,
-            paymentStatus: b.payment_status === 'verified' || b.paymentStatus === 'verified' ? 'Paid UPI' : 'Escrow Held',
+            paymentStatus: normalizedPayment,
             status: ((b.status || 'pending') as string).toLowerCase() as any,
-            studentNote: b.notes || b.description || '—',
+            studentNote: metadata.details || metadata.notes || b.description || (typeof b.notes === 'string' && !b.notes.trim().startsWith('{') ? b.notes : '') || '—',
             breakdown: [{ label: 'Total Amount:', amount: `₹${b.amount || 0}` }],
             timeline: [{ title: `Status: ${(b.status || 'pending').toLowerCase()}`, time: b.created_at ? new Date(b.created_at).toLocaleTimeString() : '—', done: true }],
             adminNotes: [],
@@ -157,8 +172,33 @@ export const Bookings: React.FC = () => {
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-  const handleReleaseEscrow = () => {
+  const updateServiceStatus = async (status: string) => {
+    if (!selectedOrder?._rawId || selectedOrder.category === 'PG Stay') return;
+    try {
+      const updated = await serviceExperienceApi.updateBookingStatus(selectedOrder._rawId, status);
+      await fetchOrders();
+      setSelectedOrder((current) => current?._rawId === updated.id ? {
+        ...current,
+        status: String(updated.status).toLowerCase() as OrderBooking['status'],
+      } : current);
+      setToastMsg(`Booking ${selectedOrder.id} updated to ${String(updated.status).toLowerCase().replace('_', ' ')}.`);
+    } catch (err: any) {
+      setToastMsg(err?.message || 'Booking status was not saved.');
+    }
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleReleaseEscrow = async () => {
     if (!selectedOrder) return;
+    if (selectedOrder.category !== 'PG Stay') {
+      if (selectedOrder.paymentStatus !== 'Paid UPI') {
+        setToastMsg('Payment must be verified in Payments before completing this service booking.');
+        setTimeout(() => setToastMsg(null), 3500);
+        return;
+      }
+      await updateServiceStatus('COMPLETED');
+      return;
+    }
     const updated = orders.map((o) =>
       o.id === selectedOrder.id ? { ...o, status: 'completed' as const, paymentStatus: 'Paid UPI' as const } : o
     );
@@ -168,8 +208,12 @@ export const Bookings: React.FC = () => {
     setTimeout(() => setToastMsg(null), 4000);
   };
 
-  const handleCancelRefund = () => {
+  const handleCancelRefund = async () => {
     if (!selectedOrder) return;
+    if (selectedOrder.category !== 'PG Stay') {
+      await updateServiceStatus('CANCELLED');
+      return;
+    }
     const updated = orders.map((o) =>
       o.id === selectedOrder.id ? { ...o, status: 'cancelled' as const, paymentStatus: 'Refunded UPI' as const } : o
     );
@@ -799,6 +843,26 @@ export const Bookings: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {selectedOrder.category !== 'PG Stay' && (
+              <label className="block rounded-xl bg-[#edeeeb] p-4 text-xs font-extrabold text-[#191c1a]">
+                SERVICE BOOKING STATUS
+                <select
+                  value={selectedOrder.status.toUpperCase()}
+                  onChange={(event) => void updateServiceStatus(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#c0c9c2] bg-white px-3 py-2.5 text-sm font-bold"
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                  <option value="ASSIGNED">Assigned</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+                <span className="mt-2 block font-medium text-[#6B6B63]">Invalid lifecycle transitions are rejected by InsForge.</span>
+              </label>
+            )}
 
             {/* Action Buttons Footer */}
             <div className="pt-3 border-t border-[#c0c9c2]/40 space-y-2">

@@ -16,6 +16,7 @@ import { pgApi, type PGProperty } from '../../services/pgApi';
 import { mealApi, type MealProvider } from '../../services/mealApi';
 import { laundryApi, type LaundryProvider } from '../../services/laundryApi';
 import { serviceApi, type ExtraServiceItem } from '../../services/serviceApi';
+import { useServiceExperience } from '../../context/ServiceExperienceContext';
 import { AnimatedCityFooter } from '../../components/home/AnimatedCityFooter';
 import { TemplateMotionHero } from '../../components/home/TemplateMotionHero';
 import { ReviewVideoCarousel } from '../../components/home/ReviewVideoCarousel';
@@ -243,6 +244,7 @@ function ScrollFillText({ reduceMotion }: { reduceMotion: boolean }) {
 
 export const TemplateHomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { settings: serviceSettings } = useServiceExperience();
   const reduceMotion = useReducedMotion() ?? false;
   const [pgListings, setPgListings] = useState<PGProperty[]>([]);
   const [mealProviders, setMealProviders] = useState<MealProvider[]>([]);
@@ -298,6 +300,12 @@ export const TemplateHomePage: React.FC = () => {
   const featuredLaundry = laundryProviders[0];
   const featuredService = extraServices[0];
   const formatPrice = (price?: number) => price && price > 0 ? `₹${price.toLocaleString('en-IN')}` : null;
+  const visibleCarouselCards = carouselCards.filter((card) => {
+    if (card.href === '/meals') return Boolean(serviceSettings?.old_meals_enabled || serviceSettings?.new_meals_enabled);
+    if (card.href === '/laundry') return Boolean(serviceSettings?.old_laundry_enabled || serviceSettings?.new_laundry_enabled);
+    if (card.href === '/services') return Boolean(serviceSettings?.extra_services_enabled);
+    return true;
+  });
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#F7F5EF] font-sans text-[#171A18] antialiased selection:bg-[#EECA3A] selection:text-[#171A18]">
@@ -336,7 +344,7 @@ export const TemplateHomePage: React.FC = () => {
           `}</style>
 
           <div className="carousel-reel" style={{ gap: '20px', padding: '24px 20px' }}>
-            {carouselCards.map((card, i) => (
+            {visibleCarouselCards.map((card, i) => (
               <Link
                 key={i}
                 to={card.href}
@@ -471,6 +479,7 @@ export const TemplateHomePage: React.FC = () => {
           {/* Screen Lock Pause after Card 1 */}
           <div className="h-[30vh] pointer-events-none" />
 
+          {(serviceSettings?.old_meals_enabled || serviceSettings?.new_meals_enabled) && <>
           {/* CARD 2: MEALS */}
           <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 20 }}>
             <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#E5E1D6] bg-[#F4F0E7] p-5 sm:p-8 shadow-sm flex flex-col justify-between text-[#171A18]">
@@ -523,7 +532,9 @@ export const TemplateHomePage: React.FC = () => {
 
           {/* Screen Lock Pause after Card 2 */}
           <div className="h-[30vh] pointer-events-none" />
+          </>}
 
+          {(serviceSettings?.old_laundry_enabled || serviceSettings?.new_laundry_enabled) && <>
           {/* CARD 3: LAUNDRY */}
           <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 30 }}>
             <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#DCE5DE] bg-[#EAF0EB] p-5 sm:p-8 shadow-sm flex flex-col justify-between text-[#171A18]">
@@ -576,7 +587,9 @@ export const TemplateHomePage: React.FC = () => {
 
           {/* Screen Lock Pause after Card 3 */}
           <div className="h-[30vh] pointer-events-none" />
+          </>}
 
+          {serviceSettings?.extra_services_enabled && <>
           {/* CARD 4: EVERYDAY SERVICES */}
           <div className="sticky top-0 h-screen flex items-center justify-center" style={{ zIndex: 40 }}>
             <div className="relative w-full h-[560px] sm:h-[580px] rounded-2xl sm:rounded-3xl border border-[#184232] bg-[#225944] p-5 sm:p-8 shadow-sm flex flex-col justify-between text-white">
@@ -624,6 +637,7 @@ export const TemplateHomePage: React.FC = () => {
 
           {/* Screen Lock Pause after Card 4 */}
           <div className="h-[38vh] pointer-events-none" />
+          </>}
         </div>
       </section>
 

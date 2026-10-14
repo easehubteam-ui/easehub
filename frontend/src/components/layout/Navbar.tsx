@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { useServiceExperience } from '../../context/ServiceExperienceContext';
 import { isAdminRole, getFirstAllowedAdminPath } from '../../types';
 import { savedApi } from '../../services/savedApi';
 import { Heart, Menu, X, ChevronDown } from 'lucide-react';
@@ -11,11 +12,14 @@ export const Navbar: React.FC = () => {
   const currentPath = location.pathname;
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const { settings: serviceSettings } = useServiceExperience();
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [savedCount, setSavedCount] = useState<number>(0);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   const scrolledRef = useRef(false);
   const lastScrollY = useRef(0);
@@ -71,7 +75,45 @@ export const Navbar: React.FC = () => {
   useEffect(() => {
     setMobileMenuOpen(false);
     setUserDropdownOpen(false);
-  }, [currentPath]);
+  }, [location.key]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (mobileMenuRef.current?.contains(target) || mobileMenuButtonRef.current?.contains(target)) return;
+      setMobileMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMobileMenuOpen(false);
+      mobileMenuButtonRef.current?.focus();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const desktopNavigation = window.matchMedia('(min-width: 1280px)');
+    const closeHiddenMobileMenu = () => {
+      if (desktopNavigation.matches && !scrolled) setMobileMenuOpen(false);
+    };
+
+    desktopNavigation.addEventListener('change', closeHiddenMobileMenu);
+    return () => desktopNavigation.removeEventListener('change', closeHiddenMobileMenu);
+  }, [scrolled]);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,7 +152,14 @@ export const Navbar: React.FC = () => {
     { path: '/laundry', label: 'Laundry' },
     { path: '/services', label: 'Services' },
     { path: '/support', label: 'Support' },
-  ];
+  ].filter((link) => {
+    if (link.path === '/meals') return Boolean(serviceSettings?.old_meals_enabled || serviceSettings?.new_meals_enabled);
+    if (link.path === '/laundry') return Boolean(serviceSettings?.old_laundry_enabled || serviceSettings?.new_laundry_enabled);
+    if (link.path === '/services') return Boolean(serviceSettings?.extra_services_enabled);
+    return true;
+  });
+  const isPathActive = (path: string) =>
+    currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`));
 
   return (
     <header className="sticky top-3 sm:top-5 z-50 w-full px-4 sm:px-8 max-w-[1420px] mx-auto pointer-events-auto flex justify-end h-[70px] min-h-[70px]">
@@ -160,7 +209,7 @@ export const Navbar: React.FC = () => {
         >
           <nav className="flex items-center gap-6 lg:gap-8 text-sm font-bold text-[#171A18] whitespace-nowrap">
             {navLinks.map((link) => {
-              const isActive = currentPath === link.path;
+              const isActive = isPathActive(link.path);
               return (
                 <Link
                   key={link.path}
@@ -301,11 +350,14 @@ export const Navbar: React.FC = () => {
           {/* Circular Menu Icon Button (≡) */}
           <button
             type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            ref={mobileMenuButtonRef}
+            onClick={() => setMobileMenuOpen((isOpen) => !isOpen)}
             className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#171A18] text-white flex items-center justify-center hover:bg-[#225944] transition-all shadow-md active:scale-95 shrink-0 ${
               scrolled ? 'flex' : 'flex xl:hidden'
             }`}
-            aria-label="Toggle Navigation Menu"
+            aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="public-mobile-navigation"
             title="Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -314,14 +366,14 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* DRAWER MENU OVERLAY */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
+      {mobileMenuOpen && (
           <motion.div
+            ref={mobileMenuRef}
+            id="public-mobile-navigation"
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.12 }}
-            className={`mt-2 bg-white border border-[#E5E1D6] rounded-[24px] p-4 shadow-2xl space-y-1.5 text-sm font-bold text-[#171A18] absolute top-full right-4 sm:right-8 ${
+            className={`mt-2 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain bg-white border border-[#E5E1D6] rounded-[24px] p-4 shadow-2xl space-y-1.5 text-sm font-bold text-[#171A18] absolute top-full right-4 sm:right-8 ${
               scrolled ? 'w-64' : 'w-72'
             }`}
           >
@@ -331,7 +383,7 @@ export const Navbar: React.FC = () => {
                 to={link.path}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block px-4 py-2.5 rounded-xl transition-colors ${
-                  currentPath === link.path
+                  isPathActive(link.path)
                     ? 'bg-[#225944] text-white font-extrabold'
                     : 'hover:bg-[#F7F5EF] text-[#171A18]'
                 }`}
@@ -359,8 +411,7 @@ export const Navbar: React.FC = () => {
               </div>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
+      )}
     </header>
   );
 };

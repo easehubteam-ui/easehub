@@ -102,6 +102,35 @@ export const paymentApi = {
     }
   },
 
+  getMyPaymentStatuses: async (): Promise<Record<string, string>> => {
+    const { data: authData } = await insforge.auth.getCurrentUser();
+    const authUserId = authData?.user?.id;
+    if (!authUserId) return {};
+
+    const { data: profiles, error: profileError } = await insforge.database
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', authUserId)
+      .limit(1);
+    if (profileError) throw new Error(profileError.message || 'Unable to resolve customer profile.');
+    const profile = Array.isArray(profiles) ? profiles[0] : null;
+    if (!profile?.id) return {};
+
+    const { data, error } = await insforge.database
+      .from('payments')
+      .select('booking_id,status,created_at')
+      .eq('user_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message || 'Unable to load payment statuses.');
+
+    const result: Record<string, string> = {};
+    for (const payment of Array.isArray(data) ? data : []) {
+      if (payment.booking_id && !result[payment.booking_id]) result[payment.booking_id] = payment.status;
+    }
+    return result;
+  },
+
   getStats: async () => {
     try {
       const list = await paymentApi.getPayments();
