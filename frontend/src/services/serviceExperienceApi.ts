@@ -103,30 +103,93 @@ const defaultServiceSettings: ServiceExperienceSettings = {
   updated_at: new Date().toISOString(),
 };
 
+const normalizeSettings = (row: Partial<ServiceExperienceSettings> | null | undefined): ServiceExperienceSettings => ({
+  id: 'global',
+  old_meals_enabled: row?.old_meals_enabled ?? true,
+  new_meals_enabled: row?.new_meals_enabled ?? true,
+  old_laundry_enabled: row?.old_laundry_enabled ?? true,
+  new_laundry_enabled: row?.new_laundry_enabled ?? true,
+  extra_services_enabled: row?.extra_services_enabled ?? true,
+  updated_by: row?.updated_by ?? null,
+  updated_at: row?.updated_at ?? new Date().toISOString(),
+});
+
+const ensureGlobalSettings = async (): Promise<ServiceExperienceSettings> => {
+  const { data, error } = await insforge.database
+    .from('service_experience_settings')
+    .select('id,old_meals_enabled,new_meals_enabled,old_laundry_enabled,new_laundry_enabled,extra_services_enabled,updated_by,updated_at')
+    .eq('id', 'global')
+    .maybeSingle();
+
+  if (error) {
+    const message = (error.message || '').toLowerCase();
+    if (!message.includes('does not exist') && !message.includes('not found') && !message.includes('relation')) {
+      throw new Error(error.message || 'Unable to load service visibility settings.');
+    }
+  }
+
+  if (data) {
+    return normalizeSettings(data as Partial<ServiceExperienceSettings>);
+  }
+
+  const safeDefault = normalizeSettings(defaultServiceSettings);
+  const { data: inserted, error: insertError } = await insforge.database
+    .from('service_experience_settings')
+    .upsert({ ...safeDefault }, { onConflict: 'id' })
+    .select('id,old_meals_enabled,new_meals_enabled,old_laundry_enabled,new_laundry_enabled,extra_services_enabled,updated_by,updated_at')
+    .maybeSingle();
+
+  if (insertError) {
+    const message = (insertError.message || '').toLowerCase();
+    if (message.includes('does not exist') || message.includes('not found') || message.includes('relation')) {
+      return safeDefault;
+    }
+    throw new Error(insertError.message || 'Unable to initialize service visibility settings.');
+  }
+
+  return normalizeSettings((inserted ?? safeDefault) as Partial<ServiceExperienceSettings> | null | undefined);
+};
+
 export const serviceExperienceApi = {
   getSettings: async (): Promise<ServiceExperienceSettings> => {
-    const { data, error } = await insforge.database
-      .from('service_experience_settings')
-      .select('id,old_meals_enabled,new_meals_enabled,old_laundry_enabled,new_laundry_enabled,extra_services_enabled,updated_by,updated_at')
-      .eq('id', 'global')
-      .maybeSingle();
-    throwIfError(error, 'Unable to load service visibility settings.');
-    if (!data) return defaultServiceSettings;
-    return data as ServiceExperienceSettings;
+    try {
+      return await ensureGlobalSettings();
+    } catch (error: any) {
+      console.warn('Service settings fallback activated:', error?.message || error);
+      return normalizeSettings(defaultServiceSettings);
+    }
   },
 
   updateSettings: async (
     patch: Partial<Omit<ServiceExperienceSettings, 'id' | 'updated_by' | 'updated_at'>>
   ): Promise<ServiceExperienceSettings> => {
+    const currentSettings = await ensureGlobalSettings();
+    const nextSettings = normalizeSettings({
+      ...currentSettings,
+      ...patch,
+      id: 'global',
+      updated_at: new Date().toISOString(),
+    });
+
     const { data, error } = await insforge.database
       .from('service_experience_settings')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', 'global')
+      .upsert({ ...nextSettings }, { onConflict: 'id' })
       .select('id,old_meals_enabled,new_meals_enabled,old_laundry_enabled,new_laundry_enabled,extra_services_enabled,updated_by,updated_at')
       .maybeSingle();
-    throwIfError(error, 'Unable to save service visibility settings.');
-    if (!data) throw new Error('Settings were not updated. Check your admin settings permission.');
-    return data as ServiceExperienceSettings;
+
+    if (error) {
+      const message = (error.message || '').toLowerCase();
+      if (message.includes('does not exist') || message.includes('not found') || message.includes('relation')) {
+        return nextSettings;
+      }
+      throwIfError(error, 'Unable to save service visibility settings.');
+    }
+
+    if (!data) {
+      throw new Error('Settings were not updated. Check your admin settings permission.');
+    }
+
+    return normalizeSettings(data as Partial<ServiceExperienceSettings>);
   },
 
   getMealPlans: async (): Promise<MealServicePlan[]> => {

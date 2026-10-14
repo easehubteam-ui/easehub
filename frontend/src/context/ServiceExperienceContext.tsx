@@ -26,7 +26,16 @@ export const ServiceExperienceProvider: React.FC<{ children: React.ReactNode }> 
       setSettings(next);
       setError(null);
     } catch (err: any) {
-      setSettings(null);
+      setSettings({
+        id: 'global',
+        old_meals_enabled: true,
+        new_meals_enabled: true,
+        old_laundry_enabled: true,
+        new_laundry_enabled: true,
+        extra_services_enabled: true,
+        updated_by: null,
+        updated_at: new Date().toISOString(),
+      });
       setError(err?.message || 'Service visibility settings could not be loaded.');
     } finally {
       setIsLoading(false);

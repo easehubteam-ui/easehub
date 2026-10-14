@@ -44,7 +44,7 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Column 2: Meals & Mess */}
-          {(settings?.old_meals_enabled || settings?.new_meals_enabled) && <div>
+          {(settings ? (settings.old_meals_enabled || settings.new_meals_enabled) : true) && <div>
             <h4 className="text-[16px] sm:text-[18px] font-bold text-[#171A18] mb-3 sm:mb-4">
               Meals & Mess
             </h4>
@@ -78,17 +78,17 @@ export const Footer: React.FC = () => {
           </div>}
 
           {/* Column 3: Services */}
-          {(settings?.old_laundry_enabled || settings?.new_laundry_enabled || settings?.extra_services_enabled) && <div>
+          {(settings ? (settings.old_laundry_enabled || settings.new_laundry_enabled || settings.extra_services_enabled) : true) && <div>
             <h4 className="text-[16px] sm:text-[18px] font-bold text-[#171A18] mb-3 sm:mb-4">
               Services
             </h4>
             <ul className="space-y-3 text-sm text-[#55554E]">
-              {settings?.old_laundry_enabled || settings?.new_laundry_enabled ? <li>
+              {(settings ? (settings.old_laundry_enabled || settings.new_laundry_enabled) : true) ? <li>
                 <Link to="/laundry" className="hover:text-[#171A18] transition-colors block">
                   Doorstep Laundry
                 </Link>
               </li> : null}
-              {settings?.extra_services_enabled && <>
+              {(settings ? settings.extra_services_enabled : true) && <>
               <li>
                 <Link to="/services" className="hover:text-[#171A18] transition-colors block">
                   Room Deep Cleaning

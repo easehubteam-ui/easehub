@@ -122,7 +122,7 @@ export const CustomerLayout: React.FC = () => {
               <span>PG / Hostel</span>
             </Link>
 
-            {Boolean(serviceSettings?.new_meals_enabled || serviceSettings?.old_meals_enabled) && <Link
+            {(serviceSettings ? Boolean(serviceSettings.new_meals_enabled || serviceSettings.old_meals_enabled) : true) && <Link
               to="/meals"
               className={`py-2 transition-all flex items-center gap-1.5 ${
                 isPathActive('/meals')
@@ -134,7 +134,7 @@ export const CustomerLayout: React.FC = () => {
               <span>Meals</span>
             </Link>}
 
-            {Boolean(serviceSettings?.new_laundry_enabled || serviceSettings?.old_laundry_enabled) && <Link
+            {(serviceSettings ? Boolean(serviceSettings.new_laundry_enabled || serviceSettings.old_laundry_enabled) : true) && <Link
               to="/laundry"
               className={`py-2 transition-all flex items-center gap-1.5 ${
                 isPathActive('/laundry')
@@ -146,7 +146,7 @@ export const CustomerLayout: React.FC = () => {
               <span>Laundry</span>
             </Link>}
 
-            {Boolean(serviceSettings?.extra_services_enabled) && <Link
+            {(serviceSettings ? Boolean(serviceSettings.extra_services_enabled) : true) && <Link
               to="/services"
               className={`py-2 transition-all flex items-center gap-1.5 ${
                 isPathActive('/services')

@@ -153,9 +153,9 @@ export const Navbar: React.FC = () => {
     { path: '/services', label: 'Services' },
     { path: '/support', label: 'Support' },
   ].filter((link) => {
-    if (link.path === '/meals') return Boolean(serviceSettings?.old_meals_enabled || serviceSettings?.new_meals_enabled);
-    if (link.path === '/laundry') return Boolean(serviceSettings?.old_laundry_enabled || serviceSettings?.new_laundry_enabled);
-    if (link.path === '/services') return Boolean(serviceSettings?.extra_services_enabled);
+    if (link.path === '/meals') return serviceSettings ? Boolean(serviceSettings.old_meals_enabled || serviceSettings.new_meals_enabled) : true;
+    if (link.path === '/laundry') return serviceSettings ? Boolean(serviceSettings.old_laundry_enabled || serviceSettings.new_laundry_enabled) : true;
+    if (link.path === '/services') return serviceSettings ? Boolean(serviceSettings.extra_services_enabled) : true;
     return true;
   });
   const isPathActive = (path: string) =>
